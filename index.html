@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude — Research & Education Projects</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --bg-card: #1a1f29;
+    --bg-card-hover: #232936;
+    --border: #2a3140;
+    --text: #e6e6e6;
+    --text-sub: #a0a8b8;
+    --text-dim: #6b7280;
+    --accent: #4fc3f7;
+    --accent-warm: #ffb74d;
+    --east: #2d7dd2;
+    --west: #e85d26;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.6;
+    padding: 2rem 1rem 4rem;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+  header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    color: var(--text-sub);
+    font-size: 0.95rem;
+    max-width: 60ch;
+    margin: 0 auto;
+  }
+  section { margin-bottom: 2.5rem; }
+  section > h2 {
+    font-size: 1.3rem;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  section > .section-desc {
+    font-size: 0.85rem;
+    color: var(--text-sub);
+    margin-bottom: 1rem;
+  }
+  h3 {
+    font-size: 1.05rem;
+    color: var(--accent-warm);
+    margin-top: 1.2rem;
+    margin-bottom: 0.6rem;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.6rem;
+  }
+  a.card {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.1s, border-color 0.1s;
+  }
+  a.card:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+  a.card .title { font-weight: 600; color: var(--accent); margin-bottom: 0.2rem; font-size: 0.95rem; }
+  a.card .desc { font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+  a.card .tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    background: rgba(79, 195, 247, 0.15);
+    color: var(--accent);
+    border-radius: 3px;
+    margin-right: 4px;
+  }
+  .featured {
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.08), rgba(255, 183, 77, 0.04));
+    border-color: rgba(79, 195, 247, 0.4);
+  }
+  .inline-links {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .inline-links a {
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 4px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .inline-links a:hover { border-color: var(--accent); }
+  footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.78rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Claude — Research &amp; Education Projects</h1>
+    <p>研究・教育・プロジェクト開発に関連するインタラクティブデモと参考資料の索引。</p>
+  </header>
+
+  <section>
+    <h2>📊 Strogatz 非線形力学系</h2>
+    <div class="section-desc">Steven Strogatz「Nonlinear Dynamics and Chaos」を基にしたインタラクティブデモ</div>
+    <div class="inline-links">
+      <a href="strogatz-cheatsheet.html">チートシート（総まとめ）</a>
+      <a href="dynamical-systems-analysis.html">力学系解析チュートリアル</a>
+      <a href="ch9-10-index.html">9-10章 専用索引</a>
+      <a href="ch9-10-schedule.md">10章 4日間スケジュール</a>
+    </div>
+
+    <h3>8章：2次元系の分岐</h3>
+    <div class="card-grid">
+      <a class="card" href="Strogatz-8.6-demo.html"><div class="title"><span class="tag">8.6</span>結合振動子と準周期性</div><div class="desc">トーラス上の流れ、位相ロック</div></a>
+      <a class="card" href="strogatz-8-7-demo.html"><div class="title"><span class="tag">8.7</span>ポアンカレ写像</div><div class="desc">連続系→離散系、クモの巣図法</div></a>
+      <a class="card" href="josephson-demo.html"><div class="title"><span class="tag">8.5</span>ジョセフソン接合</div><div class="desc">ヒステリシス、サドルノード分岐</div></a>
+      <a class="card" href="Strogatz-Hopfbifurcation-demo.html"><div class="title"><span class="tag">8.2</span>ホップ分岐</div><div class="desc">分岐点での安定性変化</div></a>
+      <a class="card" href="Strogatz-Homoclinicbifurcation-demo.html"><div class="title"><span class="tag">8.4</span>ホモクリニック分岐</div><div class="desc">サドル点へのループ接続</div></a>
+      <a class="card" href="Strogatz-infiniteperiod-demo.html"><div class="title"><span class="tag">8.4</span>無限周期分岐 (SNIPER)</div><div class="desc">ボトルネック効果</div></a>
+    </div>
+
+    <h3>9章：ローレンツ方程式とカオス</h3>
+    <div class="card-grid">
+      <a class="card" href="ch9-1-waterwheel.html"><div class="title"><span class="tag">9.1</span>カオス的な水車</div><div class="desc">Malkus-Howard N=48 チェンバー離散化、流入Q・漏れK・減衰νで定常/振動/カオス</div></a>
+      <a class="card" href="ch9-3-lorenz-attractor.html"><div class="title"><span class="tag">9.2-9.3</span>ローレンツ・アトラクター</div><div class="desc">x-z 位相図と y(t) 時系列、双子軌道で鋭敏な依存性、C± とホップ分岐 r_H</div></a>
+      <a class="card" href="ch9-4-lorenz-map.html"><div class="title"><span class="tag">9.4</span>ローレンツ写像</div><div class="desc">z の極大列から z_{n+1} vs z_n、|f'|>1 の直接確認</div></a>
+      <a class="card" href="ch9-5-parameter-explorer.html"><div class="title"><span class="tag">9.5</span>パラメーター空間の探索</div><div class="desc">r=0.8〜214 プリセット。間欠カオス・周期窓カタログ</div></a>
+      <a class="card" href="ch9-6-chaos-masking.html"><div class="title"><span class="tag">9.6</span>カオスマスク通信</div><div class="desc">Cuomo-Oppenheim 同期、x(t)+m(t) マスク送信、受信側で m 復元</div></a>
+    </div>
+
+    <h3>10章：1次元写像とカオス</h3>
+    <div class="card-grid">
+      <a class="card" href="ch10-1-cobweb.html"><div class="title"><span class="tag">10.1</span>クモの巣図法 (8写像)</div><div class="desc">ロジスティック/cos/正弦/テント/シフトなど8写像切替、二分法で不動点</div></a>
+      <a class="card" href="ch10-2-logistic-timeseries.html"><div class="title"><span class="tag">10.2</span>ロジスティック時系列</div><div class="desc">r 変化で周期 1→2→4→8→カオス、ヒストグラム表示</div></a>
+      <a class="card" href="ch10-2-orbit-diagram.html"><div class="title"><span class="tag">10.2</span>軌道図 (分岐図)</div><div class="desc">フラクタル構造、矩形ドラッグで拡大、4写像対応</div></a>
+      <a class="card" href="ch10-4-period3-window.html"><div class="title"><span class="tag">10.4</span>3周期窓と接線分岐</div><div class="desc">r₁ = 1+√8 ≈ 3.8284 で 3周期窓誕生、I型間欠性</div></a>
+      <a class="card" href="ch10-5-lyapunov.html"><div class="title"><span class="tag">10.5</span>リアプノフ指数 λ(r)</div><div class="desc">λ&lt;0 周期 / λ=0 倍分岐 / λ&gt;0 カオス、軌道図オーバーレイ可</div></a>
+      <a class="card" href="ch10-6-universality.html"><div class="title"><span class="tag">10.6</span>普遍性 (サイン vs ロジスティック)</div><div class="desc">超安定軌道 R_n から Feigenbaum δ を計算</div></a>
+      <a class="card" href="ch10-7-renormalization.html"><div class="title"><span class="tag">10.7</span>Feigenbaum くりこみ</div><div class="desc">f(x, R_n) と α·f²(x/α, R_{n+1}) の3パネル自己相似性、α 推定</div></a>
+      <a class="card" href="logistic-map-demo.html"><div class="title"><span class="tag">10.3, 10.6</span>ロジスティック写像 (旧版)</div><div class="desc">クモの巣図法、周期倍分岐、Feigenbaum定数</div></a>
+      <a class="card" href="Strogatz-hatten-circadianchaos-demo.html"><div class="title"><span class="tag">10.5</span>円形写像のカオス</div><div class="desc">Circle Map、概日リズム、アーノルドの舌</div></a>
+    </div>
+
+    <h3>その他のデモ</h3>
+    <div class="card-grid">
+      <a class="card" href="Strogatz-Vanderpol-demo.html"><div class="title">Van der Pol 振動子</div><div class="desc">リミットサイクルと非線形振動</div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>🐰 Lotka-Volterra で学ぶ2次元力学系</h2>
+    <div class="section-desc">生態学モデルで Strogatz 2-10章の主要概念を体験</div>
+    <div class="card-grid">
+      <a class="card" href="lv-competition-demo.html"><div class="title"><span class="tag">5-6章</span>競争方程式</div><div class="desc">固定点分類、多様体、双安定性</div></a>
+      <a class="card" href="lv-classic-demo.html"><div class="title"><span class="tag">6-7章</span>古典LV（被食-捕食）</div><div class="desc">中心点、保存系、構造不安定性</div></a>
+      <a class="card" href="rosenzweig-macarthur-demo.html"><div class="title"><span class="tag">8章</span>Rosenzweig-MacArthur</div><div class="desc">ホップ分岐、Paradox of Enrichment</div></a>
+      <a class="card" href="lv-discrete-demo.html"><div class="title"><span class="tag">10章</span>離散LV</div><div class="desc">周期倍分岐、カオスへの道</div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>🏀 NBA・バスケットボール研究</h2>
+
+    <h3>NBA 勢力図 (ライブデータ連携)</h3>
+    <div class="card-grid">
+      <a class="card featured" href="NBAlandscape.html"><div class="title">NBA ランドスケープ</div><div class="desc">2025-26 全30チームの勢力図。ESPN API ライブスコア・順位表・ニュース。Gemini API による AI 更新 (右上 ⚙️ で key 入力)。選手プロフィールリンク付き</div></a>
+      <a class="card" href="playoffs.html"><div class="title">プレーオフ</div><div class="desc">NBA プレーオフブラケット (SVG)。シリーズ詳報、ラウンド別フィルタ</div></a>
+      <a class="card" href="offseason.html"><div class="title">オフシーズン</div><div class="desc">ESPN Draft API、FA情報、ラスベガス サマーリーグスコアボード</div></a>
+      <a class="card" href="gleague-wnba.html"><div class="title">WNBA &amp; G League</div><div class="desc">WNBA ライブスコア・順位表・13チーム地図、Gリーグ 30 アフィリエイト表</div></a>
+    </div>
+
+    <h3>バスケットボール学術研究</h3>
+    <div class="card-grid">
+      <a class="card" href="basketball-research-map.html"><div class="title">バスケットボール研究マップ</div><div class="desc">10サブコミュニティの体系的マッピング、D3.js 近接ネットワーク</div></a>
+      <a class="card" href="oliver-research-tree.html"><div class="title">Oliver 読解マップ</div><div class="desc">Dean Oliver (2004) 24章を5クラスタ化、27後続研究との対応 D3.jsフォースグラフ</div></a>
+      <a class="card" href="oliver-research-flow.html"><div class="title">Oliver 研究系譜フロー</div><div class="desc">概念がどう学術・実務へ展開されたかを時系列で追う</div></a>
+      <a class="card" href="basketball-research-timeline.html"><div class="title">バスケ学術研究タイムライン</div><div class="desc">バイオメカ・医学・心理学・アナリティクス・AI/CV・コーチング等 10分野 1985–2025</div></a>
+    </div>
+
+    <h3>参考資料 (research/)</h3>
+    <div class="card-grid">
+      <a class="card" href="research/oliver-deep-research.md"><div class="title">oliver-deep-research.md</div><div class="desc">章別命題・後続研究の詳細</div></a>
+      <a class="card" href="research/nba-reception-report.md"><div class="title">nba-reception-report.md</div><div class="desc">LeBron / Curry の米国内受容比較</div></a>
+      <a class="card" href="research/nba-reception-rationale.md"><div class="title">nba-reception-rationale.md</div><div class="desc">NBA 受容類型の根拠</div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>📚 生態学・生物学</h2>
+    <div class="card-grid">
+      <a class="card" href="ESJ_indexes.html"><div class="title">日本生態学会誌 目次 (2010-2025)</div><div class="desc">15年分の論文目次を検索可能な形式で収録</div></a>
+      <a class="card" href="NewResearchTheme.html"><div class="title">植物生態学 研究フロンティア</div><div class="desc">空間構造と生活史戦略進化のレビュー</div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>🌍 その他のプロジェクト</h2>
+    <div class="card-grid">
+      <a class="card" href="ancient-landscapes-by-claude.html"><div class="title">古代ランドスケープ</div><div class="desc">古代史と地形的変化の可視化</div></a>
+      <a class="card" href="LLM-prompt-generator.html"><div class="title">LLM プロンプト生成器</div><div class="desc">構造化プロンプトを GUI で組み立て、Gemini API で改善提案</div></a>
+      <a class="card" href="prompt-engineering-guide.md"><div class="title">プロンプトエンジニアリング・ガイド</div><div class="desc">プロンプト設計の原則と実例</div></a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      <a href="README.md">README.md</a> ·
+      <a href="https://github.com/eUmeda/Claude-public" target="_blank" rel="noopener">GitHub Repo</a>
+    </p>
+    <p style="margin-top:8px;">最終更新: 2026年5月14日</p>
+  </footer>
+</div>
+</body>
+</html>
