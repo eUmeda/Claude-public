@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ファン・デル・ポール振動子</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.2em;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .equation {
+            font-family: serif;
+            font-style: italic;
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        canvas {
+            background: #16213e;
+            border-radius: 10px;
+        }
+        .canvas-label {
+            text-align: center;
+            font-size: 0.85em;
+            margin-top: 5px;
+            color: #4fc3f7;
+        }
+        .controls {
+            width: 100%;
+            max-width: 350px;
+        }
+        .slider-container {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 1em;
+        }
+        .param-value {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 25px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #0f3460;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -9px;
+            cursor: pointer;
+        }
+        .info-panel {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 10px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #0f3460;
+            font-size: 0.9em;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-value {
+            font-family: monospace;
+            color: #4fc3f7;
+        }
+        .comparison {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+            font-size: 0.85em;
+        }
+        .comparison h3 {
+            color: #4fc3f7;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        .compare-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+        .match { color: #4caf50; }
+        .note {
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+        .note strong {
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>ファン・デル・ポール振動子</h1>
+    <div class="equation">
+        ẍ + ε ẋ(x² − 1) + x = 0
+    </div>
+
+<div class="canvas-container">
+    <div>
+        <canvas id="phaseCanvas" width="165" height="165"></canvas>
+        <div class="canvas-label">相平面 (x, ẋ)</div>
+    </div>
+    <div>
+        <canvas id="timeCanvas" width="165" height="165"></canvas>
+        <div class="canvas-label">時系列 x(t)</div>
+    </div>
+</div>
+
+<div class="controls">
+    <div class="slider-container">
+        <div class="slider-label">
+            <span>パラメータ ε</span>
+            <span class="param-value" id="epsDisplay">0.50</span>
+        </div>
+        <input type="range" id="epsSlider" min="0.01" max="2.0" step="0.01" value="0.5">
+    </div>
+    
+    <div class="info-panel">
+        <div class="info-row">
+            <span>実測振幅 (max |x|)</span>
+            <span class="info-value" id="ampDisplay">---</span>
+        </div>
+        <div class="info-row">
+            <span>理論値（≈2）</span>
+            <span class="info-value">2.00</span>
+        </div>
+        <div class="info-row">
+            <span>√ε でスケールした振幅</span>
+            <span class="info-value" id="scaledAmpDisplay">---</span>
+        </div>
+        <div class="info-row">
+            <span>理論値（2√ε）</span>
+            <span class="info-value" id="theoreticalScaled">---</span>
+        </div>
+    </div>
+    
+    <div class="comparison">
+        <h3>スケーリング則の検証</h3>
+        <div class="compare-row">
+            <span>x の振幅:</span>
+            <span>≈ 2（ε によらず一定）</span>
+        </div>
+        <div class="compare-row">
+            <span>u = √ε · x の振幅:</span>
+            <span class="match">≈ 2√ε（Hopf則に従う！）</span>
+        </div>
+    </div>
+    
+    <div class="note">
+        <strong>例題 8.4.1 のポイント：</strong><br>
+        一見、振幅が ε によらず ≈2 なので Hopf のスケーリング則 O(√ε) に反するように見える。<br><br>
+        しかし u = √ε · x と変数変換すると、u の振幅は 2√ε となり、<strong>Hopf 分岐のスケーリング則と一致する</strong>！
+    </div>
+</div>
+
+<script>
+    const phaseCanvas = document.getElementById('phaseCanvas');
+    const timeCanvas = document.getElementById('timeCanvas');
+    const phaseCtx = phaseCanvas.getContext('2d');
+    const timeCtx = timeCanvas.getContext('2d');
+    
+    const epsSlider = document.getElementById('epsSlider');
+    const epsDisplay = document.getElementById('epsDisplay');
+    const ampDisplay = document.getElementById('ampDisplay');
+    const scaledAmpDisplay = document.getElementById('scaledAmpDisplay');
+    const theoreticalScaled = document.getElementById('theoreticalScaled');
+
+    let eps = 0.5;
+    let x = 0.1;
+    let v = 0; // ẋ
+    let trail = [];
+    let timeData = [];
+    const maxTrailLength = 500;
+    const maxTimeLength = 200;
+    let lastTime = performance.now();
+    let maxAmplitude = 0;
+    let simTime = 0;
+
+    // 相平面の設定
+    const phaseCenterX = phaseCanvas.width / 2;
+    const phaseCenterY = phaseCanvas.height / 2;
+    const phaseScale = 30;
+
+    // 時系列の設定
+    const timeScale = 30;
+
+    function xDot(x, v) {
+        return v;
+    }
+
+    function vDot(x, v, eps) {
+        return -eps * v * (x * x - 1) - x;
+    }
+
+    function draw() {
+        const currentTime = performance.now();
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.03);
+        lastTime = currentTime;
+
+        // RK4積分（複数ステップ）
+        const steps = 5;
+        const h = dt / steps;
+        for (let s = 0; s < steps; s++) {
+            const k1x = xDot(x, v);
+            const k1v = vDot(x, v, eps);
+            const k2x = xDot(x + h/2 * k1x, v + h/2 * k1v);
+            const k2v = vDot(x + h/2 * k1x, v + h/2 * k1v, eps);
+            const k3x = xDot(x + h/2 * k2x, v + h/2 * k2v);
+            const k3v = vDot(x + h/2 * k2x, v + h/2 * k2v, eps);
+            const k4x = xDot(x + h * k3x, v + h * k3v);
+            const k4v = vDot(x + h * k3x, v + h * k3v, eps);
+            
+            x += h/6 * (k1x + 2*k2x + 2*k3x + k4x);
+            v += h/6 * (k1v + 2*k2v + 2*k3v + k4v);
+        }
+        
+        simTime += dt;
+
+        // 振幅の追跡
+        if (Math.abs(x) > maxAmplitude && simTime > 5) {
+            maxAmplitude = Math.abs(x);
+        }
+        
+        // 指数移動平均でスムージング
+        if (simTime > 5) {
+            maxAmplitude = maxAmplitude * 0.999 + Math.abs(x) * 0.001;
+        }
+
+        // 軌跡を記録
+        const screenX = phaseCenterX + x * phaseScale;
+        const screenY = phaseCenterY - v * phaseScale;
+        trail.push({ x: screenX, y: screenY });
+        if (trail.length > maxTrailLength) {
+            trail.shift();
+        }
+
+        // 時系列データ
+        timeData.push(x);
+        if (timeData.length > maxTimeLength) {
+            timeData.shift();
+        }
+
+        // === 相平面の描画 ===
+        phaseCtx.fillStyle = '#16213e';
+        phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+        // 座標軸
+        phaseCtx.strokeStyle = '#333';
+        phaseCtx.lineWidth = 1;
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(0, phaseCenterY);
+        phaseCtx.lineTo(phaseCanvas.width, phaseCenterY);
+        phaseCtx.moveTo(phaseCenterX, 0);
+        phaseCtx.lineTo(phaseCenterX, phaseCanvas.height);
+        phaseCtx.stroke();
+
+        // リミットサイクルの目安（半径≈2の円）
+        phaseCtx.beginPath();
+        phaseCtx.arc(phaseCenterX, phaseCenterY, 2 * phaseScale, 0, 2 * Math.PI);
+        phaseCtx.strokeStyle = 'rgba(79, 195, 247, 0.3)';
+        phaseCtx.lineWidth = 2;
+        phaseCtx.setLineDash([5, 5]);
+        phaseCtx.stroke();
+        phaseCtx.setLineDash([]);
+
+        // 軌跡
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                const p = trail[i];
+                const prev = trail[i - 1];
+                
+                phaseCtx.beginPath();
+                phaseCtx.moveTo(prev.x, prev.y);
+                phaseCtx.lineTo(p.x, p.y);
+                phaseCtx.strokeStyle = `rgba(46, 204, 113, ${alpha * 0.8})`;
+                phaseCtx.lineWidth = 2;
+                phaseCtx.stroke();
+            }
+        }
+
+        // 原点
+        phaseCtx.beginPath();
+        phaseCtx.arc(phaseCenterX, phaseCenterY, 5, 0, 2 * Math.PI);
+        phaseCtx.fillStyle = '#f44336';
+        phaseCtx.fill();
+
+        // 現在位置
+        phaseCtx.beginPath();
+        phaseCtx.arc(screenX, screenY, 6, 0, 2 * Math.PI);
+        phaseCtx.fillStyle = '#2ecc71';
+        phaseCtx.fill();
+        phaseCtx.strokeStyle = '#fff';
+        phaseCtx.lineWidth = 2;
+        phaseCtx.stroke();
+
+        // === 時系列の描画 ===
+        timeCtx.fillStyle = '#16213e';
+        timeCtx.fillRect(0, 0, timeCanvas.width, timeCanvas.height);
+
+        // 基準線
+        const timeCenterY = timeCanvas.height / 2;
+        timeCtx.strokeStyle = '#333';
+        timeCtx.lineWidth = 1;
+        timeCtx.beginPath();
+        timeCtx.moveTo(0, timeCenterY);
+        timeCtx.lineTo(timeCanvas.width, timeCenterY);
+        timeCtx.stroke();
+
+        // 振幅=2の参照線
+        timeCtx.strokeStyle = 'rgba(79, 195, 247, 0.3)';
+        timeCtx.setLineDash([3, 3]);
+        timeCtx.beginPath();
+        timeCtx.moveTo(0, timeCenterY - 2 * timeScale);
+        timeCtx.lineTo(timeCanvas.width, timeCenterY - 2 * timeScale);
+        timeCtx.moveTo(0, timeCenterY + 2 * timeScale);
+        timeCtx.lineTo(timeCanvas.width, timeCenterY + 2 * timeScale);
+        timeCtx.stroke();
+        timeCtx.setLineDash([]);
+
+        // 時系列プロット
+        if (timeData.length > 1) {
+            timeCtx.beginPath();
+            timeCtx.moveTo(0, timeCenterY - timeData[0] * timeScale);
+            for (let i = 1; i < timeData.length; i++) {
+                const tx = (i / maxTimeLength) * timeCanvas.width;
+                const ty = timeCenterY - timeData[i] * timeScale;
+                timeCtx.lineTo(tx, ty);
+            }
+            timeCtx.strokeStyle = '#2ecc71';
+            timeCtx.lineWidth = 2;
+            timeCtx.stroke();
+        }
+
+        // ラベル
+        timeCtx.fillStyle = '#4fc3f7';
+        timeCtx.font = '10px sans-serif';
+        timeCtx.fillText('x=2', 5, timeCenterY - 2 * timeScale - 3);
+        timeCtx.fillText('x=-2', 5, timeCenterY + 2 * timeScale + 10);
+
+        // 情報更新
+        if (simTime > 5) {
+            ampDisplay.textContent = maxAmplitude.toFixed(2);
+            const scaledAmp = maxAmplitude * Math.sqrt(eps);
+            scaledAmpDisplay.textContent = scaledAmp.toFixed(3);
+            theoreticalScaled.textContent = (2 * Math.sqrt(eps)).toFixed(3);
+        } else {
+            ampDisplay.textContent = '計測中...';
+            scaledAmpDisplay.textContent = '---';
+            theoreticalScaled.textContent = (2 * Math.sqrt(eps)).toFixed(3);
+        }
+
+        requestAnimationFrame(draw);
+    }
+
+    epsSlider.addEventListener('input', (e) => {
+        eps = parseFloat(e.target.value);
+        epsDisplay.textContent = eps.toFixed(2);
+        // リセット
+        x = 0.1;
+        v = 0;
+        trail = [];
+        timeData = [];
+        maxAmplitude = 0;
+        simTime = 0;
+    });
+
+    // クリックで初期位置変更
+    phaseCanvas.addEventListener('click', (e) => {
+        const rect = phaseCanvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        x = (clickX - phaseCenterX) / phaseScale;
+        v = -(clickY - phaseCenterY) / phaseScale;
+        trail = [];
+        timeData = [];
+        maxAmplitude = 0;
+        simTime = 0;
+    });
+
+    draw();
+</script>
+
+</body>
+</html>

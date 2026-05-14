@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.6 普遍性 - サイン写像 vs ロジスティック</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.1em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.82em;
+  max-width: 460px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; margin-bottom: 4px; }
+.canvas-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.controls { width: 100%; max-width: 460px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 80px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.78em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.u-seq {
+  font-family: monospace; font-size: 0.8em;
+  color: #81d4fa;
+}
+</style>
+</head>
+<body>
+<h1>Metropolis の U系列と Feigenbaum δ</h1>
+<div class="note">
+単峰写像ならどれでも同じ順番で周期軌道が現れる (U系列)。
+6周期まで: 1, 2, 2×2, 6, 5, 3, 2×3, 5, 6, 4, 6, 5, 6。<br>
+さらに、r_n の差の比が Feigenbaum δ = 4.669... に収束するのも普遍。<br>
+上下の分岐図を比べて、定性的に同じ構造が見えることを確認。
+</div>
+
+<div class="canvas-row">
+  <canvas id="bif1" width="360" height="200"></canvas>
+  <canvas id="bif2" width="360" height="200"></canvas>
+</div>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>上: サイン写像 r 範囲</span><span id="s1v">0.7 - 1.0</span></label>
+    <input type="range" id="s1s" min="0.6" max="1" step="0.001" value="0.7">
+    <input type="range" id="s2s" min="0.7" max="1" step="0.001" value="1.0">
+  </div>
+  <div class="slider-box">
+    <label><span>下: ロジスティック r 範囲</span><span id="l1v">2.8 - 4.0</span></label>
+    <input type="range" id="l1s" min="2.8" max="4" step="0.001" value="2.8">
+    <input type="range" id="l2s" min="2.8" max="4" step="0.001" value="4.0">
+  </div>
+  <div class="buttons">
+    <button id="redraw">描画</button>
+    <button id="align">比較整列</button>
+    <button id="computeFeig">δ 計算</button>
+  </div>
+  <div class="status">
+    <div>U系列 (3周期まで): <span class="u-seq">1, 2, 4, 6, 5, 3, ...</span></div>
+    <div>サイン写像の r_n:</div>
+    <div id="sinRn" class="u-seq"></div>
+    <div>ロジスティックの r_n:</div>
+    <div id="logRn" class="u-seq"></div>
+    <div>Feigenbaum 比 δ (n=3): <span id="delta">-</span></div>
+    <div>(文献値 δ = 4.669201...)</div>
+  </div>
+</div>
+
+<script>
+const b1C = document.getElementById('bif1');
+const b2C = document.getElementById('bif2');
+const c1 = b1C.getContext('2d');
+const c2 = b2C.getContext('2d');
+
+let sMin = 0.7, sMax = 1.0;
+let lMin = 2.8, lMax = 4.0;
+
+function drawBif(ctx, C, rmin, rmax, f, label) {
+  const W = C.width, H = C.height;
+  ctx.fillStyle = '#0f1a2e';
+  ctx.fillRect(0, 0, W, H);
+  const PAD = 25;
+  const toSX = r => PAD + (r - rmin) / (rmax - rmin) * (W - 2*PAD);
+  const toSY = x => H - PAD - x * (H - 2*PAD);
+
+  ctx.strokeStyle = '#444';
+  ctx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  const nPts = 500;
+  for (let i = 0; i < nPts; i++) {
+    const r = rmin + (rmax - rmin) * i / (nPts - 1);
+    let x = 0.3;
+    for (let k = 0; k < 500; k++) x = f(x, r);
+    for (let k = 0; k < 200; k++) {
+      x = f(x, r);
+      const sx = toSX(r);
+      const sy = toSY(x);
+      if (sy >= PAD && sy <= H - PAD) {
+        ctx.fillStyle = 'rgba(79, 195, 247, 0.35)';
+        ctx.fillRect(sx, sy, 1, 1);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '10px sans-serif';
+  ctx.fillText(label, 4, 12);
+  ctx.fillText(rmin.toFixed(3), PAD, H - PAD + 12);
+  ctx.fillText(rmax.toFixed(3), W - PAD - 25, H - PAD + 12);
+}
+
+function fSin(x, r) { return r * Math.sin(Math.PI * x); }
+function fLog(x, r) { return r * x * (1 - x); }
+
+function superstable(f, fprime, N) {
+  // 超安定サイクル: 臨界点 x_c を含む 2^N 周期
+  // x_c は df/dx = 0 の点
+  // f'(x) = r*π*cos(πx) = 0 → x=1/2 (サイン写像)
+  // f'(x) = r(1-2x) = 0 → x=1/2 (ロジスティック)
+  const xc = 0.5;
+  // R_N を探す: f^(2^N)(xc, R) = xc を満たす R
+  // 二分法: Strogatz 10.3.12 のヒント
+  let a, b;
+  if (f === fSin) { a = 0.5; b = 1.0; }
+  else { a = 1.5; b = 4.0; }
+  const iter = Math.pow(2, N);
+  function fn(r) {
+    let x = xc;
+    for (let k = 0; k < iter; k++) x = f(x, r);
+    return x - xc;
+  }
+  // fn(a) と fn(b) で符号が違う区間を探して二分
+  // 粗探索
+  const nCoarse = 200;
+  const Rs = [];
+  for (let i = 0; i < nCoarse; i++) {
+    const r1 = a + (b - a) * i / nCoarse;
+    const r2 = a + (b - a) * (i + 1) / nCoarse;
+    if (fn(r1) * fn(r2) < 0) {
+      let lo = r1, hi = r2;
+      for (let j = 0; j < 50; j++) {
+        const m = (lo + hi) / 2;
+        if (fn(lo) * fn(m) < 0) hi = m; else lo = m;
+      }
+      Rs.push((lo + hi) / 2);
+    }
+  }
+  return Rs;
+}
+
+function drawAll() {
+  drawBif(c1, b1C, sMin, sMax, fSin, 'サイン写像 r·sin(πx)');
+  drawBif(c2, b2C, lMin, lMax, fLog, 'ロジスティック r·x(1-x)');
+  document.getElementById('s1v').textContent = `${sMin.toFixed(3)} - ${sMax.toFixed(3)}`;
+  document.getElementById('l1v').textContent = `${lMin.toFixed(3)} - ${lMax.toFixed(3)}`;
+}
+
+function computeFeigenbaum() {
+  // 各写像で R_0, R_1, R_2, R_3 を計算
+  const sinRs = [];
+  const logRs = [];
+  for (let n = 0; n <= 4; n++) {
+    const sR = superstable(fSin, null, n);
+    const lR = superstable(fLog, null, n);
+    if (sR.length > 0) sinRs.push(sR[0]);
+    if (lR.length > 0) logRs.push(lR[0]);
+  }
+  document.getElementById('sinRn').textContent =
+    sinRs.map((r, i) => `R_${i}=${r.toFixed(5)}`).join(', ');
+  document.getElementById('logRn').textContent =
+    logRs.map((r, i) => `R_${i}=${r.toFixed(5)}`).join(', ');
+  // δ ≈ (R_{n+1} - R_n) / (R_{n+2} - R_{n+1}) の逆数
+  if (sinRs.length >= 4 && logRs.length >= 4) {
+    const dSin = (sinRs[2] - sinRs[1]) / (sinRs[3] - sinRs[2]);
+    const dLog = (logRs[2] - logRs[1]) / (logRs[3] - logRs[2]);
+    document.getElementById('delta').textContent =
+      `サイン=${dSin.toFixed(3)}, ロジスティック=${dLog.toFixed(3)}`;
+  }
+}
+
+document.getElementById('s1s').addEventListener('input', e => {
+  sMin = parseFloat(e.target.value);
+  if (sMin >= sMax) sMin = sMax - 0.01;
+  document.getElementById('s1v').textContent = `${sMin.toFixed(3)} - ${sMax.toFixed(3)}`;
+});
+document.getElementById('s2s').addEventListener('input', e => {
+  sMax = parseFloat(e.target.value);
+  if (sMax <= sMin) sMax = sMin + 0.01;
+  document.getElementById('s1v').textContent = `${sMin.toFixed(3)} - ${sMax.toFixed(3)}`;
+});
+document.getElementById('l1s').addEventListener('input', e => {
+  lMin = parseFloat(e.target.value);
+  if (lMin >= lMax) lMin = lMax - 0.01;
+  document.getElementById('l1v').textContent = `${lMin.toFixed(3)} - ${lMax.toFixed(3)}`;
+});
+document.getElementById('l2s').addEventListener('input', e => {
+  lMax = parseFloat(e.target.value);
+  if (lMax <= lMin) lMax = lMin + 0.01;
+  document.getElementById('l1v').textContent = `${lMin.toFixed(3)} - ${lMax.toFixed(3)}`;
+});
+document.getElementById('redraw').addEventListener('click', drawAll);
+document.getElementById('align').addEventListener('click', () => {
+  // サイン写像のカオス入り口 ≈ 0.86547、ロジスティックの入り口 3.5699
+  // 両者を端に揃える
+  sMin = 0.7; sMax = 1.0;
+  lMin = 2.8; lMax = 4.0;
+  document.getElementById('s1s').value = sMin;
+  document.getElementById('s2s').value = sMax;
+  document.getElementById('l1s').value = lMin;
+  document.getElementById('l2s').value = lMax;
+  drawAll();
+});
+document.getElementById('computeFeig').addEventListener('click', computeFeigenbaum);
+
+drawAll();
+</script>
+</body>
+</html>

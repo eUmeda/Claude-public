@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.1 クモの巣図法</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 110px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+select {
+  background: #0f3460; color: #fff; border: none;
+  border-radius: 6px; padding: 6px 10px; font-size: 0.85em;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+<h1>1次元写像 x<sub>n+1</sub> = f(x<sub>n</sub>)</h1>
+<div class="note">
+写像の関数形 y=f(x) と対角線 y=x をプロットし、階段状の軌跡を描く方法。
+不動点 f(x*)=x* は2曲線の交点。安定性は |f'(x*)| で決まる:
+&lt;1 なら安定、&gt;1 なら不安定、=1 なら分岐点。
+</div>
+
+<canvas id="cw" width="360" height="360"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label>写像</label>
+    <select id="mapSel">
+      <option value="logistic">ロジスティック写像 r·x(1-x)</option>
+      <option value="cos">cos x</option>
+      <option value="sin">r·sin(π·x)</option>
+      <option value="tent">テント写像</option>
+      <option value="shift10">10進シフト 10x (mod 1)</option>
+      <option value="shift2">2進シフト 2x (mod 1)</option>
+      <option value="linear">線形 r·x</option>
+      <option value="quadratic">二次 x² + c</option>
+    </select>
+  </div>
+  <div class="slider-box">
+    <label><span>パラメーター r (または c)</span><span id="rv">3.20</span></label>
+    <input type="range" id="rs" min="-2" max="4" step="0.01" value="3.2">
+  </div>
+  <div class="slider-box">
+    <label><span>初期値 x₀</span><span id="xv">0.30</span></label>
+    <input type="range" id="xs" min="0.01" max="0.99" step="0.001" value="0.3">
+  </div>
+  <div class="slider-box">
+    <label><span>反復回数</span><span id="nv">30</span></label>
+    <input type="range" id="ns" min="1" max="200" step="1" value="30">
+  </div>
+  <div class="buttons">
+    <button id="reset">再描画</button>
+    <button id="anim">アニメーション</button>
+  </div>
+  <div class="status">
+    <div>最終 x = <span id="xf">-</span></div>
+    <div>不動点候補: <span id="fp">-</span></div>
+    <div>|f'(x_final)| ≈ <span id="slope">-</span></div>
+  </div>
+</div>
+
+<script>
+const cw = document.getElementById('cw');
+const ctx = cw.getContext('2d');
+const W = cw.width, H = cw.height;
+
+let mapName = 'logistic';
+let r = 3.2;
+let x0 = 0.3;
+let N = 30;
+let animating = false;
+let animStep = 0;
+
+function f(x) {
+  switch (mapName) {
+    case 'logistic': return r * x * (1 - x);
+    case 'cos': return Math.cos(x);
+    case 'sin': return r * Math.sin(Math.PI * x);
+    case 'tent': return x < 0.5 ? r * x : r * (1 - x);
+    case 'shift10': return (10 * x) % 1;
+    case 'shift2': return (2 * x) % 1;
+    case 'linear': return r * x;
+    case 'quadratic': return x*x + r;  // r = c
+  }
+  return x;
+}
+function fprime(x) {
+  const h = 1e-5;
+  return (f(x+h) - f(x-h)) / (2*h);
+}
+
+function getDomain() {
+  switch (mapName) {
+    case 'logistic':
+    case 'sin':
+    case 'tent':
+    case 'shift10':
+    case 'shift2': return [0, 1, 0, 1];
+    case 'cos': return [-1.5, 1.5, -1.5, 1.5];
+    case 'linear': return [-1.5, 1.5, -3, 3];
+    case 'quadratic': return [-2, 2, -3, 4];
+  }
+  return [0, 1, 0, 1];
+}
+
+function draw() {
+  ctx.fillStyle = '#0f1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  const [xmin, xmax, ymin, ymax] = getDomain();
+  const PAD = 25;
+  const toSX = x => PAD + (x - xmin) / (xmax - xmin) * (W - 2*PAD);
+  const toSY = y => H - PAD - (y - ymin) / (ymax - ymin) * (H - 2*PAD);
+
+  // 軸
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  // 原点軸
+  if (xmin < 0 && xmax > 0) {
+    ctx.beginPath(); ctx.moveTo(toSX(0), toSY(ymin)); ctx.lineTo(toSX(0), toSY(ymax)); ctx.stroke();
+  }
+  if (ymin < 0 && ymax > 0) {
+    ctx.beginPath(); ctx.moveTo(toSX(xmin), toSY(0)); ctx.lineTo(toSX(xmax), toSY(0)); ctx.stroke();
+  }
+  // 枠
+  ctx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  // 対角線 y = x
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const xlo = Math.max(xmin, ymin), xhi = Math.min(xmax, ymax);
+  ctx.moveTo(toSX(xlo), toSY(xlo));
+  ctx.lineTo(toSX(xhi), toSY(xhi));
+  ctx.stroke();
+
+  // f(x)
+  ctx.strokeStyle = '#4fc3f7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let started = false;
+  for (let i = 0; i <= 400; i++) {
+    const x = xmin + (xmax - xmin) * i / 400;
+    const y = f(x);
+    if (y < ymin - 1 || y > ymax + 1) { started = false; continue; }
+    if (!started) { ctx.moveTo(toSX(x), toSY(y)); started = true; }
+    else ctx.lineTo(toSX(x), toSY(y));
+  }
+  ctx.stroke();
+
+  // クモの巣
+  const nMax = animating ? animStep : N;
+  let x = x0;
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(toSX(x), toSY(0));
+  ctx.lineTo(toSX(x), toSY(f(x)));
+  for (let i = 0; i < nMax; i++) {
+    const y = f(x);
+    // 水平: (x, y) → (y, y)
+    ctx.moveTo(toSX(x), toSY(y));
+    ctx.lineTo(toSX(y), toSY(y));
+    // 垂直: (y, y) → (y, f(y))
+    const y2 = f(y);
+    ctx.moveTo(toSX(y), toSY(y));
+    ctx.lineTo(toSX(y), toSY(y2));
+    x = y;
+  }
+  ctx.stroke();
+
+  // 初期点
+  ctx.fillStyle = '#4fc3f7';
+  ctx.beginPath(); ctx.arc(toSX(x0), toSY(0), 3, 0, 2*Math.PI); ctx.fill();
+
+  // 最終点
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath(); ctx.arc(toSX(x), toSY(f(x)), 4, 0, 2*Math.PI); ctx.fill();
+
+  // ステータス
+  document.getElementById('xf').textContent = x.toFixed(5);
+  document.getElementById('slope').textContent = Math.abs(fprime(x)).toFixed(3);
+
+  // 不動点探索 (数値)
+  const candidates = [];
+  for (let i = 0; i <= 50; i++) {
+    const xt = xmin + (xmax - xmin) * i / 50;
+    const xt2 = xt + (xmax - xmin) / 50;
+    if ((f(xt) - xt) * (f(xt2) - xt2) < 0) {
+      // 二分法
+      let a = xt, b = xt2;
+      for (let j = 0; j < 30; j++) {
+        const m = (a+b)/2;
+        if ((f(a)-a) * (f(m)-m) < 0) b = m; else a = m;
+      }
+      candidates.push(((a+b)/2).toFixed(4));
+    }
+  }
+  document.getElementById('fp').textContent = candidates.length ? candidates.join(', ') : 'なし';
+
+  if (animating) {
+    animStep++;
+    if (animStep > N) { animating = false; animStep = 0; }
+    setTimeout(() => requestAnimationFrame(draw), 100);
+  }
+}
+
+document.getElementById('mapSel').addEventListener('change', e => {
+  mapName = e.target.value;
+  // 各写像に合わせてrのデフォルト
+  const defaults = {logistic: 3.2, cos: 0, sin: 0.9, tent: 1.5, shift10: 0, shift2: 0, linear: 0.5, quadratic: -1.5};
+  r = defaults[mapName];
+  document.getElementById('rs').value = r;
+  document.getElementById('rv').textContent = r.toFixed(2);
+  draw();
+});
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(2);
+  draw();
+});
+document.getElementById('xs').addEventListener('input', e => {
+  x0 = parseFloat(e.target.value);
+  document.getElementById('xv').textContent = x0.toFixed(2);
+  draw();
+});
+document.getElementById('ns').addEventListener('input', e => {
+  N = parseInt(e.target.value);
+  document.getElementById('nv').textContent = N;
+  draw();
+});
+document.getElementById('reset').addEventListener('click', draw);
+document.getElementById('anim').addEventListener('click', () => {
+  animating = true;
+  animStep = 0;
+  draw();
+});
+
+draw();
+</script>
+</body>
+</html>

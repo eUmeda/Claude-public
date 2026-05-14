@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.5 リアプノフ指数</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; margin-bottom: 6px; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 90px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.8em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+select {
+  background: #0f3460; color: #fff; border: none;
+  border-radius: 6px; padding: 6px 10px; font-size: 0.85em;
+  width: 100%;
+}
+.math { font-family: serif; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>リアプノフ指数 λ(r)</h1>
+<div class="note">
+<span class="math">λ = lim (1/n) Σ ln|f'(x_i)|</span><br>
+λ&lt;0: 安定周期軌道 (δ のスパイク = 超安定点、λ→−∞)<br>
+λ=0: 周期倍分岐の境界<br>
+λ&gt;0: カオス (軌道の指数的発散)<br>
+ロジスティック写像では r ≈ 3.5699 付近で λ が最初に正。
+</div>
+
+<canvas id="lam" width="360" height="260"></canvas>
+<canvas id="orb" width="360" height="180"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label>写像</label>
+    <select id="mapSel">
+      <option value="logistic">ロジスティック r·x(1-x)</option>
+      <option value="sin">サイン写像 r·sin(πx)</option>
+      <option value="tent">テント写像</option>
+    </select>
+  </div>
+  <div class="slider-box">
+    <label><span>r 範囲 開始</span><span id="r1v">2.80</span></label>
+    <input type="range" id="r1s" min="0" max="4" step="0.001" value="2.8">
+  </div>
+  <div class="slider-box">
+    <label><span>r 範囲 終了</span><span id="r2v">4.00</span></label>
+    <input type="range" id="r2s" min="0" max="4" step="0.001" value="4.0">
+  </div>
+  <div class="slider-box">
+    <label><span>計算ステップ数</span><span id="nv">3000</span></label>
+    <input type="range" id="ns" min="500" max="20000" step="500" value="3000">
+  </div>
+  <div class="buttons">
+    <button id="compute">計算</button>
+    <button id="overlay">軌道図重ね</button>
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r1="2.8" data-r2="4">全体</button>
+    <button class="preset" data-r1="3.5" data-r2="4">カオス帯</button>
+    <button class="preset" data-r1="3.82" data-r2="3.86">3周期窓</button>
+  </div>
+  <div class="status">
+    <div>λ の最大値: <span id="lmax">-</span></div>
+    <div>λ が最初に正になる r: <span id="rcrit">-</span></div>
+    <div>赤線: λ=0</div>
+  </div>
+</div>
+
+<script>
+const lamC = document.getElementById('lam');
+const orbC = document.getElementById('orb');
+const lCtx = lamC.getContext('2d');
+const oCtx = orbC.getContext('2d');
+const W = lamC.width, H = lamC.height;
+
+let mapName = 'logistic';
+let r1 = 2.8, r2 = 4.0;
+let N = 3000;
+let withOverlay = false;
+
+function f(x, r) {
+  switch (mapName) {
+    case 'logistic': return r * x * (1 - x);
+    case 'sin': return r * Math.sin(Math.PI * x);
+    case 'tent': return x < 0.5 ? r * x : r * (1 - x);
+  }
+}
+function fprime(x, r) {
+  switch (mapName) {
+    case 'logistic': return r * (1 - 2*x);
+    case 'sin': return r * Math.PI * Math.cos(Math.PI * x);
+    case 'tent': return x < 0.5 ? r : -r;
+  }
+}
+
+function computeLambda(r) {
+  let x = 0.3;
+  const warmup = 300;
+  for (let i = 0; i < warmup; i++) x = f(x, r);
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < N; i++) {
+    x = f(x, r);
+    const d = Math.abs(fprime(x, r));
+    if (d > 1e-15) {
+      sum += Math.log(d);
+      count++;
+    }
+  }
+  return count > 0 ? sum / count : -Infinity;
+}
+
+function draw() {
+  lCtx.fillStyle = '#0f1a2e';
+  lCtx.fillRect(0, 0, W, H);
+  const PAD = 30;
+  const toSX = r => PAD + (r - r1) / (r2 - r1) * (W - 2*PAD);
+
+  // λ の範囲を自動スケール
+  const nPts = 400;
+  const vals = [];
+  for (let i = 0; i < nPts; i++) {
+    const r = r1 + (r2 - r1) * i / (nPts - 1);
+    vals.push({r, lam: computeLambda(r)});
+  }
+  const finite = vals.filter(v => isFinite(v.lam));
+  let lmin = -2, lmax = 1;
+  if (finite.length > 0) {
+    lmin = Math.min(-2, Math.min(...finite.map(v => v.lam)));
+    lmax = Math.max(0.7, Math.max(...finite.map(v => v.lam)));
+    lmin = Math.max(lmin, -5);  // 表示を下に限定
+  }
+  const toSY = l => H - PAD - (l - lmin) / (lmax - lmin) * (H - 2*PAD);
+
+  // 軌道図オーバーレイ
+  if (withOverlay) {
+    for (let i = 0; i < nPts; i++) {
+      const r = vals[i].r;
+      let x = 0.3;
+      for (let k = 0; k < 500; k++) x = f(x, r);
+      for (let k = 0; k < 100; k++) {
+        x = f(x, r);
+        const sx = toSX(r);
+        // 軌道図用の縦位置 (0〜1 の x を 右半分にマッピング)
+        const sy = H - PAD - x * (H - 2*PAD);
+        lCtx.fillStyle = 'rgba(150, 150, 150, 0.2)';
+        lCtx.fillRect(sx, sy, 1, 1);
+      }
+    }
+  }
+
+  // 枠
+  lCtx.strokeStyle = '#444';
+  lCtx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  // λ=0 赤線
+  if (lmin <= 0 && lmax >= 0) {
+    lCtx.strokeStyle = '#e74c3c';
+    lCtx.lineWidth = 1;
+    lCtx.beginPath();
+    lCtx.moveTo(PAD, toSY(0));
+    lCtx.lineTo(W - PAD, toSY(0));
+    lCtx.stroke();
+  }
+
+  // λ(r) プロット
+  lCtx.strokeStyle = '#4fc3f7';
+  lCtx.lineWidth = 1.2;
+  lCtx.beginPath();
+  let started = false;
+  for (const v of vals) {
+    if (!isFinite(v.lam) || v.lam < lmin) { started = false; continue; }
+    const sx = toSX(v.r);
+    const sy = toSY(Math.max(lmin, v.lam));
+    if (!started) { lCtx.moveTo(sx, sy); started = true; }
+    else lCtx.lineTo(sx, sy);
+  }
+  lCtx.stroke();
+
+  // 軸ラベル
+  lCtx.fillStyle = '#888';
+  lCtx.font = '10px sans-serif';
+  lCtx.fillText(r1.toFixed(2), PAD, H - PAD + 14);
+  lCtx.fillText(r2.toFixed(2), W - PAD - 25, H - PAD + 14);
+  lCtx.fillText(lmax.toFixed(1), 4, PAD + 4);
+  lCtx.fillText(lmin.toFixed(1), 4, H - PAD + 4);
+  lCtx.fillText('λ', PAD + 4, 14);
+  lCtx.fillText('r', W - 14, H - 6);
+
+  // max λ と rcrit
+  let maxL = -Infinity, rAtMax = 0;
+  let rcrit = null;
+  for (let i = 1; i < vals.length; i++) {
+    if (vals[i].lam > maxL) { maxL = vals[i].lam; rAtMax = vals[i].r; }
+    if (rcrit === null && isFinite(vals[i-1].lam) && isFinite(vals[i].lam)
+        && vals[i-1].lam < 0 && vals[i].lam > 0) {
+      rcrit = vals[i].r;
+    }
+  }
+  document.getElementById('lmax').textContent = maxL.toFixed(4) + (rAtMax ? ` (r=${rAtMax.toFixed(3)})` : '');
+  document.getElementById('rcrit').textContent = rcrit ? rcrit.toFixed(4) : '見つからず';
+
+  // 下の軌道図（対応位置）
+  const W2 = orbC.width, H2 = orbC.height;
+  oCtx.fillStyle = '#0f1a2e';
+  oCtx.fillRect(0, 0, W2, H2);
+  const toSX2 = r => PAD + (r - r1) / (r2 - r1) * (W2 - 2*PAD);
+  for (let i = 0; i < nPts; i++) {
+    const r = vals[i].r;
+    let x = 0.3;
+    for (let k = 0; k < 400; k++) x = f(x, r);
+    for (let k = 0; k < 200; k++) {
+      x = f(x, r);
+      const sx = toSX2(r);
+      const sy = H2 - 20 - x * (H2 - 40);
+      if (sy >= 20 && sy <= H2 - 20) {
+        oCtx.fillStyle = 'rgba(79, 195, 247, 0.35)';
+        oCtx.fillRect(sx, sy, 1, 1);
+      }
+    }
+  }
+  oCtx.strokeStyle = '#444';
+  oCtx.strokeRect(PAD, 20, W2 - 2*PAD, H2 - 40);
+  oCtx.fillStyle = '#888';
+  oCtx.font = '10px sans-serif';
+  oCtx.fillText('対応する軌道図', 4, 12);
+}
+
+document.getElementById('mapSel').addEventListener('change', e => {
+  mapName = e.target.value;
+  const defaults = {
+    logistic: [2.8, 4.0],
+    sin: [0.6, 1.0],
+    tent: [0, 2]
+  };
+  [r1, r2] = defaults[mapName];
+  document.getElementById('r1s').value = r1;
+  document.getElementById('r2s').value = r2;
+  document.getElementById('r1v').textContent = r1.toFixed(2);
+  document.getElementById('r2v').textContent = r2.toFixed(2);
+  draw();
+});
+document.getElementById('r1s').addEventListener('input', e => {
+  r1 = parseFloat(e.target.value);
+  document.getElementById('r1v').textContent = r1.toFixed(3);
+});
+document.getElementById('r2s').addEventListener('input', e => {
+  r2 = parseFloat(e.target.value);
+  document.getElementById('r2v').textContent = r2.toFixed(3);
+});
+document.getElementById('ns').addEventListener('input', e => {
+  N = parseInt(e.target.value);
+  document.getElementById('nv').textContent = N;
+});
+document.getElementById('compute').addEventListener('click', draw);
+document.getElementById('overlay').addEventListener('click', function() {
+  withOverlay = !withOverlay;
+  this.classList.toggle('active');
+  draw();
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r1 = parseFloat(btn.dataset.r1);
+    r2 = parseFloat(btn.dataset.r2);
+    document.getElementById('r1s').value = r1;
+    document.getElementById('r2s').value = r2;
+    document.getElementById('r1v').textContent = r1.toFixed(3);
+    document.getElementById('r2v').textContent = r2.toFixed(3);
+    draw();
+  });
+});
+
+draw();
+</script>
+</body>
+</html>

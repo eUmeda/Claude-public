@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NBA Playoffs — Basketball Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="js/nba-common.js"></script>
+<style>
+  .playoff-gradient {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 80%, rgba(212,168,67,.1) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 80% 20%, rgba(45,125,210,.06) 0%, transparent 50%),
+      var(--bg-deep);
+  }
+
+  /* Bracket container */
+  .bracket-wrap {
+    overflow-x: auto;
+    padding: 1rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.1) transparent;
+  }
+  .bracket-svg {
+    min-width: 1000px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Bracket team slot */
+  .bk-slot { cursor: default; }
+  .bk-slot rect {
+    fill: var(--bg-card);
+    stroke: var(--border);
+    stroke-width: 1;
+    rx: 4;
+    transition: fill .2s;
+  }
+  .bk-slot:hover rect { fill: var(--bg-card-hover); }
+  .bk-slot .bk-seed {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px; fill: var(--text-muted);
+  }
+  .bk-slot .bk-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px; fill: var(--text-primary);
+    font-weight: 500;
+  }
+  .bk-slot .bk-score {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px; fill: var(--accent-gold);
+    font-weight: 600;
+  }
+  .bk-slot.winner .bk-name { fill: var(--accent-gold); }
+  .bk-slot.loser { opacity: .45; }
+  .bk-line {
+    stroke: var(--border);
+    stroke-width: 1;
+    fill: none;
+  }
+  .bk-round-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    fill: var(--text-muted);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    text-anchor: middle;
+  }
+  .bk-conf-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    fill: var(--text-secondary);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+  }
+
+  /* Series detail cards */
+  .series-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.2rem;
+    margin-top: 2rem;
+  }
+  .series-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    transition: border-color .3s;
+  }
+  .series-card:hover { border-color: rgba(212,168,67,.2); }
+  .series-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .8rem; padding-bottom: .6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .series-card-round {
+    font-family: 'Oswald', sans-serif;
+    font-size: .6rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .series-card-status {
+    font-family: 'Oswald', sans-serif;
+    font-size: .65rem; letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .series-card-status.live { color: #e74c3c; }
+  .series-card-status.final { color: var(--accent-gold); }
+
+  .series-matchup {
+    display: flex; align-items: center; gap: .8rem;
+    margin-bottom: .8rem;
+  }
+  .series-team {
+    display: flex; align-items: center; gap: .5rem; flex: 1;
+  }
+  .series-team img { width: 28px; height: 28px; }
+  .series-team-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: .85rem; font-weight: 500;
+  }
+  .series-team-name.winner { color: var(--accent-gold); }
+  .series-vs {
+    font-family: 'Oswald', sans-serif;
+    font-size: .7rem; color: var(--text-muted);
+  }
+  .series-score {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.4rem; font-weight: 700;
+    text-align: center; letter-spacing: .1em;
+    margin-bottom: .5rem;
+  }
+  .series-games {
+    display: flex; gap: .4rem; flex-wrap: wrap;
+  }
+  .series-game {
+    font-size: .65rem; padding: .25rem .5rem;
+    background: rgba(255,255,255,.03); border-radius: 3px;
+    color: var(--text-secondary);
+  }
+  .series-game.game-live { border-left: 2px solid #e74c3c; color: var(--text-primary); }
+
+  /* Round filter */
+  .round-filter {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .round-filter::-webkit-scrollbar { display: none; }
+  .round-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: .7rem; letter-spacing: .08em;
+    text-transform: uppercase; padding: .7rem 1.2rem;
+    background: none; border: none;
+    color: var(--text-secondary);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color .3s, border-color .3s;
+    white-space: nowrap;
+  }
+  .round-btn:hover { color: var(--text-primary); }
+  .round-btn.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); }
+
+  .no-data-hero {
+    text-align: center; padding: 6rem 2rem 3rem;
+  }
+  .no-data-hero .icon { font-size: 4rem; margin-bottom: 1rem; display: block; }
+  .no-data-hero h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.6rem; margin-bottom: .8rem;
+  }
+  .no-data-hero p { color: var(--text-secondary); max-width: 500px; margin: 0 auto; line-height: 1.8; }
+
+  /* Projected bracket styling */
+  .projected-note {
+    text-align: center; font-size: .75rem;
+    color: var(--text-muted); margin: 1rem 0;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<nav class="site-nav" id="siteNav"></nav>
+
+<!-- HERO -->
+<section class="hero playoff-gradient">
+  <div class="hero-label" id="heroLabel"></div>
+  <h1>NBA <span class="west">PLAY</span><span class="east">OFFS</span></h1>
+  <p class="hero-sub" id="heroSub"></p>
+</section>
+
+<!-- MAIN CONTENT -->
+<div class="section" id="mainContent">
+  <!-- Round filter -->
+  <div class="round-filter" id="roundFilter"></div>
+
+  <!-- Bracket visualization -->
+  <div class="section-header">
+    <div class="section-label gold">BRACKET</div>
+    <div class="section-title" id="bracketTitle">プレーオフブラケット</div>
+  </div>
+  <div class="bracket-wrap" id="bracketWrap">
+    <div class="placeholder-msg">ブラケットを読み込み中...</div>
+  </div>
+
+  <!-- Series details -->
+  <div class="section-header" style="margin-top:3rem;" id="seriesHeader">
+    <div class="section-label" style="color:var(--accent-west);">SERIES DETAILS</div>
+    <div class="section-title">シリーズ詳報</div>
+  </div>
+  <div class="series-grid" id="seriesGrid">
+    <div class="placeholder-msg" style="grid-column:1/-1;">データを読み込み中...</div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>データ: <a href="https://www.espn.com/nba/playoffs" target="_blank">ESPN NBA Playoffs</a>
+    ・ 更新: <span id="footerTime"></span></p>
+  <div class="footer-credit">eUmeda Basketball Dashboard</div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  const C = NBACommon;
+  C.injectCSS();
+  document.getElementById('siteNav').innerHTML = C.buildSiteNav('playoffs.html');
+
+  const season = C.getNBASeason();
+  const phase = C.getSeasonPhase();
+  document.getElementById('heroLabel').textContent = `NBA PLAYOFFS ${season}`;
+  document.getElementById('footerTime').textContent =
+    new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ' JST';
+
+  // Round definitions
+  const ROUNDS = [
+    {id:'all',     label:'全ラウンド'},
+    {id:'1',       label:'1回戦'},
+    {id:'2',       label:'セミファイナル'},
+    {id:'3',       label:'カンファレンス決勝'},
+    {id:'4',       label:'NBAファイナル'}
+  ];
+
+  // ── Build round filter ──
+  const filterEl = document.getElementById('roundFilter');
+  filterEl.innerHTML = ROUNDS.map((r,i) =>
+    `<button class="round-btn${i===0?' active':''}" data-round="${r.id}">${r.label}</button>`
+  ).join('');
+
+  let currentRound = 'all';
+  filterEl.addEventListener('click', e => {
+    const btn = e.target.closest('.round-btn');
+    if (!btn) return;
+    filterEl.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRound = btn.dataset.round;
+    filterSeries();
+  });
+
+  // ── State ──
+  let allSeries = [];
+
+  function filterSeries() {
+    const cards = document.querySelectorAll('.series-card');
+    cards.forEach(card => {
+      if (currentRound === 'all') {
+        card.style.display = '';
+      } else {
+        card.style.display = card.dataset.round === currentRound ? '' : 'none';
+      }
+    });
+  }
+
+  // ── Load playoff data ──
+  async function loadPlayoffs() {
+    const wrap = document.getElementById('bracketWrap');
+    const grid = document.getElementById('seriesGrid');
+
+    try {
+      // seasontype=3 = playoffs
+      const data = await C.fetchJSON(
+        C.scoreboardURL('nba', {seasontype: 3, limit: 200})
+      );
+      const events = data.events || [];
+
+      if (!events.length) {
+        showNoData();
+        return;
+      }
+
+      // Group events by series
+      const seriesMap = new Map();
+      for (const ev of events) {
+        const comp = ev.competitions[0];
+        const series = comp.series;
+        if (!series) continue;
+
+        const key = series.title || `${comp.competitors[0].team.abbreviation}-${comp.competitors[1].team.abbreviation}`;
+        if (!seriesMap.has(key)) {
+          seriesMap.set(key, {
+            title: series.title || key,
+            summary: series.summary || '',
+            completed: series.completed || false,
+            type: series.type || '',
+            games: []
+          });
+
+          // Extract teams from series
+          const s = seriesMap.get(key);
+          for (const c of comp.competitors) {
+            if (c.homeAway === 'home') s.homeTeam = c.team;
+            else s.awayTeam = c.team;
+          }
+          s.homeWins = 0;
+          s.awayWins = 0;
+        }
+        seriesMap.get(key).games.push(ev);
+      }
+
+      // Process series
+      allSeries = [];
+      for (const [key, s] of seriesMap) {
+        // Determine round from games
+        let round = 1;
+        const notes = (s.games[0]?.competitions[0]?.notes || []);
+        const headline = notes.map(n => n.headline || '').join(' ').toLowerCase();
+        if (headline.includes('final') && !headline.includes('conference')) round = 4;
+        else if (headline.includes('conference') && headline.includes('final')) round = 3;
+        else if (headline.includes('semi') || headline.includes('2nd')) round = 2;
+        else round = 1;
+
+        // Count wins
+        let topTeam = null, bottomTeam = null;
+        let topWins = 0, bottomWins = 0;
+        for (const ev of s.games) {
+          const comp = ev.competitions[0];
+          if (!comp.status.type.completed) continue;
+          const home = comp.competitors.find(c => c.homeAway === 'home');
+          const away = comp.competitors.find(c => c.homeAway === 'away');
+          if (!topTeam) {
+            topTeam = away?.team;
+            bottomTeam = home?.team;
+          }
+          const homeWon = Number(home.score) > Number(away.score);
+          if (home.team.abbreviation === topTeam?.abbreviation) {
+            if (homeWon) topWins++; else bottomWins++;
+          } else if (away.team.abbreviation === topTeam?.abbreviation) {
+            if (!homeWon) topWins++; else bottomWins++;
+          } else {
+            if (homeWon) bottomWins++; else topWins++;
+          }
+        }
+
+        // If still no teams, use first game competitors
+        if (!topTeam && s.games.length) {
+          const comp = s.games[0].competitions[0];
+          const comps = comp.competitors || [];
+          topTeam = comps[0]?.team;
+          bottomTeam = comps[1]?.team;
+        }
+
+        allSeries.push({
+          ...s,
+          round,
+          topTeam, bottomTeam,
+          topWins, bottomWins,
+          winner: s.completed ? (topWins > bottomWins ? 'top' : 'bottom') : null
+        });
+      }
+
+      // Sort by round then by game dates
+      allSeries.sort((a,b) => a.round - b.round);
+
+      renderBracket(allSeries);
+      renderSeriesCards(allSeries);
+
+      document.getElementById('heroSub').textContent =
+        `${allSeries.length}シリーズ、${events.length}試合を取得（${season}シーズン）`;
+
+    } catch (e) {
+      console.error('Playoff load error:', e);
+      showNoData();
+    }
+  }
+
+  function showNoData() {
+    const isPlayoffTime = phase === 'playoffs' || phase === 'finals';
+    document.getElementById('bracketWrap').innerHTML = '';
+    document.getElementById('seriesGrid').innerHTML = '';
+    document.getElementById('seriesHeader').style.display = 'none';
+    document.getElementById('roundFilter').style.display = 'none';
+    document.getElementById('bracketTitle').style.display = 'none';
+
+    const mainContent = document.getElementById('mainContent');
+    const noData = document.createElement('div');
+    noData.className = 'no-data-hero';
+    noData.innerHTML = isPlayoffTime
+      ? `<span class="icon">🏀</span>
+         <h2>プレーオフデータを取得できませんでした</h2>
+         <p>ESPNからのデータ取得に失敗しました。しばらく待ってから再読み込みしてください。</p>`
+      : `<span class="icon">🏆</span>
+         <h2>プレーオフは4月から</h2>
+         <p>${season}シーズンのプレーオフはまだ始まっていません。レギュラーシーズンの順位表は<a href="NBAlandscape.html">NBA勢力図</a>で確認できます。</p>`;
+    mainContent.prepend(noData);
+
+    // If off-season, try to show projected bracket from standings
+    if (!isPlayoffTime) loadProjectedBracket();
+  }
+
+  async function loadProjectedBracket() {
+    try {
+      const data = await C.fetchJSON(C.standingsURL('nba', season));
+      const children = data.children || [];
+      const teams = {west: [], east: []};
+
+      for (const conf of children) {
+        const name = (conf.abbreviation || conf.name || '').toLowerCase();
+        const isWest = name.includes('west') || name.includes('western');
+        const key = isWest ? 'west' : 'east';
+        const entries = (conf.standings || {}).entries || [];
+        entries.sort((a,b) => {
+          const wa = Number(C.stat(a,'wins')) || 0;
+          const wb = Number(C.stat(b,'wins')) || 0;
+          return wb - wa;
+        });
+        teams[key] = entries.slice(0,8).map((e,i) => ({
+          seed: i+1,
+          team: e.team,
+          wins: C.stat(e,'wins') || '0',
+          losses: C.stat(e,'losses') || '0'
+        }));
+      }
+
+      if (teams.west.length >= 8 && teams.east.length >= 8) {
+        document.getElementById('bracketTitle').style.display = '';
+        document.getElementById('bracketTitle').textContent = '予想ブラケット（現在の順位ベース）';
+        document.getElementById('roundFilter').style.display = 'none';
+        renderProjectedBracket(teams);
+      }
+    } catch(e) {
+      console.error('Projected bracket error:', e);
+    }
+  }
+
+  // ── SVG Bracket rendering ──
+  function renderProjectedBracket(teams) {
+    const wrap = document.getElementById('bracketWrap');
+    const W = 1100, H = 600;
+    const slotW = 140, slotH = 28, gap = 8;
+    const roundGap = 180;
+
+    let svg = `<svg class="bracket-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+    // Conference labels
+    svg += `<text class="bk-conf-label" x="30" y="30" fill="var(--accent-west)">WESTERN</text>`;
+    svg += `<text class="bk-conf-label" x="${W-30}" y="30" fill="var(--accent-east)" text-anchor="end">EASTERN</text>`;
+
+    // Round labels
+    const roundLabels = ['1ST ROUND','SEMI','CONF FINALS','FINALS','CONF FINALS','SEMI','1ST ROUND'];
+    const roundX = [80, 80+roundGap, 80+roundGap*2, W/2, W-80-roundGap*2, W-80-roundGap, W-80];
+    roundLabels.forEach((label,i) => {
+      svg += `<text class="bk-round-label" x="${roundX[i]}" y="55">${label}</text>`;
+    });
+
+    // West bracket (left side) — matchups: 1v8, 4v5, 3v6, 2v7
+    const westMatchups = [[0,7],[3,4],[2,5],[1,6]];
+    const eastMatchups = [[0,7],[3,4],[2,5],[1,6]];
+
+    function drawSlot(x, y, team, seed) {
+      const abbr = team?.abbreviation || '?';
+      const logo = team ? C.espnLogo(abbr) : '';
+      svg += `<g class="bk-slot">`;
+      svg += `<rect x="${x}" y="${y}" width="${slotW}" height="${slotH}"/>`;
+      svg += `<text class="bk-seed" x="${x+6}" y="${y+18}">${seed}</text>`;
+      svg += `<text class="bk-name" x="${x+22}" y="${y+18}">${abbr}</text>`;
+      svg += `</g>`;
+      return {cx: x + slotW, cy: y + slotH/2};
+    }
+
+    function drawLine(x1,y1,x2,y2) {
+      svg += `<line class="bk-line" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    }
+
+    // West Round 1
+    const westR1Y = 70;
+    const westR1X = 10;
+    const matchH = (slotH * 2 + gap);
+
+    for (let i = 0; i < 4; i++) {
+      const [s1, s2] = westMatchups[i];
+      const y = westR1Y + i * (matchH + 40);
+      drawSlot(westR1X, y, teams.west[s1]?.team, s1+1);
+      drawSlot(westR1X, y + slotH + gap, teams.west[s2]?.team, s2+1);
+      // Connector lines
+      const midY = y + slotH + gap/2;
+      drawLine(westR1X + slotW, y + slotH/2, westR1X + slotW + 15, y + slotH/2);
+      drawLine(westR1X + slotW, y + slotH + gap + slotH/2, westR1X + slotW + 15, y + slotH + gap + slotH/2);
+      drawLine(westR1X + slotW + 15, y + slotH/2, westR1X + slotW + 15, y + slotH + gap + slotH/2);
+      drawLine(westR1X + slotW + 15, midY, westR1X + slotW + 30, midY);
+    }
+
+    // West Semi (Round 2)
+    const westR2X = westR1X + roundGap;
+    for (let i = 0; i < 2; i++) {
+      const y = westR1Y + i * (matchH*2 + 80) + matchH/2 + 10;
+      svg += `<g class="bk-slot"><rect x="${westR2X}" y="${y}" width="${slotW}" height="${slotH}"/>
+        <text class="bk-name" x="${westR2X+8}" y="${y+18}">TBD</text></g>`;
+      svg += `<g class="bk-slot"><rect x="${westR2X}" y="${y+slotH+gap}" width="${slotW}" height="${slotH}"/>
+        <text class="bk-name" x="${westR2X+8}" y="${y+slotH+gap+18}">TBD</text></g>`;
+      const midY = y + slotH + gap/2;
+      drawLine(westR2X + slotW, y + slotH/2, westR2X + slotW + 15, y + slotH/2);
+      drawLine(westR2X + slotW, y + slotH+gap + slotH/2, westR2X + slotW + 15, y + slotH+gap + slotH/2);
+      drawLine(westR2X + slotW + 15, y + slotH/2, westR2X + slotW + 15, y + slotH+gap + slotH/2);
+      drawLine(westR2X + slotW + 15, midY, westR2X + slotW + 30, midY);
+    }
+
+    // West Conf Finals
+    const westR3X = westR2X + roundGap;
+    const wcfY = H/2 - slotH - gap/2 - 30;
+    svg += `<g class="bk-slot"><rect x="${westR3X}" y="${wcfY}" width="${slotW}" height="${slotH}"/>
+      <text class="bk-name" x="${westR3X+8}" y="${wcfY+18}">TBD</text></g>`;
+    svg += `<g class="bk-slot"><rect x="${westR3X}" y="${wcfY+slotH+gap}" width="${slotW}" height="${slotH}"/>
+      <text class="bk-name" x="${westR3X+8}" y="${wcfY+slotH+gap+18}">TBD</text></g>`;
+
+    // Finals
+    const finalsX = W/2 - slotW/2;
+    const finalsY = H/2 - slotH - gap/2;
+    svg += `<g class="bk-slot"><rect x="${finalsX}" y="${finalsY}" width="${slotW}" height="${slotH}" style="stroke:var(--accent-gold);stroke-width:1.5"/>
+      <text class="bk-name" x="${finalsX+8}" y="${finalsY+18}">WEST CHAMP</text></g>`;
+    svg += `<g class="bk-slot"><rect x="${finalsX}" y="${finalsY+slotH+gap}" width="${slotW}" height="${slotH}" style="stroke:var(--accent-gold);stroke-width:1.5"/>
+      <text class="bk-name" x="${finalsX+8}" y="${finalsY+slotH+gap+18}">EAST CHAMP</text></g>`;
+    // Trophy icon
+    svg += `<text x="${W/2}" y="${finalsY - 10}" text-anchor="middle" font-size="18">🏆</text>`;
+
+    // East Round 1 (right side, mirrored)
+    const eastR1X = W - 10 - slotW;
+    for (let i = 0; i < 4; i++) {
+      const [s1, s2] = eastMatchups[i];
+      const y = westR1Y + i * (matchH + 40);
+      drawSlot(eastR1X, y, teams.east[s1]?.team, s1+1);
+      drawSlot(eastR1X, y + slotH + gap, teams.east[s2]?.team, s2+1);
+      const midY = y + slotH + gap/2;
+      drawLine(eastR1X, y + slotH/2, eastR1X - 15, y + slotH/2);
+      drawLine(eastR1X, y + slotH + gap + slotH/2, eastR1X - 15, y + slotH + gap + slotH/2);
+      drawLine(eastR1X - 15, y + slotH/2, eastR1X - 15, y + slotH + gap + slotH/2);
+      drawLine(eastR1X - 15, midY, eastR1X - 30, midY);
+    }
+
+    // East Semi
+    const eastR2X = eastR1X - roundGap;
+    for (let i = 0; i < 2; i++) {
+      const y = westR1Y + i * (matchH*2 + 80) + matchH/2 + 10;
+      svg += `<g class="bk-slot"><rect x="${eastR2X}" y="${y}" width="${slotW}" height="${slotH}"/>
+        <text class="bk-name" x="${eastR2X+8}" y="${y+18}">TBD</text></g>`;
+      svg += `<g class="bk-slot"><rect x="${eastR2X}" y="${y+slotH+gap}" width="${slotW}" height="${slotH}"/>
+        <text class="bk-name" x="${eastR2X+8}" y="${y+slotH+gap+18}">TBD</text></g>`;
+      const midY = y + slotH + gap/2;
+      drawLine(eastR2X, y + slotH/2, eastR2X - 15, y + slotH/2);
+      drawLine(eastR2X, y + slotH+gap + slotH/2, eastR2X - 15, y + slotH+gap + slotH/2);
+      drawLine(eastR2X - 15, y + slotH/2, eastR2X - 15, y + slotH+gap + slotH/2);
+      drawLine(eastR2X - 15, midY, eastR2X - 30, midY);
+    }
+
+    // East Conf Finals
+    const eastR3X = eastR2X - roundGap;
+    svg += `<g class="bk-slot"><rect x="${eastR3X}" y="${wcfY}" width="${slotW}" height="${slotH}"/>
+      <text class="bk-name" x="${eastR3X+8}" y="${wcfY+18}">TBD</text></g>`;
+    svg += `<g class="bk-slot"><rect x="${eastR3X}" y="${wcfY+slotH+gap}" width="${slotW}" height="${slotH}"/>
+      <text class="bk-name" x="${eastR3X+8}" y="${wcfY+slotH+gap+18}">TBD</text></g>`;
+
+    svg += '</svg>';
+    wrap.innerHTML = svg + '<p class="projected-note">※ 現在の順位に基づく予想ブラケットです。実際の対戦はプレーオフ開始時に確定します。</p>';
+  }
+
+  function renderBracket(series) {
+    // When we have actual playoff data, render real bracket
+    const wrap = document.getElementById('bracketWrap');
+
+    if (!series.length) {
+      wrap.innerHTML = '<div class="placeholder-msg">ブラケットデータなし</div>';
+      return;
+    }
+
+    // Group by round and conference
+    const byRound = {1:[], 2:[], 3:[], 4:[]};
+    for (const s of series) {
+      if (byRound[s.round]) byRound[s.round].push(s);
+    }
+
+    // For actual data, we build a simplified bracket view
+    const W = 1100, H = 620;
+    let svg = `<svg class="bracket-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+    svg += `<text class="bk-conf-label" x="30" y="30" fill="var(--accent-west)">WESTERN</text>`;
+    svg += `<text class="bk-conf-label" x="${W-30}" y="30" fill="var(--accent-east)" text-anchor="end">EASTERN</text>`;
+
+    const slotW = 140, slotH = 28, gap = 6;
+
+    // Separate by conf (heuristic: check team abbreviation)
+    const westTeams = Object.keys(C.NBA_TEAMS).filter(k => C.NBA_TEAMS[k].conf === 'west');
+
+    function isWestSeries(s) {
+      const abbr = s.topTeam?.abbreviation || '';
+      return westTeams.includes(abbr);
+    }
+
+    // Place series by round
+    for (let round = 1; round <= 4; round++) {
+      const rs = byRound[round];
+      const westSeries = rs.filter(isWestSeries);
+      const eastSeries = rs.filter(s => !isWestSeries(s));
+
+      // Position calculation
+      const baseY = 60;
+      const spacing = round === 1 ? 130 : round === 2 ? 260 : round === 3 ? 450 : 0;
+      const offset = round === 1 ? 0 : round === 2 ? 60 : round === 3 ? 180 : 0;
+
+      // West side
+      const westX = (round - 1) * 175 + 10;
+      westSeries.forEach((s, i) => {
+        const y = baseY + offset + i * spacing;
+        const isWinner = s.winner === 'top';
+        svg += `<g class="bk-slot ${s.winner === 'top' ? 'winner' : s.winner === 'bottom' ? 'loser' : ''}">
+          <rect x="${westX}" y="${y}" width="${slotW}" height="${slotH}"/>
+          <text class="bk-name" x="${westX+6}" y="${y+18}">${s.topTeam?.abbreviation || '?'}</text>
+          <text class="bk-score" x="${westX+slotW-8}" y="${y+18}" text-anchor="end">${s.topWins}</text>
+        </g>`;
+        svg += `<g class="bk-slot ${s.winner === 'bottom' ? 'winner' : s.winner === 'top' ? 'loser' : ''}">
+          <rect x="${westX}" y="${y+slotH+gap}" width="${slotW}" height="${slotH}"/>
+          <text class="bk-name" x="${westX+6}" y="${y+slotH+gap+18}">${s.bottomTeam?.abbreviation || '?'}</text>
+          <text class="bk-score" x="${westX+slotW-8}" y="${y+slotH+gap+18}" text-anchor="end">${s.bottomWins}</text>
+        </g>`;
+      });
+
+      // East side (mirrored)
+      const eastX = W - 10 - slotW - (round - 1) * 175;
+      eastSeries.forEach((s, i) => {
+        const y = baseY + offset + i * spacing;
+        svg += `<g class="bk-slot ${s.winner === 'top' ? 'winner' : s.winner === 'bottom' ? 'loser' : ''}">
+          <rect x="${eastX}" y="${y}" width="${slotW}" height="${slotH}"/>
+          <text class="bk-name" x="${eastX+6}" y="${y+18}">${s.topTeam?.abbreviation || '?'}</text>
+          <text class="bk-score" x="${eastX+slotW-8}" y="${y+18}" text-anchor="end">${s.topWins}</text>
+        </g>`;
+        svg += `<g class="bk-slot ${s.winner === 'bottom' ? 'winner' : s.winner === 'top' ? 'loser' : ''}">
+          <rect x="${eastX}" y="${y+slotH+gap}" width="${slotW}" height="${slotH}"/>
+          <text class="bk-name" x="${eastX+6}" y="${y+slotH+gap+18}">${s.bottomTeam?.abbreviation || '?'}</text>
+          <text class="bk-score" x="${eastX+slotW-8}" y="${y+slotH+gap+18}" text-anchor="end">${s.bottomWins}</text>
+        </g>`;
+      });
+
+      // Finals (center)
+      if (round === 4) {
+        const finX = W/2 - slotW/2;
+        const finY = H/2 - slotH - gap/2;
+        rs.forEach(s => {
+          svg += `<g class="bk-slot"><rect x="${finX}" y="${finY}" width="${slotW}" height="${slotH}" style="stroke:var(--accent-gold)"/>
+            <text class="bk-name" x="${finX+6}" y="${finY+18}">${s.topTeam?.abbreviation || '?'}</text>
+            <text class="bk-score" x="${finX+slotW-8}" y="${finY+18}" text-anchor="end">${s.topWins}</text></g>`;
+          svg += `<g class="bk-slot"><rect x="${finX}" y="${finY+slotH+gap}" width="${slotW}" height="${slotH}" style="stroke:var(--accent-gold)"/>
+            <text class="bk-name" x="${finX+6}" y="${finY+slotH+gap+18}">${s.bottomTeam?.abbreviation || '?'}</text>
+            <text class="bk-score" x="${finX+slotW-8}" y="${finY+slotH+gap+18}" text-anchor="end">${s.bottomWins}</text></g>`;
+          svg += `<text x="${W/2}" y="${finY-10}" text-anchor="middle" font-size="18">🏆</text>`;
+        });
+      }
+    }
+
+    svg += '</svg>';
+    wrap.innerHTML = svg;
+  }
+
+  function renderSeriesCards(series) {
+    const grid = document.getElementById('seriesGrid');
+    if (!series.length) {
+      grid.innerHTML = '<div class="placeholder-msg" style="grid-column:1/-1;">シリーズデータなし</div>';
+      return;
+    }
+
+    const roundNames = {1:'1回戦', 2:'セミファイナル', 3:'カンファレンス決勝', 4:'NBAファイナル'};
+
+    grid.innerHTML = series.map(s => {
+      const topAbbr = s.topTeam?.abbreviation || '?';
+      const btmAbbr = s.bottomTeam?.abbreviation || '?';
+      const topWinner = s.topWins > s.bottomWins;
+      const hasLive = s.games.some(g => g.competitions[0].status.type.state === 'in');
+
+      let statusHtml = '';
+      if (s.completed) {
+        statusHtml = `<span class="series-card-status final">${s.summary || 'FINAL'}</span>`;
+      } else if (hasLive) {
+        statusHtml = `<span class="series-card-status live">LIVE</span>`;
+      } else {
+        statusHtml = `<span class="series-card-status">${s.topWins}-${s.bottomWins}</span>`;
+      }
+
+      // Individual game scores
+      const gameHtml = s.games
+        .sort((a,b) => new Date(a.date) - new Date(b.date))
+        .map(g => {
+          const comp = g.competitions[0];
+          const isLive = comp.status.type.state === 'in';
+          const home = comp.competitors.find(c => c.homeAway === 'home');
+          const away = comp.competitors.find(c => c.homeAway === 'away');
+          if (comp.status.type.state === 'pre') {
+            const d = new Date(comp.date);
+            return `<span class="series-game">G${g.competitions[0].series?.gameNumber || '?'}: ${d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})}</span>`;
+          }
+          return `<span class="series-game ${isLive?'game-live':''}">G${comp.series?.gameNumber || '?'}: ${away.team.abbreviation} ${away.score}-${home.score} ${home.team.abbreviation}</span>`;
+        }).join('');
+
+      return `<div class="series-card" data-round="${s.round}">
+        <div class="series-card-header">
+          <span class="series-card-round">${roundNames[s.round] || 'Round ' + s.round}</span>
+          ${statusHtml}
+        </div>
+        <div class="series-matchup">
+          <div class="series-team">
+            <img src="${C.espnLogo(topAbbr)}" alt="${topAbbr}" onerror="this.style.display='none'" loading="lazy">
+            <span class="series-team-name ${topWinner && s.completed ? 'winner' : ''}">${topAbbr}</span>
+          </div>
+          <span class="series-vs">vs</span>
+          <div class="series-team" style="justify-content:flex-end;">
+            <span class="series-team-name ${!topWinner && s.completed ? 'winner' : ''}">${btmAbbr}</span>
+            <img src="${C.espnLogo(btmAbbr)}" alt="${btmAbbr}" onerror="this.style.display='none'" loading="lazy">
+          </div>
+        </div>
+        <div class="series-score">${s.topWins} — ${s.bottomWins}</div>
+        <div class="series-games">${gameHtml}</div>
+      </div>`;
+    }).join('');
+  }
+
+  loadPlayoffs();
+
+})();
+</script>
+</body>
+</html>

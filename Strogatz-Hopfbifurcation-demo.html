@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hopf分岐デモ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .equation {
+            font-family: serif;
+            font-style: italic;
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+        canvas {
+            background: #16213e;
+            border-radius: 12px;
+            max-width: 100%;
+            touch-action: none;
+        }
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            margin-top: 20px;
+        }
+        .slider-container {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        .mu-value {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -10px;
+            cursor: pointer;
+        }
+        .info-panel {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #0f3460;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-value {
+            font-family: monospace;
+            color: #4fc3f7;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.stable {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status.critical {
+            background: #4a3000;
+            color: #ff9800;
+        }
+        .status.cycle {
+            background: #0d3b66;
+            color: #4fc3f7;
+        }
+        .key-point {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .key-point strong {
+            color: #4fc3f7;
+        }
+        .amplitude-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .amplitude-bar {
+            height: 20px;
+            background: #1a1a2e;
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .amplitude-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #2ecc71);
+            transition: width 0.2s;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hopf分岐 (Supercritical)</h1>
+    <div class="equation">
+        ṙ = μr − r³, &nbsp; θ̇ = ω
+    </div>
+
+<canvas id="canvas" width="350" height="350"></canvas>
+
+<div class="controls">
+    <div class="slider-container">
+        <div class="slider-label">
+            <span>パラメータ μ</span>
+            <span class="mu-value" id="muDisplay">0.00</span>
+        </div>
+        <input type="range" id="muSlider" min="-0.5" max="1.0" step="0.01" value="0">
+    </div>
+    
+    <div class="info-panel">
+        <div class="info-row">
+            <span>現在の半径 r</span>
+            <span class="info-value" id="rDisplay">0.00</span>
+        </div>
+        <div class="info-row">
+            <span>リミットサイクル半径 √μ</span>
+            <span class="info-value" id="lcRadiusDisplay">---</span>
+        </div>
+        <div class="info-row">
+            <span>原点の安定性</span>
+            <span class="info-value" id="stabilityDisplay">安定</span>
+        </div>
+        <div class="amplitude-display">
+            <span>振幅 ∝ √(μ − μc)</span>
+            <div class="amplitude-bar">
+                <div class="amplitude-fill" id="amplitudeBar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status stable" id="status">
+        μ &lt; 0：原点が安定（振動なし）
+    </div>
+    
+    <div class="key-point">
+        <strong>Hopf分岐の特徴：</strong><br>
+        • 振幅が √(μ−μc) でゼロから成長<br>
+        • 周期は有限のまま（T = 2π/ω）<br>
+        • 分岐点で固有値が虚軸を横切る
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const muSlider = document.getElementById('muSlider');
+    const muDisplay = document.getElementById('muDisplay');
+    const rDisplay = document.getElementById('rDisplay');
+    const lcRadiusDisplay = document.getElementById('lcRadiusDisplay');
+    const stabilityDisplay = document.getElementById('stabilityDisplay');
+    const amplitudeBar = document.getElementById('amplitudeBar');
+    const status = document.getElementById('status');
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const scale = 120;
+
+    let mu = 0;
+    let r = 0.5;
+    let theta = 0;
+    const omega = 2;
+    let trail = [];
+    const maxTrailLength = 300;
+    let lastTime = performance.now();
+
+    function rDot(r, mu) {
+        return mu * r - r * r * r;
+    }
+
+    function updateStatus() {
+        if (mu < -0.02) {
+            status.className = 'status stable';
+            status.textContent = 'μ < 0：原点が安定（振動減衰）';
+            stabilityDisplay.textContent = '安定';
+            stabilityDisplay.style.color = '#4caf50';
+        } else if (mu <= 0.02) {
+            status.className = 'status critical';
+            status.textContent = '⚠️ μ ≈ 0：分岐点（臨界）';
+            stabilityDisplay.textContent = '臨界';
+            stabilityDisplay.style.color = '#ff9800';
+        } else {
+            status.className = 'status cycle';
+            status.textContent = 'μ > 0：リミットサイクル出現！';
+            stabilityDisplay.textContent = '不安定';
+            stabilityDisplay.style.color = '#f44336';
+        }
+    }
+
+    function draw() {
+        const currentTime = performance.now();
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.05);
+        lastTime = currentTime;
+
+        // 物理更新
+        const dr = rDot(r, mu);
+        r += dr * dt * 2;
+        theta += omega * dt;
+        
+        // rを正の範囲にクランプ
+        r = Math.max(0.001, Math.min(2, r));
+        
+        if (theta > 2 * Math.PI) theta -= 2 * Math.PI;
+
+        // 現在位置
+        const x = centerX + r * scale * Math.cos(theta);
+        const y = centerY - r * scale * Math.sin(theta);
+
+        // 軌跡を記録
+        trail.push({ x, y, r });
+        if (trail.length > maxTrailLength) {
+            trail.shift();
+        }
+
+        // 描画クリア
+        ctx.fillStyle = '#16213e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 座標軸
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(canvas.width, centerY);
+        ctx.moveTo(centerX, 0);
+        ctx.lineTo(centerX, canvas.height);
+        ctx.stroke();
+
+        // リミットサイクル（μ > 0 の場合）
+        if (mu > 0) {
+            const lcRadius = Math.sqrt(mu) * scale;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, lcRadius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#4fc3f7';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // ラベル
+            ctx.fillStyle = '#4fc3f7';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(`r = √μ = ${Math.sqrt(mu).toFixed(2)}`, centerX + lcRadius + 10, centerY);
+        }
+
+        // 軌跡を描画
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                const p = trail[i];
+                const prev = trail[i - 1];
+                
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = `rgba(46, 204, 113, ${alpha * 0.8})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // 原点（固定点）
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+        if (mu < 0) {
+            ctx.fillStyle = '#4caf50'; // 安定：緑
+        } else if (mu > 0) {
+            ctx.fillStyle = '#f44336'; // 不安定：赤
+        } else {
+            ctx.fillStyle = '#ff9800'; // 臨界：オレンジ
+        }
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 現在位置の点
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // ベクトル場の矢印（半径方向）
+        const numArrows = 8;
+        for (let i = 0; i < numArrows; i++) {
+            const angle = (i / numArrows) * 2 * Math.PI;
+            for (let rr = 0.3; rr <= 1.2; rr += 0.3) {
+                const ax = centerX + rr * scale * Math.cos(angle);
+                const ay = centerY - rr * scale * Math.sin(angle);
+                const dr = rDot(rr, mu);
+                const arrowLen = Math.sign(dr) * Math.min(Math.abs(dr) * 30, 15);
+                
+                ctx.beginPath();
+                ctx.moveTo(ax, ay);
+                ctx.lineTo(
+                    ax + arrowLen * Math.cos(angle),
+                    ay - arrowLen * Math.sin(angle)
+                );
+                ctx.strokeStyle = dr > 0 ? 'rgba(231, 76, 60, 0.5)' : 'rgba(46, 204, 113, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // 情報更新
+        rDisplay.textContent = r.toFixed(3);
+        if (mu > 0) {
+            lcRadiusDisplay.textContent = Math.sqrt(mu).toFixed(3);
+        } else {
+            lcRadiusDisplay.textContent = '---';
+        }
+        
+        // 振幅バー
+        const ampPercent = mu > 0 ? Math.min(Math.sqrt(mu) / Math.sqrt(1.0) * 100, 100) : 0;
+        amplitudeBar.style.width = ampPercent + '%';
+
+        requestAnimationFrame(draw);
+    }
+
+    muSlider.addEventListener('input', (e) => {
+        mu = parseFloat(e.target.value);
+        muDisplay.textContent = mu.toFixed(2);
+        updateStatus();
+        trail = [];
+    });
+
+    // クリックで初期位置をリセット
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        const dx = clickX - centerX;
+        const dy = -(clickY - centerY);
+        
+        r = Math.sqrt(dx * dx + dy * dy) / scale;
+        theta = Math.atan2(dy, dx);
+        trail = [];
+    });
+
+    updateStatus();
+    draw();
+</script>
+
+</body>
+</html>

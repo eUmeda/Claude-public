@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>失われた世界：ビッグファイブが刻む地球史の風景</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Lora:wght@400;500;600&family=Libre+Baskerville:wght@400;700&display=swap');
+        
+        :root {
+            --ocean-deep: #0a3d62;
+            --ocean-mid: #1e6091;
+            --reef-coral: #e67e22;
+            --forest-dark: #1e4620;
+            --forest-light: #4a7c59;
+            --desert-sand: #d4a373;
+            --volcanic-red: #8b3a3a;
+            --sky-ancient: #87a7b3;
+            --limestone: #c9b8a0;
+            --coal-black: #2c2416;
+            --amber-glow: #d4a574;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Lora', serif;
+            background: linear-gradient(to bottom, #f5f1e8 0%, #e8dcc8 100%);
+            color: var(--coal-black);
+            line-height: 1.8;
+            overflow-x: hidden;
+        }
+        
+        /* Masthead */
+        .masthead {
+            background: linear-gradient(135deg, var(--coal-black) 0%, var(--ocean-deep) 100%);
+            color: #f5f1e8;
+            padding: 6rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 8px solid var(--amber-glow);
+        }
+        
+        .masthead::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(135, 167, 179, 0.1) 0%, transparent 50%);
+            animation: rotate 60s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 6vw, 5.5rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: -0.03em;
+            text-shadow: 3px 3px 12px rgba(0,0,0,0.4);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            font-weight: 400;
+            opacity: 0.95;
+            font-style: italic;
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        /* Navigation */
+        .timeline-nav {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            margin: 3rem auto;
+            max-width: 1400px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .timeline-nav h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--ocean-deep);
+            text-align: center;
+        }
+        
+        .era-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .era-links a {
+            background: linear-gradient(135deg, var(--ocean-mid) 0%, var(--ocean-deep) 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.4s ease;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .era-links a:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+        
+        /* Era sections */
+        .era {
+            margin: 8rem 0;
+            position: relative;
+        }
+        
+        .era-banner {
+            position: relative;
+            height: 400px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 3rem;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+        }
+        
+        .era-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+            z-index: 1;
+        }
+        
+        .era-banner-content {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            right: 2rem;
+            z-index: 2;
+            color: white;
+        }
+        
+        .era-banner h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .era-time {
+            font-size: 1.3rem;
+            font-weight: 600;
+            opacity: 0.95;
+            font-family: 'Libre Baskerville', serif;
+        }
+        
+        /* Color schemes for different eras */
+        .era-cambrian .era-banner { background: linear-gradient(135deg, var(--ocean-deep) 0%, var(--ocean-mid) 50%, var(--reef-coral) 100%); }
+        .era-silurian .era-banner { background: linear-gradient(135deg, var(--ocean-mid) 0%, var(--forest-light) 100%); }
+        .era-carboniferous .era-banner { background: linear-gradient(135deg, var(--forest-dark) 0%, var(--coal-black) 50%, var(--forest-light) 100%); }
+        .era-triassic .era-banner { background: linear-gradient(135deg, var(--volcanic-red) 0%, var(--desert-sand) 100%); }
+        .era-jurassic .era-banner { background: linear-gradient(135deg, var(--forest-light) 0%, var(--sky-ancient) 50%, var(--ocean-mid) 100%); }
+        
+        /* Content cards */
+        .landscape-card {
+            background: white;
+            padding: 3rem;
+            margin: 2rem 0;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border-left: 6px solid var(--ocean-mid);
+        }
+        
+        .landscape-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            color: var(--ocean-deep);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .landscape-card h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            color: var(--forest-dark);
+            margin: 2rem 0 1rem;
+            font-weight: 600;
+        }
+        
+        .landscape-description {
+            font-size: 1.15rem;
+            line-height: 2;
+            color: #2c2c2c;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+        
+        /* Ecosystem grid */
+        .ecosystem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .ecosystem-zone {
+            background: linear-gradient(135deg, rgba(135, 167, 179, 0.1) 0%, rgba(201, 184, 160, 0.1) 100%);
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid rgba(10, 61, 98, 0.2);
+        }
+        
+        .ecosystem-zone h5 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            color: var(--ocean-deep);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .organism-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .organism-list li {
+            padding: 0.6rem 0 0.6rem 1.8rem;
+            position: relative;
+            line-height: 1.6;
+            font-size: 1.05rem;
+        }
+        
+        .organism-list li::before {
+            content: '◆';
+            position: absolute;
+            left: 0;
+            color: var(--reef-coral);
+            font-size: 0.8rem;
+        }
+        
+        /* Illustration box */
+        .illustration-box {
+            width: 100%;
+            min-height: 350px;
+            background: linear-gradient(to bottom, var(--sky-ancient) 0%, var(--limestone) 100%);
+            border-radius: 12px;
+            margin: 3rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.1);
+        }
+        
+        .illustration-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0px, transparent 1px, transparent 20px, rgba(0,0,0,0.02) 21px),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, transparent 1px, transparent 20px, rgba(0,0,0,0.02) 21px);
+        }
+        
+        .illustration-caption {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+        
+        /* Key features highlight */
+        .key-features {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(139, 115, 85, 0.1) 100%);
+            padding: 2.5rem;
+            margin: 3rem 0;
+            border-radius: 12px;
+            border: 3px solid var(--amber-glow);
+        }
+        
+        .key-features h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--volcanic-red);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .key-features ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .key-features li {
+            padding: 0.8rem 0 0.8rem 2rem;
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        
+        .key-features li::before {
+            content: '★';
+            position: absolute;
+            left: 0;
+            color: var(--amber-glow);
+            font-size: 1.2rem;
+        }
+        
+        /* Atmospheric quotes */
+        .atmospheric-quote {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-style: italic;
+            text-align: center;
+            color: var(--ocean-deep);
+            margin: 4rem 0;
+            padding: 2rem;
+            line-height: 1.6;
+            position: relative;
+        }
+        
+        .atmospheric-quote::before {
+            content: '"';
+            font-size: 6rem;
+            position: absolute;
+            top: -2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--limestone);
+            opacity: 0.3;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 4rem 2rem;
+            margin-top: 6rem;
+            background: linear-gradient(135deg, var(--coal-black) 0%, var(--ocean-deep) 100%);
+            color: rgba(255, 255, 255, 0.9);
+            border-top: 6px solid var(--amber-glow);
+        }
+        
+        footer p {
+            font-size: 1rem;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto 1rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .era-banner {
+                height: 300px;
+            }
+            
+            .ecosystem-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .atmospheric-quote {
+                font-size: 1.4rem;
+            }
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Fade in animation */
+        .landscape-card {
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="masthead">
+        <h1>失われた世界</h1>
+        <p class="subtitle">ビッグファイブが刻む地球史の風景 — 5億年の時を遡る生態系の記憶</p>
+    </header>
+
+    <div class="container">
+        <nav class="timeline-nav">
+            <h2>地質時代の旅へようこそ</h2>
+            <div class="era-links">
+                <a href="#cambrian">カンブリア紀〜オルドビス紀</a>
+                <a href="#silurian">シルル紀〜デボン紀</a>
+                <a href="#carboniferous">石炭紀〜ペルム紀</a>
+                <a href="#triassic">三畳紀</a>
+                <a href="#jurassic">ジュラ紀〜白亜紀</a>
+            </div>
+        </nav>
+
+        <!-- CAMBRIAN-ORDOVICIAN ERA -->
+        <section id="cambrian" class="era era-cambrian">
+            <div class="era-banner">
+                <div class="era-banner-content">
+                    <h2>カンブリア紀〜オルドビス紀</h2>
+                    <p class="era-time">約5億4100万〜4億4400万年前</p>
+                </div>
+            </div>
+
+            <div class="landscape-card">
+                <h3>海の支配：すべては水中から始まった</h3>
+                <p class="landscape-description">
+                    陸地は荒涼とした岩石の大地。生命はすべて海の中に存在していた。浅い暖かな海は、地球史上初の複雑な生態系の舞台となった。透明度の高い海水の中、海底にはストロマトライト（シアノバクテリアの層状構造）が広がり、その周囲を奇妙な姿の生物たちが泳ぎ、這い、濾過摂食を行っていた。日光が届く浅瀬では、世界初の「礁」を形成する生物たちが、互いに寄り添うように成長していた。
+                </p>
+
+                <div class="illustration-box" style="background: linear-gradient(to bottom, #4a90a4 0%, #2c5f6f 50%, #1a3d4a 100%);">
+                    <svg width="600" height="350" viewBox="0 0 600 350" style="max-width: 100%; height: auto;">
+                        <!-- Sunlight rays -->
+                        <line x1="100" y1="0" x2="120" y2="100" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        <line x1="200" y1="0" x2="180" y2="100" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        <line x1="400" y1="0" x2="420" y2="120" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        
+                        <!-- Sea floor -->
+                        <path d="M 0 250 Q 150 240, 300 250 T 600 245 L 600 350 L 0 350 Z" fill="#3d5a4f" opacity="0.6"/>
+                        
+                        <!-- Stromatolites -->
+                        <ellipse cx="100" cy="260" rx="40" ry="25" fill="#5a7a6f" opacity="0.7"/>
+                        <ellipse cx="100" cy="245" rx="30" ry="18" fill="#6a8a7f" opacity="0.7"/>
+                        <ellipse cx="100" cy="235" rx="20" ry="12" fill="#7a9a8f" opacity="0.7"/>
+                        
+                        <ellipse cx="500" cy="255" rx="35" ry="22" fill="#5a7a6f" opacity="0.7"/>
+                        <ellipse cx="500" cy="242" rx="28" ry="16" fill="#6a8a7f" opacity="0.7"/>
+                        
+                        <!-- Trilobites -->
+                        <g transform="translate(250, 230)">
+                            <ellipse cx="0" cy="0" rx="25" ry="12" fill="#8b7355" opacity="0.8"/>
+                            <circle cx="-10" cy="-5" r="3" fill="#3d2817"/>
+                            <circle cx="10" cy="-5" r="3" fill="#3d2817"/>
+                            <path d="M -20 0 L -25 10" stroke="#6a5744" stroke-width="2"/>
+                            <path d="M -10 5 L -15 15" stroke="#6a5744" stroke-width="2"/>
+                            <path d="M 10 5 L 5 15" stroke="#6a5744" stroke-width="2"/>
+                            <path d="M 20 0 L 25 10" stroke="#6a5744" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Anomalocaris -->
+                        <g transform="translate(400, 180)">
+                            <ellipse cx="0" cy="0" rx="50" ry="15" fill="#d4a574" opacity="0.7"/>
+                            <circle cx="-40" cy="0" r="10" fill="#c49563"/>
+                            <circle cx="-45" cy="-3" r="4" fill="#2c2416"/>
+                            <path d="M -50 0 Q -70 -20, -65 -30" stroke="#d4a574" stroke-width="3" fill="none"/>
+                            <path d="M -50 0 Q -70 20, -65 30" stroke="#d4a574" stroke-width="3" fill="none"/>
+                            <!-- Flaps -->
+                            <path d="M -20 -10 Q -15 -20, -10 -15" stroke="#e6b88a" stroke-width="2" fill="none"/>
+                            <path d="M 0 -12 Q 5 -22, 10 -18" stroke="#e6b88a" stroke-width="2" fill="none"/>
+                            <path d="M 20 -10 Q 25 -20, 30 -15" stroke="#e6b88a" stroke-width="2" fill="none"/>
+                        </g>
+                        
+                        <!-- Brachiopods -->
+                        <g transform="translate(180, 265)">
+                            <path d="M 0 0 Q 15 -10, 30 0" fill="#a8968a" opacity="0.8"/>
+                            <path d="M 0 0 Q 15 10, 30 0" fill="#978878" opacity="0.8"/>
+                        </g>
+                        
+                        <!-- Coral-like organisms -->
+                        <g transform="translate(350, 240)">
+                            <path d="M 0 20 L 0 0 L -10 -15 M 0 0 L 10 -15 M 0 0 L -5 -10 M 0 0 L 5 -10" stroke="#e67e22" stroke-width="2.5" fill="none" opacity="0.7"/>
+                        </g>
+                        
+                        <!-- Small particles (plankton) -->
+                        <circle cx="150" cy="120" r="2" fill="rgba(255,255,255,0.5)"/>
+                        <circle cx="320" cy="90" r="2" fill="rgba(255,255,255,0.5)"/>
+                        <circle cx="450" cy="140" r="2" fill="rgba(255,255,255,0.5)"/>
+                        <circle cx="220" cy="160" r="2" fill="rgba(255,255,255,0.5)"/>
+                    </svg>
+                    <div class="illustration-caption">カンブリア紀の海：三葉虫、アノマロカリス、ストロマトライト</div>
+                </div>
+
+                <div class="ecosystem-grid">
+                    <div class="ecosystem-zone">
+                        <h5>🌊 浅海の捕食者</h5>
+                        <ul class="organism-list">
+                            <li><strong>アノマロカリス</strong> — 体長60cm以上、複眼を持つ最初期の頂点捕食者</li>
+                            <li><strong>ウミサソリ類（オルドビス紀）</strong> — 最大2.5mに達する節足動物</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦀 海底の住人</h5>
+                        <ul class="organism-list">
+                            <li><strong>三葉虫</strong> — 最も繁栄した節足動物、数千種が存在</li>
+                            <li><strong>腕足動物</strong> — 二枚貝に似た殻を持つ濾過摂食者</li>
+                            <li><strong>軟体動物</strong> — 初期の巻貝、二枚貝</li>
+                            <li><strong>棘皮動物</strong> — 原始的なウニ、ヒトデ、ウミユリの祖先</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🪸 礁の建設者</h5>
+                        <ul class="organism-list">
+                            <li><strong>古杯類（アーケオシアタ）</strong> — カンブリア紀の礁形成生物</li>
+                            <li><strong>層孔虫</strong> — オルドビス紀から繁栄した群体性海綿動物</li>
+                            <li><strong>床板サンゴ</strong> — 初期のサンゴ類</li>
+                            <li><strong>コケムシ</strong> — 群体性の濾過摂食者</li>
+                            <li><strong>筆石</strong> — 群体性浮遊生物、示準化石</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🐟 初期の脊椎動物</h5>
+                        <ul class="organism-list">
+                            <li><strong>無顎類</strong> — 顎を持たない原始的な魚類</li>
+                            <li><strong>甲冑魚</strong> — 骨質の装甲を持つ初期の魚</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="key-features">
+                    <h3>この時代の特徴</h3>
+                    <ul>
+                        <li><strong>陸上は完全に不毛</strong> — 植物も動物も存在せず、岩石と砂だけの世界</li>
+                        <li><strong>海は生命で満ちていた</strong> — すべての主要な動物門がカンブリア爆発で出現</li>
+                        <li><strong>複眼の進化</strong> — 三葉虫は地球史上最初の複雑な視覚系を持っていた</li>
+                        <li><strong>硬組織の発明</strong> — 殻、骨格、外骨格が進化し、化石記録が豊富に</li>
+                        <li><strong>礁生態系の誕生</strong> — 群体性生物が立体的な構造を作り、多様な生物の住処に</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SILURIAN-DEVONIAN ERA -->
+        <section id="silurian" class="era era-silurian">
+            <div class="era-banner">
+                <div class="era-banner-content">
+                    <h2>シルル紀〜デボン紀</h2>
+                    <p class="era-time">約4億4400万〜3億7500万年前</p>
+                </div>
+            </div>
+
+            <div class="landscape-card">
+                <h3>陸上への進出：緑の革命の始まり</h3>
+                <p class="landscape-description">
+                    シルル紀、ついに生命が陸上に進出し始めた。最初は数センチの背丈しかない原始的な維管束植物（クックソニアなど）が、川辺や湿地に根を下ろした。デボン紀に入ると、植物は急速に大型化し、高さ数メートルの「木」が出現した。陸上には最初の森が形成され始め、節足動物（ムカデやクモの祖先、原始的な昆虫）が落ち葉の下を這い回った。一方、海では「魚の時代」が到来していた。装甲に覆われた板皮類、鋭い歯を持つサメの祖先、そして四肢を持ち始めた肉鰭類が繁栄した。
+                </p>
+
+                <div class="illustration-box" style="background: linear-gradient(to bottom, #87a7b3 0%, #5a8a6f 40%, #4a7c59 70%, #3d5a4f 100%);">
+                    <svg width="600" height="350" viewBox="0 0 600 350" style="max-width: 100%; height: auto;">
+                        <!-- Sky -->
+                        <circle cx="500" cy="60" r="30" fill="#ffd96a" opacity="0.6"/>
+                        
+                        <!-- Land horizon -->
+                        <path d="M 0 200 Q 200 190, 400 200 T 600 195" stroke="#4a7c59" stroke-width="2" fill="none"/>
+                        
+                        <!-- Water/swamp area -->
+                        <ellipse cx="300" cy="280" rx="200" ry="40" fill="#4a6d7c" opacity="0.5"/>
+                        
+                        <!-- Early trees (Archaeopteris-like) -->
+                        <g transform="translate(150, 150)">
+                            <rect x="-8" y="0" width="16" height="80" fill="#5a4a3a"/>
+                            <path d="M -40 20 Q -20 10, 0 0 Q 20 10, 40 20" stroke="#4a7c59" stroke-width="3" fill="none"/>
+                            <path d="M -35 40 Q -18 30, 0 20 Q 18 30, 35 40" stroke="#4a7c59" stroke-width="3" fill="none"/>
+                            <path d="M -30 60 Q -15 50, 0 40 Q 15 50, 30 60" stroke="#4a7c59" stroke-width="3" fill="none"/>
+                        </g>
+                        
+                        <g transform="translate(450, 170)">
+                            <rect x="-6" y="0" width="12" height="60" fill="#5a4a3a"/>
+                            <path d="M -30 15 Q -15 8, 0 0 Q 15 8, 30 15" stroke="#5a9a7f" stroke-width="2.5" fill="none"/>
+                            <path d="M -25 35 Q -13 28, 0 20 Q 13 28, 25 35" stroke="#5a9a7f" stroke-width="2.5" fill="none"/>
+                        </g>
+                        
+                        <!-- Small ground plants -->
+                        <g transform="translate(100, 220)">
+                            <path d="M 0 0 L -5 -15 M 0 0 L 5 -15 M 0 0 L 0 -18" stroke="#6aa86f" stroke-width="2"/>
+                        </g>
+                        <g transform="translate(350, 230)">
+                            <path d="M 0 0 L -3 -10 M 0 0 L 3 -10 M 0 0 L 0 -12" stroke="#6aa86f" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Dunkleosteus (armored fish) -->
+                        <g transform="translate(250, 280)">
+                            <ellipse cx="0" cy="0" rx="60" ry="25" fill="#7a8a9a" opacity="0.8"/>
+                            <path d="M -50 -5 L -70 0 L -50 5 Z" fill="#7a8a9a" opacity="0.8"/>
+                            <circle cx="-40" cy="-8" r="5" fill="#2c2416"/>
+                            <!-- Armor plates -->
+                            <line x1="-30" y1="-20" x2="-30" y2="20" stroke="#5a6a7a" stroke-width="2"/>
+                            <line x1="0" y1="-22" x2="0" y2="22" stroke="#5a6a7a" stroke-width="2"/>
+                            <line x1="30" y1="-20" x2="30" y2="20" stroke="#5a6a7a" stroke-width="2"/>
+                            <!-- Jaw -->
+                            <path d="M -60 5 L -75 15" stroke="#5a6a7a" stroke-width="3"/>
+                        </g>
+                        
+                        <!-- Eurypterid (sea scorpion) -->
+                        <g transform="translate(450, 290)">
+                            <ellipse cx="0" cy="0" rx="40" ry="15" fill="#8b7355" opacity="0.7"/>
+                            <path d="M 40 0 L 55 -5 L 60 0 L 55 5 Z" fill="#8b7355" opacity="0.7"/>
+                            <circle cx="-30" cy="-5" r="4" fill="#3d2817"/>
+                            <!-- Pincers -->
+                            <path d="M -40 -10 L -50 -20 L -45 -25" stroke="#7a6344" stroke-width="2.5" fill="none"/>
+                            <path d="M -40 10 L -50 20 L -45 25" stroke="#7a6344" stroke-width="2.5" fill="none"/>
+                            <!-- Legs -->
+                            <line x1="-10" y1="15" x2="-15" y2="25" stroke="#7a6344" stroke-width="2"/>
+                            <line x1="10" y1="15" x2="5" y2="25" stroke="#7a6344" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Millipede on land -->
+                        <g transform="translate(200, 235)">
+                            <path d="M 0 0 Q 10 -2, 20 0 Q 30 2, 40 0" stroke="#5a4a3a" stroke-width="3" fill="none"/>
+                            <line x1="5" y1="0" x2="5" y2="5" stroke="#5a4a3a" stroke-width="1.5"/>
+                            <line x1="15" y1="0" x2="15" y2="5" stroke="#5a4a3a" stroke-width="1.5"/>
+                            <line x1="25" y1="0" x2="25" y2="5" stroke="#5a4a3a" stroke-width="1.5"/>
+                            <line x1="35" y1="0" x2="35" y2="5" stroke="#5a4a3a" stroke-width="1.5"/>
+                        </g>
+                    </svg>
+                    <div class="illustration-caption">デボン紀の風景：初期の森、板皮類ダンクレオステウス、ウミサソリ</div>
+                </div>
+
+                <div class="ecosystem-grid">
+                    <div class="ecosystem-zone">
+                        <h5>🌿 陸上植物</h5>
+                        <ul class="organism-list">
+                            <li><strong>クックソニア（シルル紀）</strong> — 最古級の維管束植物、数cm</li>
+                            <li><strong>古生マツ類（リニア類）</strong> — デボン紀の裸茎植物</li>
+                            <li><strong>アーケオプテリス</strong> — 最初の「木」、高さ10m以上</li>
+                            <li><strong>シダ類の祖先</strong> — 葉を持つ植物の出現</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦗 陸上節足動物</h5>
+                        <ul class="organism-list">
+                            <li><strong>ムカデ・ヤスデの祖先</strong> — 最初の陸上節足動物</li>
+                            <li><strong>原始的なクモ類</strong> — 8本脚の捕食者</li>
+                            <li><strong>トビムシ</strong> — 土壌生物の先駆者</li>
+                            <li><strong>原始的な昆虫</strong> — 翅のない小型昆虫</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🐟 海の魚類</h5>
+                        <ul class="organism-list">
+                            <li><strong>板皮類</strong> — ダンクレオステウス（体長6m）など装甲魚</li>
+                            <li><strong>軟骨魚類</strong> — サメとエイの祖先</li>
+                            <li><strong>肉鰭類</strong> — ユーステノプテロンなど、四肢動物の祖先</li>
+                            <li><strong>シーラカンス</strong> — 「生きた化石」の起源</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦂 海の無脊椎動物</h5>
+                        <ul class="organism-list">
+                            <li><strong>ウミサソリ（ユーリプテルス類）</strong> — 最大2.5m、頂点捕食者</li>
+                            <li><strong>アンモナイト</strong> — 最初の出現</li>
+                            <li><strong>サンゴ礁</strong> — 四射サンゴと床板サンゴが大規模な礁を形成</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="key-features">
+                    <h3>この時代の特徴</h3>
+                    <ul>
+                        <li><strong>植物の陸上進出</strong> — 地球は初めて緑色に染まり始めた</li>
+                        <li><strong>菌類との共生</strong> — 菌根が陸上植物の定着を助けた</li>
+                        <li><strong>初の森林</strong> — デボン紀後期には高さ10m超の樹木が出現</li>
+                        <li><strong>魚の時代</strong> — 顎を持つ魚類が海を支配、多様化が爆発的に進む</li>
+                        <li><strong>四肢動物の起源</strong> — 肉鰭類から両生類への進化が始まる</li>
+                        <li><strong>デボン紀末の大量絶滅</strong> — サンゴ礁生態系が壊滅的打撃を受ける</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARBONIFEROUS-PERMIAN ERA -->
+        <section id="carboniferous" class="era era-carboniferous">
+            <div class="era-banner">
+                <div class="era-banner-content">
+                    <h2>石炭紀〜ペルム紀</h2>
+                    <p class="era-time">約3億5900万〜2億5200万年前</p>
+                </div>
+            </div>
+
+            <div class="landscape-card">
+                <h3>巨大森林と巨大昆虫の時代</h3>
+                <p class="landscape-description">
+                    石炭紀、地球は前例のない緑の惑星となった。赤道付近の低地には、リンボク（リコポッド）、フウインボク、カラミテス（トクサの巨大版）が高さ30〜40mにも達する巨大森林を形成した。大気中の酸素濃度は35%にまで上昇し（現在は21%）、これが巨大節足動物を可能にした。翼長70cmのトンボ（メガネウラ）、体長2.6m超のヤスデ型節足動物（アースロプレウラ）が森の中を飛び、這い回った。ペルム紀になると気候が乾燥化し、爬虫類と単弓類（哺乳類型爬虫類）が繁栄を始めた。針葉樹やソテツ類も出現し、現代的な植物相への移行が始まった。
+                </p>
+
+                <div class="illustration-box" style="background: linear-gradient(to bottom, #6a8a6f 0%, #3d5941 40%, #2c4020 70%, #1e2e18 100%);">
+                    <svg width="600" height="350" viewBox="0 0 600 350" style="max-width: 100%; height: auto;">
+                        <!-- Massive trees (Lepidodendron) -->
+                        <g transform="translate(100, 50)">
+                            <rect x="-15" y="0" width="30" height="200" fill="#4a3a2a"/>
+                            <!-- Diamond pattern bark -->
+                            <pattern id="bark" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 10 0 L 0 10 L 10 20 L 20 10 Z" fill="none" stroke="#3a2a1a" stroke-width="1"/>
+                            </pattern>
+                            <rect x="-15" y="0" width="30" height="200" fill="url(#bark)" opacity="0.5"/>
+                            <!-- Top branches -->
+                            <path d="M 0 30 Q -30 20, -50 25 M 0 30 Q 30 20, 50 25 M 0 30 Q -20 10, -35 12 M 0 30 Q 20 10, 35 12" stroke="#5a7a4f" stroke-width="4" fill="none"/>
+                        </g>
+                        
+                        <g transform="translate(500, 80)">
+                            <rect x="-12" y="0" width="24" height="180" fill="#5a4a3a"/>
+                            <rect x="-12" y="0" width="24" height="180" fill="url(#bark)" opacity="0.5"/>
+                            <path d="M 0 40 Q -25 30, -40 35 M 0 40 Q 25 30, 40 35" stroke="#6a8a5f" stroke-width="3" fill="none"/>
+                        </g>
+                        
+                        <!-- Ferns on ground -->
+                        <g transform="translate(250, 280)">
+                            <path d="M 0 0 Q -20 -30, -25 -50 M 0 0 Q 20 -30, 25 -50 M 0 0 Q -10 -25, -12 -45 M 0 0 Q 10 -25, 12 -45" stroke="#4a7c59" stroke-width="2.5" fill="none"/>
+                        </g>
+                        
+                        <!-- Meganeura (giant dragonfly) -->
+                        <g transform="translate(350, 120)">
+                            <ellipse cx="0" cy="0" rx="30" ry="8" fill="#8b7355" opacity="0.8"/>
+                            <circle cx="-25" cy="0" r="6" fill="#3d2817"/>
+                            <!-- Wings -->
+                            <ellipse cx="-10" cy="-15" rx="35" ry="15" fill="rgba(200,200,200,0.3)" stroke="#6a5744" stroke-width="1"/>
+                            <ellipse cx="-10" cy="15" rx="35" ry="15" fill="rgba(200,200,200,0.3)" stroke="#6a5744" stroke-width="1"/>
+                            <ellipse cx="15" cy="-15" rx="35" ry="15" fill="rgba(200,200,200,0.3)" stroke="#6a5744" stroke-width="1"/>
+                            <ellipse cx="15" cy="15" rx="35" ry="15" fill="rgba(200,200,200,0.3)" stroke="#6a5744" stroke-width="1"/>
+                            <!-- Wing veins -->
+                            <line x1="-10" y1="-15" x2="-40" y2="-20" stroke="#6a5744" stroke-width="0.5"/>
+                            <line x1="-10" y1="-15" x2="-35" y2="-10" stroke="#6a5744" stroke-width="0.5"/>
+                        </g>
+                        
+                        <!-- Arthropleura (giant millipede) -->
+                        <g transform="translate(150, 290)">
+                            <path d="M 0 0 Q 30 -5, 60 0 Q 90 5, 120 0" stroke="#5a4a3a" stroke-width="12" fill="none"/>
+                            <!-- Segments -->
+                            <line x1="15" y1="-3" x2="15" y2="8" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="30" y1="-5" x2="30" y2="10" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="45" y1="-4" x2="45" y2="9" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="60" y1="-2" x2="60" y2="8" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="75" y1="-1" x2="75" y2="9" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="90" y1="2" x2="90" y2="10" stroke="#4a3a2a" stroke-width="3"/>
+                            <line x1="105" y1="1" x2="105" y2="9" stroke="#4a3a2a" stroke-width="3"/>
+                        </g>
+                        
+                        <!-- Early reptile (like Hylonomus) -->
+                        <g transform="translate(400, 300)">
+                            <ellipse cx="0" cy="0" rx="20" ry="8" fill="#6a8a5a" opacity="0.8"/>
+                            <circle cx="-15" cy="-3" r="5" fill="#5a7a4a"/>
+                            <circle cx="-18" cy="-5" r="2" fill="#2c2416"/>
+                            <path d="M -10 5 L -15 15 M 10 5 L 5 15" stroke="#6a8a5a" stroke-width="2"/>
+                            <path d="M 15 0 L 28 -2 L 30 0" stroke="#5a7a4a" stroke-width="2" fill="none"/>
+                        </g>
+                        
+                        <!-- Swamp water -->
+                        <ellipse cx="450" cy="320" rx="100" ry="20" fill="#3d5a4f" opacity="0.4"/>
+                    </svg>
+                    <div class="illustration-caption">石炭紀の森：巨大シダ木、メガネウラ、アースロプレウラ</div>
+                </div>
+
+                <div class="ecosystem-grid">
+                    <div class="ecosystem-zone">
+                        <h5>🌲 巨大森林の植物</h5>
+                        <ul class="organism-list">
+                            <li><strong>リンボク（レピドデンドロン）</strong> — 高さ40m、幹の直径2m</li>
+                            <li><strong>フウインボク（シギラリア）</strong> — 高さ30m、円柱状の幹</li>
+                            <li><strong>カラミテス</strong> — 巨大なトクサ類、高さ20m</li>
+                            <li><strong>シダ種子植物</strong> — 種子を持つシダ様植物</li>
+                            <li><strong>針葉樹（ペルム紀）</strong> — 最初の針葉樹が出現</li>
+                            <li><strong>ソテツ類（ペルム紀）</strong> — 裸子植物の多様化</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦋 巨大昆虫</h5>
+                        <ul class="organism-list">
+                            <li><strong>メガネウラ</strong> — 翼長70cm、史上最大のトンボ</li>
+                            <li><strong>アースロプレウラ</strong> — 体長2.6m超の巨大ヤスデ</li>
+                            <li><strong>巨大ゴキブリ</strong> — 体長15cm</li>
+                            <li><strong>原始的なバッタ類</strong> — 翅を持つ昆虫の多様化</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦎 両生類と爬虫類</h5>
+                        <ul class="organism-list">
+                            <li><strong>大型両生類</strong> — エリオプス（体長2m）など</li>
+                            <li><strong>ヒロノムス</strong> — 最古の爬虫類（石炭紀）</li>
+                            <li><strong>単弓類（ペルム紀）</strong> — ディメトロドン、ゴルゴノプスなど哺乳類型爬虫類</li>
+                            <li><strong>初期の双弓類</strong> — 現生爬虫類の祖先</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🌊 海洋生物</h5>
+                        <ul class="organism-list">
+                            <li><strong>サメ類</strong> — ヘリコプリオン（渦巻き歯）など奇妙な種</li>
+                            <li><strong>アンモナイト</strong> — 大繁栄期</li>
+                            <li><strong>腕足動物</strong> — 依然として優勢</li>
+                            <li><strong>ウミユリ</strong> — 「ウミユリの庭」を形成</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="key-features">
+                    <h3>この時代の特徴</h3>
+                    <ul>
+                        <li><strong>大気酸素濃度35%</strong> — 史上最高レベル、巨大昆虫を可能にした</li>
+                        <li><strong>石炭の形成</strong> — 巨大森林の遺骸が現在の石炭層に</li>
+                        <li><strong>パンゲア超大陸の形成</strong> — ペルム紀に全陸地が集結</li>
+                        <li><strong>爬虫類の進化</strong> — 羊膜卵の発明により陸上生活が完全に可能に</li>
+                        <li><strong>単弓類の繁栄</strong> — 哺乳類への道を歩み始める</li>
+                        <li><strong>P-T境界の大量絶滅</strong> — 地球史上最大の絶滅イベント（種の96%が絶滅）</li>
+                    </ul>
+                </div>
+
+                <p class="atmospheric-quote">
+                    酸素に満ちた空気の中、巨大な森が地平線まで続き、翼長70cmのトンボが空を支配していた。
+                </p>
+            </div>
+        </section>
+
+        <!-- TRIASSIC ERA -->
+        <section id="triassic" class="era era-triassic">
+            <div class="era-banner">
+                <div class="era-banner-content">
+                    <h2>三畳紀</h2>
+                    <p class="era-time">約2億5200万〜2億100万年前</p>
+                </div>
+            </div>
+
+            <div class="landscape-card">
+                <h3>絶滅からの回復：新しい支配者たちの登場</h3>
+                <p class="landscape-description">
+                    ペルム紀末の大絶滅から回復しつつある地球。陸上ではソテツ、イチョウ、針葉樹が優勢となり、乾燥した気候に適応していた。パンゲア超大陸の内陸部は広大な砂漠となり、海岸線には温暖な浅海が広がった。海では魚竜、首長竜、板歯類（プラコドゥス類）が繁栄し、新しい海洋生態系を形成した。陸上では、史上初の恐竜が出現した。エオラプトル、ヘレラサウルスなど、まだ小型の恐竜たちは、単弓類や主竜類と競合していた。また、最初の翼竜が空を飛び始め、哺乳類の祖先である小型の夜行性動物も誕生していた。
+                </p>
+
+                <div class="illustration-box" style="background: linear-gradient(to bottom, #c49563 0%, #a67c52 40%, #8b6844 70%, #4a6d7c 100%);">
+                    <svg width="600" height="350" viewBox="0 0 600 350" style="max-width: 100%; height: auto;">
+                        <!-- Desert landscape -->
+                        <path d="M 0 220 Q 100 210, 200 220 T 400 215 T 600 220" fill="#d4a373" opacity="0.6"/>
+                        <path d="M 0 240 Q 150 235, 300 240 T 600 238" fill="#c49563" opacity="0.5"/>
+                        
+                        <!-- Cycad/Bennettites -->
+                        <g transform="translate(120, 180)">
+                            <rect x="-6" y="0" width="12" height="50" fill="#6a5744"/>
+                            <path d="M 0 10 Q -20 0, -30 5 M 0 10 Q 20 0, 30 5 M 0 10 Q -15 -5, -25 0 M 0 10 Q 15 -5, 25 0" stroke="#5a8a4f" stroke-width="3" fill="none"/>
+                        </g>
+                        
+                        <!-- Conifer -->
+                        <g transform="translate(500, 160)">
+                            <path d="M 0 0 L -15 30 L 15 30 Z" fill="#4a6a3f" opacity="0.7"/>
+                            <path d="M 0 20 L -18 50 L 18 50 Z" fill="#4a7a4f" opacity="0.7"/>
+                            <path d="M 0 40 L -20 70 L 20 70 Z" fill="#5a8a5f" opacity="0.7"/>
+                            <rect x="-4" y="70" width="8" height="30" fill="#5a4a3a"/>
+                        </g>
+                        
+                        <!-- Ichthyosaur in water -->
+                        <g transform="translate(300, 300)">
+                            <ellipse cx="0" cy="0" rx="80" ry="20" fill="#5a8a9a" opacity="0.7"/>
+                            <circle cx="-60" cy="-5" r="12" fill="#4a7a8a"/>
+                            <circle cx="-68" cy="-8" r="4" fill="#2c2416"/>
+                            <!-- Dorsal fin -->
+                            <path d="M 0 -15 L -10 -35 L 10 -20 Z" fill="#4a7a8a" opacity="0.8"/>
+                            <!-- Tail -->
+                            <path d="M 70 0 L 100 -15 L 105 0 L 100 15 Z" fill="#5a8a9a" opacity="0.7"/>
+                            <!-- Flippers -->
+                            <path d="M -20 15 L -25 30" stroke="#4a7a8a" stroke-width="5"/>
+                            <path d="M 20 15 L 15 30" stroke="#4a7a8a" stroke-width="5"/>
+                        </g>
+                        
+                        <!-- Early dinosaur (Coelophysis-like) -->
+                        <g transform="translate(200, 230)">
+                            <ellipse cx="0" cy="0" rx="25" ry="12" fill="#8b6a4a" opacity="0.8"/>
+                            <circle cx="-20" cy="-5" r="8" fill="#7a5a3a"/>
+                            <circle cx="-25" cy="-8" r="3" fill="#2c2416"/>
+                            <!-- Neck -->
+                            <path d="M -20 -10 Q -30 -20, -35 -25" stroke="#8b6a4a" stroke-width="4" fill="none"/>
+                            <circle cx="-35" cy="-25" r="6" fill="#7a5a3a"/>
+                            <!-- Legs -->
+                            <path d="M -10 10 L -15 25 L -13 30" stroke="#8b6a4a" stroke-width="3" fill="none"/>
+                            <path d="M 10 10 L 5 25 L 7 30" stroke="#8b6a4a" stroke-width="3" fill="none"/>
+                            <!-- Tail -->
+                            <path d="M 25 0 Q 40 -5, 50 0" stroke="#8b6a4a" stroke-width="4" fill="none"/>
+                        </g>
+                        
+                        <!-- Pterosaur -->
+                        <g transform="translate(450, 100)">
+                            <ellipse cx="0" cy="0" rx="15" ry="6" fill="#7a6a5a" opacity="0.8"/>
+                            <circle cx="-12" cy="-2" r="5" fill="#6a5a4a"/>
+                            <!-- Crest -->
+                            <path d="M -15 -5 L -20 -12 L -12 -7" fill="#8a7a6a"/>
+                            <!-- Wings -->
+                            <path d="M -5 0 Q -30 -20, -50 -15" stroke="#8a7a6a" stroke-width="1.5" fill="rgba(200,180,160,0.3)"/>
+                            <path d="M 5 0 Q 30 -20, 50 -15" stroke="#8a7a6a" stroke-width="1.5" fill="rgba(200,180,160,0.3)"/>
+                            <path d="M -5 0 L -50 -15 L -5 -3 Z" fill="rgba(200,180,160,0.3)"/>
+                            <path d="M 5 0 L 50 -15 L 5 -3 Z" fill="rgba(200,180,160,0.3)"/>
+                        </g>
+                        
+                        <!-- Small mammal ancestor -->
+                        <g transform="translate(150, 245)">
+                            <ellipse cx="0" cy="0" rx="8" ry="5" fill="#5a4a3a" opacity="0.7"/>
+                            <circle cx="-6" cy="-2" r="3" fill="#4a3a2a"/>
+                            <line x1="5" y1="4" x2="10" y2="8" stroke="#5a4a3a" stroke-width="1.5"/>
+                        </g>
+                        
+                        <!-- Water -->
+                        <ellipse cx="300" cy="310" rx="250" ry="30" fill="#4a6d7c" opacity="0.4"/>
+                    </svg>
+                    <div class="illustration-caption">三畳紀の風景：魚竜、初期恐竜、翼竜、ソテツ</div>
+                </div>
+
+                <div class="ecosystem-grid">
+                    <div class="ecosystem-zone">
+                        <h5>🌴 陸上植物</h5>
+                        <ul class="organism-list">
+                            <li><strong>ソテツ類</strong> — 乾燥気候に適応した裸子植物</li>
+                            <li><strong>イチョウ類</strong> — 多様な種が存在</li>
+                            <li><strong>針葉樹</strong> — アラウカリア類など</li>
+                            <li><strong>ベネチテス類</strong> — ソテツに似た種子植物</li>
+                            <li><strong>シダ類</strong> — 湿潤な環境に残存</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦕 初期恐竜</h5>
+                        <ul class="organism-list">
+                            <li><strong>エオラプトル</strong> — 最古級の恐竜、体長1m</li>
+                            <li><strong>ヘレラサウルス</strong> — 初期獣脚類</li>
+                            <li><strong>プラテオサウルス</strong> — 初期竜脚形類、体長10m</li>
+                            <li><strong>コエロフィシス</strong> — 小型肉食恐竜</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦅 翼竜と哺乳類</h5>
+                        <ul class="organism-list">
+                            <li><strong>エウディモルフォドン</strong> — 最古級の翼竜</li>
+                            <li><strong>キノドン類</strong> — 哺乳類に近い単弓類</li>
+                            <li><strong>モルガヌコドン</strong> — 最初の真の哺乳類（三畳紀末）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🐋 海洋爬虫類</h5>
+                        <ul class="organism-list">
+                            <li><strong>魚竜（イクチオサウルス類）</strong> — イルカに似た体型</li>
+                            <li><strong>首長竜（ノトサウルス類）</strong> — 長い首を持つ捕食者</li>
+                            <li><strong>板歯類（プラコドゥス）</strong> — 貝を食べる爬虫類</li>
+                            <li><strong>真骨魚類</strong> — 現代魚類の祖先が出現</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="key-features">
+                    <h3>この時代の特徴</h3>
+                    <ul>
+                        <li><strong>大絶滅からの回復</strong> — 生態系が徐々に多様性を取り戻す</li>
+                        <li><strong>恐竜の出現</strong> — まだ小型で数も少ないが、後の支配者の誕生</li>
+                        <li><strong>哺乳類の起源</strong> — 小型の夜行性動物として進化開始</li>
+                        <li><strong>海洋爬虫類の繁栄</strong> — 魚竜と首長竜が海を支配</li>
+                        <li><strong>翼竜の出現</strong> — 脊椎動物で初めて空を飛ぶ</li>
+                        <li><strong>乾燥気候</strong> — パンゲア内陸部は広大な砂漠</li>
+                        <li><strong>三畳紀末の絶滅</strong> — 恐竜が生態系の主役へと躍進する契機</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- JURASSIC-CRETACEOUS ERA -->
+        <section id="jurassic" class="era era-jurassic">
+            <div class="era-banner">
+                <div class="era-banner-content">
+                    <h2>ジュラ紀〜白亜紀</h2>
+                    <p class="era-time">約2億100万〜6600万年前</p>
+                </div>
+            </div>
+
+            <div class="landscape-card">
+                <h3>恐竜の黄金時代と被子植物の革命</h3>
+                <p class="landscape-description">
+                    ジュラ紀、恐竜は地球の支配者となった。ブラキオサウルス、ディプロドクスなど巨大竜脚類が針葉樹やソテツの林の間を歩き、アロサウルスなどの獣脚類が狩りをした。空には翼竜が舞い、海には巨大な首長竜と魚竜が泳いだ。気候は温暖湿潤で、極地にも氷河はなかった。白亜紀中期（約1億2500万年前）、地球史を変える革命が起こった——被子植物（花を咲かせる植物）の出現である。白亜紀後期までに、被子植物は急速に多様化し、現代的な森林や草原を形成した。恐竜もこれに適応し、ハドロサウルス類、角竜類、ティラノサウルス類など多様化の極致に達した。鳥類が進化し、真社会性昆虫（アリ、シロアリ、ハチ）が出現し、送粉システムが確立した。
+                </p>
+
+                <div class="illustration-box" style="background: linear-gradient(to bottom, #87a7b3 0%, #6a9a7f 40%, #4a7c59 60%, #3d6a8f 100%);">
+                    <svg width="600" height="350" viewBox="0 0 600 350" style="max-width: 100%; height: auto;">
+                        <!-- Sky with pterosaurs -->
+                        <g transform="translate(150, 60)">
+                            <ellipse cx="0" cy="0" rx="20" ry="8" fill="#6a5a4a" opacity="0.6"/>
+                            <path d="M -8 0 L -40 -10 L -8 -3 Z" fill="rgba(200,180,160,0.3)"/>
+                            <path d="M 8 0 L 40 -10 L 8 -3 Z" fill="rgba(200,180,160,0.3)"/>
+                        </g>
+                        
+                        <!-- Sauropod (like Brachiosaurus) -->
+                        <g transform="translate(150, 200)">
+                            <ellipse cx="0" cy="0" rx="60" ry="35" fill="#7a9a6a" opacity="0.8"/>
+                            <!-- Neck -->
+                            <path d="M -30 -20 Q -50 -80, -45 -120" stroke="#7a9a6a" stroke-width="20" fill="none"/>
+                            <circle cx="-45" cy="-120" r="15" fill="#6a8a5a"/>
+                            <circle cx="-50" cy="-125" r="5" fill="#2c2416"/>
+                            <!-- Tail -->
+                            <path d="M 60 0 Q 100 10, 130 5" stroke="#7a9a6a" stroke-width="18" fill="none"/>
+                            <!-- Legs -->
+                            <rect x="-40" y="35" width="18" height="70" fill="#6a8a5a" rx="5"/>
+                            <rect x="-10" y="35" width="18" height="70" fill="#6a8a5a" rx="5"/>
+                            <rect x="20" y="35" width="18" height="70" fill="#6a8a5a" rx="5"/>
+                            <rect x="45" y="35" width="18" height="70" fill="#6a8a5a" rx="5"/>
+                        </g>
+                        
+                        <!-- Theropod (like Allosaurus) -->
+                        <g transform="translate(450, 260)">
+                            <ellipse cx="0" cy="0" rx="40" ry="20" fill="#8b6a4a" opacity="0.8"/>
+                            <circle cx="-35" cy="-10" r="12" fill="#7a5a3a"/>
+                            <circle cx="-42" cy="-14" r="4" fill="#2c2416"/>
+                            <!-- Jaw -->
+                            <path d="M -42 -8 L -50 -5" stroke="#7a5a3a" stroke-width="3"/>
+                            <!-- Neck -->
+                            <path d="M -30 -15 Q -35 -25, -38 -30" stroke="#8b6a4a" stroke-width="10" fill="none"/>
+                            <!-- Tail -->
+                            <path d="M 40 0 Q 70 -10, 90 -5" stroke="#8b6a4a" stroke-width="12" fill="none"/>
+                            <!-- Legs -->
+                            <path d="M -15 18 L -20 50 L -15 55" stroke="#8b6a4a" stroke-width="6" fill="none"/>
+                            <path d="M 15 18 L 10 50 L 15 55" stroke="#8b6a4a" stroke-width="6" fill="none"/>
+                            <!-- Arms -->
+                            <path d="M -25 -5 L -35 5" stroke="#8b6a4a" stroke-width="4" fill="none"/>
+                        </g>
+                        
+                        <!-- Flowering plant (Cretaceous) -->
+                        <g transform="translate(350, 280)">
+                            <rect x="-2" y="0" width="4" height="40" fill="#5a7a4f"/>
+                            <circle cx="0" cy="-5" r="8" fill="#e67e22" opacity="0.7"/>
+                            <circle cx="-6" cy="-3" r="6" fill="#e8b84d" opacity="0.7"/>
+                            <circle cx="6" cy="-3" r="6" fill="#e8b84d" opacity="0.7"/>
+                            <circle cx="0" cy="2" r="6" fill="#e8b84d" opacity="0.7"/>
+                            <!-- Leaves -->
+                            <ellipse cx="-10" cy="15" rx="8" ry="12" fill="#5a8a5f" opacity="0.7"/>
+                            <ellipse cx="10" cy="15" rx="8" ry="12" fill="#5a8a5f" opacity="0.7"/>
+                        </g>
+                        
+                        <!-- Conifer tree -->
+                        <g transform="translate(80, 140)">
+                            <path d="M 0 0 L -20 40 L 20 40 Z" fill="#4a6a3f" opacity="0.7"/>
+                            <path d="M 0 25 L -25 65 L 25 65 Z" fill="#4a7a4f" opacity="0.7"/>
+                            <path d="M 0 50 L -30 90 L 30 90 Z" fill="#5a8a5f" opacity="0.7"/>
+                            <rect x="-5" y="90" width="10" height="50" fill="#5a4a3a"/>
+                        </g>
+                        
+                        <!-- Bee/pollinator -->
+                        <g transform="translate(370, 250)">
+                            <ellipse cx="0" cy="0" rx="6" ry="3" fill="#d4a574" opacity="0.7"/>
+                            <ellipse cx="-3" cy="-2" rx="4" ry="2" fill="rgba(200,200,200,0.4)"/>
+                            <ellipse cx="3" cy="-2" rx="4" ry="2" fill="rgba(200,200,200,0.4)"/>
+                        </g>
+                        
+                        <!-- Plesiosaur in water -->
+                        <g transform="translate(500, 320)">
+                            <ellipse cx="0" cy="0" rx="50" ry="15" fill="#5a8a9a" opacity="0.6"/>
+                            <!-- Long neck -->
+                            <path d="M -30 -10 Q -40 -30, -42 -50" stroke="#5a8a9a" stroke-width="8" fill="none" opacity="0.6"/>
+                            <circle cx="-42" cy="-50" r="8" fill="#4a7a8a" opacity="0.6"/>
+                            <!-- Flippers -->
+                            <ellipse cx="-15" cy="12" rx="20" ry="8" fill="#4a7a8a" opacity="0.5" transform="rotate(30 -15 12)"/>
+                            <ellipse cx="15" cy="12" rx="20" ry="8" fill="#4a7a8a" opacity="0.5" transform="rotate(-30 15 12)"/>
+                        </g>
+                        
+                        <!-- Water surface -->
+                        <line x1="0" y1="310" x2="600" y2="310" stroke="#3d6a8f" stroke-width="2" opacity="0.3"/>
+                    </svg>
+                    <div class="illustration-caption">白亜紀の風景：竜脚類、獣脚類、翼竜、被子植物、首長竜</div>
+                </div>
+
+                <div class="ecosystem-grid">
+                    <div class="ecosystem-zone">
+                        <h5>🌸 植物の革命</h5>
+                        <ul class="organism-list">
+                            <li><strong>被子植物</strong> — 白亜紀中期に出現、急速に多様化</li>
+                            <li><strong>モクレン類</strong> — 最古級の被子植物</li>
+                            <li><strong>ヤシ類、イチジク類</strong> — 白亜紀後期</li>
+                            <li><strong>針葉樹</strong> — 依然として優勢（ジュラ紀）</li>
+                            <li><strong>ソテツ類</strong> — ジュラ紀に最盛期</li>
+                            <li><strong>イチョウ類</strong> — 多様な種が存在</li>
+                            <li><strong>シダ類</strong> — 林床を覆う</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦕 恐竜の多様性</h5>
+                        <ul class="organism-list">
+                            <li><strong>竜脚類</strong> — ブラキオサウルス（25m）、アルゼンチノサウルス（35m超）</li>
+                            <li><strong>獣脚類</strong> — アロサウルス、ティラノサウルス、ヴェロキラプトル</li>
+                            <li><strong>鳥脚類</strong> — イグアノドン、ハドロサウルス類</li>
+                            <li><strong>角竜類</strong> — トリケラトプス（白亜紀後期）</li>
+                            <li><strong>剣竜類</strong> — ステゴサウルス（ジュラ紀）</li>
+                            <li><strong>鎧竜類</strong> — アンキロサウルス（白亜紀）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🦅 翼竜と鳥類</h5>
+                        <ul class="organism-list">
+                            <li><strong>プテラノドン</strong> — 翼長7m（白亜紀）</li>
+                            <li><strong>ケツァルコアトルス</strong> — 翼長10m超、史上最大の飛行動物</li>
+                            <li><strong>始祖鳥</strong> — 最古の鳥類（ジュラ紀後期）</li>
+                            <li><strong>ヘスペロルニス</strong> — 潜水性の鳥（白亜紀）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🐋 海洋爬虫類</h5>
+                        <ul class="organism-list">
+                            <li><strong>魚竜</strong> — ジュラ紀に最盛期（白亜紀前期に絶滅）</li>
+                            <li><strong>首長竜</strong> — エラスモサウルス、プリオサウルス</li>
+                            <li><strong>モササウルス類</strong> — 巨大な海棲トカゲ（白亜紀後期）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="ecosystem-zone">
+                        <h5>🐝 昆虫と哺乳類</h5>
+                        <ul class="organism-list">
+                            <li><strong>真社会性昆虫</strong> — アリ、シロアリ、ハチが出現</li>
+                            <li><strong>チョウとガ</strong> — 被子植物と共進化</li>
+                            <li><strong>真骨魚類</strong> — 現代魚類の大繁栄</li>
+                            <li><strong>哺乳類</strong> — 小型で夜行性、多様化開始</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="key-features">
+                    <h3>この時代の特徴</h3>
+                    <ul>
+                        <li><strong>恐竜の全盛期</strong> — 史上最大の陸上動物が地球を支配</li>
+                        <li><strong>被子植物の出現と急速な多様化</strong> — 白亜紀中期〜後期、地球の植生が一変</li>
+                        <li><strong>昆虫-植物の共進化</strong> — 送粉システムの確立、真社会性昆虫の出現</li>
+                        <li><strong>鳥類の進化</strong> — 獣脚類恐竜から進化、多様化</li>
+                        <li><strong>温暖な気候</strong> — 極地に氷河なし、海面は現在より高い</li>
+                        <li><strong>大陸の分裂</strong> — パンゲアが分裂し、現代的な大陸配置へ</li>
+                        <li><strong>K-Pg境界の大量絶滅</strong> — 6600万年前の小惑星衝突、非鳥類型恐竜の絶滅</li>
+                    </ul>
+                </div>
+
+                <p class="atmospheric-quote">
+                    花々が咲き乱れる森で、ティラノサウルスが吠え、翼竜が空を舞い、海ではモササウルスが泳ぐ——これが恐竜時代の頂点だった。
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <!-- References Section -->
+    <section style="background: white; padding: 4rem 2rem; margin: 6rem auto 0; max-width: 1400px; border-radius: 16px; box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--ocean-deep); text-align: center; margin-bottom: 3rem; font-weight: 700;">参考文献</h2>
+            
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">カンブリア紀〜オルドビス紀</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Vannier J, Vidal M, Marchant R, et al.</strong> (2019). Collective behaviour in 480-million-year-old trilobite arthropods from Morocco. <em>Scientific Reports</em> 9: 14941. DOI: <a href="https://doi.org/10.1038/s41598-019-51012-3" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41598-019-51012-3</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Corrales-García A, Esteve J, Zhao Y, Yang X</strong> (2020). Synchronized moulting behaviour in trilobites from the Cambrian Series 2 of South China. <em>Scientific Reports</em> 10: 14193. DOI: <a href="https://doi.org/10.1038/s41598-020-70883-5" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41598-020-70883-5</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Zhang Z, et al.</strong> (2021). Fossil evidence unveils an early Cambrian origin for Bryozoa. <em>Nature</em> 599: 251-255. DOI: <a href="https://doi.org/10.1038/s41586-021-04033-w" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41586-021-04033-w</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Wood R, et al.</strong> (2022). Increases in reef size, habitat and metacommunity complexity associated with Cambrian radiation oxygenation pulses. <em>Nature Communications</em> 13: 7520. DOI: <a href="https://doi.org/10.1038/s41467-022-35283-5" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41467-022-35283-5</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Maletz J</strong> (2023). Benthic graptolites (Graptolithina, Pterobranchia) in the Miaolingian (Cambrian Series 3). <em>Palaeobiodiversity and Palaeoenvironments</em> 104: 47-64. DOI: <a href="https://doi.org/10.1007/s12549-023-00595-x" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1007/s12549-023-00595-x</a></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">シルル紀〜デボン紀</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Jung J, et al.</strong> (2024). Coral photosymbiosis on Mid-Devonian reefs. <em>Nature</em> 634: 895-899. DOI: <a href="https://doi.org/10.1038/s41586-024-08101-9" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41586-024-08101-9</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Ezaki Y, et al.</strong> (2024). Stromatoporoids survived the end-Devonian extinction and reef formation continued in the Carboniferous. <em>Geology</em> 52: 707-711. DOI: <a href="https://doi.org/10.1130/G52141.1" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1130/G52141.1</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Jeon J, et al.</strong> (2025). Phosphatic stromatoporoid sponges formed reefs ~480 Mya. <em>Proceedings of the National Academy of Sciences</em> 122: e2426105122. DOI: <a href="https://doi.org/10.1073/pnas.2426105122" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1073/pnas.2426105122</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Strullu-Derrien C, et al.</strong> (2018). The origin and evolution of mycorrhizal symbioses: from palaeomycology to phylogenomics. <em>New Phytologist</em> 220: 1012-1030. DOI: <a href="https://doi.org/10.1111/nph.15076" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1111/nph.15076</a></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">石炭紀〜ペルム紀</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Knecht RJ, et al.</strong> (2024). Early Pennsylvanian Lagerstätte reveals a diverse ecosystem. <em>Nature Communications</em> 15: 8279. DOI: <a href="https://doi.org/10.1038/s41467-024-52181-0" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41467-024-52181-0</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Garwood R, et al.</strong> (2024). Head anatomy and phylogenomics show the Carboniferous giant Arthropleura belonged to a millipede-centipede group. <em>Science Advances</em> 10: eadp6362. DOI: <a href="https://doi.org/10.1126/sciadv.adp6362" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1126/sciadv.adp6362</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Prevec R, et al.</strong> (2022). South African Lagerstätte reveals middle Permian Gondwanan lakeshore ecosystem. <em>Communications Biology</em> 5: 1269. DOI: <a href="https://doi.org/10.1038/s42003-022-04132-y" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s42003-022-04132-y</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Huang Y, et al.</strong> (2023). The stability and collapse of marine ecosystems during the Permian-Triassic mass extinction. <em>Current Biology</em> 33: 1-11. DOI: <a href="https://doi.org/10.1016/j.cub.2023.01.032" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1016/j.cub.2023.01.032</a></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">三畳紀</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Kelley NP, et al.</strong> (2022). Grouping behavior in a Triassic marine apex predator. <em>Current Biology</em> 32: 5398-5405. DOI: <a href="https://doi.org/10.1016/j.cub.2022.11.005" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1016/j.cub.2022.11.005</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Moon BC, Stubbs TL</strong> (2020). Early high rates and disparity in the evolution of ichthyosaurs. <em>Communications Biology</em> 3: 68. DOI: <a href="https://doi.org/10.1038/s42003-020-0779-6" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s42003-020-0779-6</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Wang X, et al.</strong> (2017). Egg accumulation with 3D embryos provides insight into the life history of a pterosaur. <em>Science</em> 358: 1197-1201. DOI: <a href="https://doi.org/10.1126/science.aan2329" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1126/science.aan2329</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Manzig PC, et al.</strong> (2014). Discovery of a Rare Pterosaur Bone Bed in a Cretaceous Desert. <em>PLoS ONE</em> 9: e100005. DOI: <a href="https://doi.org/10.1371/journal.pone.0100005" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1371/journal.pone.0100005</a></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">ジュラ紀〜白亜紀</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Pol D, et al.</strong> (2021). Earliest evidence of herd-living and age segregation amongst dinosaurs. <em>Scientific Reports</em> 11: 20003. DOI: <a href="https://doi.org/10.1038/s41598-021-99176-1" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41598-021-99176-1</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Bell PR, et al.</strong> (2025). A ceratopsid-dominated tracksite from the Dinosaur Park Formation. <em>PLOS ONE</em> 20: e0324913. DOI: <a href="https://doi.org/10.1371/journal.pone.0324913" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1371/journal.pone.0324913</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Bi S, et al.</strong> (2021). An oviraptorid preserved atop an embryo-bearing egg clutch sheds light on the reproductive biology of non-avialan theropod dinosaurs. <em>Science Bulletin</em> 66: 947-954. DOI: <a href="https://doi.org/10.1016/j.scib.2020.12.018" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1016/j.scib.2020.12.018</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Titus AL, et al.</strong> (2021). Geology and taphonomy of a unique tyrannosaurid bonebed from the upper Campanian Kaiparowits Formation. <em>PeerJ</em> 9: e11013. DOI: <a href="https://doi.org/10.7717/peerj.11013" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.7717/peerj.11013</a></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 4rem;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--forest-dark); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--amber-glow);">社会性昆虫と植物共生</h3>
+                
+                <div style="margin-bottom: 1.5rem; padding-left: 2rem; text-indent: -2rem; line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong>Chouvenc T, et al.</strong> (2021). Termite evolution: mutualistic associations, key innovations, and the rise of Termitidae. <em>Cellular and Molecular Life Sciences</em> 78: 2749-2769. DOI: <a href="https://doi.org/10.1007/s00018-020-03728-z" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1007/s00018-020-03728-z</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Boudinot BE, et al.</strong> (2022). Evidence for the evolution of eusociality in stem ants and a systematic revision of †Gerontoformica. <em>Zoological Journal of the Linnean Society</em> 195: 1355-1389. DOI: <a href="https://doi.org/10.1093/zoolinnean/zlab097" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1093/zoolinnean/zlab097</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Almeida EA, et al.</strong> (2023). The evolutionary history of bees in time and space. <em>Current Biology</em> 33: 3409-3422. DOI: <a href="https://doi.org/10.1016/j.cub.2023.07.005" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1016/j.cub.2023.07.005</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Peris D, Condamine FL</strong> (2024). The angiosperm radiation played a dual role in the diversification of insects and insect pollinators. <em>Nature Communications</em> 15: 562. DOI: <a href="https://doi.org/10.1038/s41467-024-44784-4" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1038/s41467-024-44784-4</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Khramov AV, et al.</strong> (2022). Possible long-proboscid insect pollinators from the Early Permian of Russia. <em>Current Biology</em> 32: R880-R881. DOI: <a href="https://doi.org/10.1016/j.cub.2022.06.085" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1016/j.cub.2022.06.085</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Khramov AV, et al.</strong> (2023). The earliest pollen-loaded insects from the Lower Permian of Russia. <em>Biology Letters</em> 19: 20220523. DOI: <a href="https://doi.org/10.1098/rsbl.2022.0523" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1098/rsbl.2022.0523</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Bao T, et al.</strong> (2019). Pollination of Cretaceous flowers. <em>Proceedings of the National Academy of Sciences</em> 116: 24707-24711. DOI: <a href="https://doi.org/10.1073/pnas.1916186116" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1073/pnas.1916186116</a></p>
+                    
+                    <p style="margin-bottom: 1rem;"><strong>Strullu-Derrien C, et al.</strong> (2025). An arbuscular mycorrhiza from the 407-million-year-old Windyfield Chert. <em>New Phytologist</em> 245: 430-443. DOI: <a href="https://doi.org/10.1111/nph.70655" target="_blank" style="color: var(--ocean-mid); text-decoration: none; border-bottom: 1px solid var(--ocean-mid);">10.1111/nph.70655</a></p>
+                </div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(139, 115, 85, 0.05) 100%); padding: 2rem; border-radius: 8px; border-left: 4px solid var(--amber-glow); margin-top: 3rem;">
+                <p style="font-size: 0.95rem; line-height: 1.7; color: #2c2c2c;"><strong>注記：</strong>本ドキュメントに掲載された研究は、2020〜2025年に発表された査読付き学術論文を中心に選定されています。各研究のDOI（Digital Object Identifier）から原著論文にアクセスできます。生態系の復元は、これらの研究成果と古生物学・古環境学の知見を総合して行われています。</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>本ドキュメントは、2020〜2025年の最新の古生物学研究に基づき、各地質時代の生態系と風景を再構成したものです。</p>
+        <p>化石記録から復元された失われた世界——それは、私たちの想像をはるかに超える多様性と美しさに満ちていました。</p>
+        <p style="margin-top: 2rem; font-size: 0.9rem;">※イラストは概念図であり、科学的正確性よりも雰囲気の再現を優先しています。</p>
+    </footer>
+</body>
+</html>

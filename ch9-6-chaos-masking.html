@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>9.6 カオス同期によるプライベート通信</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.1em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.82em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; margin-bottom: 6px; }
+.controls { width: 100%; max-width: 440px; margin-top: 8px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 120px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.legend {
+  font-size: 0.75em; color: #aaa; margin-top: 6px;
+  line-height: 1.4;
+}
+</style>
+</head>
+<body>
+<h1>Cuomo-Oppenheim 同期スキーム</h1>
+<div class="note">
+送信側で Lorenz (x, y, z) を生成。メッセージ m(t) を x(t) に加算して
+s(t) = x(t) + m(t) を送信。受信側は s(t) で駆動される Lorenz を解き、
+x_r(t) を取り出す。誤差 e(t) = x(t) - x_r(t) は Lyapunov 関数で減衰し、
+m(t) ≈ s(t) - x_r(t) として復元できる。
+</div>
+
+<canvas id="sig" width="340" height="220"></canvas>
+<canvas id="err" width="340" height="100"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>メッセージ周波数</span><span id="fv">0.50</span></label>
+    <input type="range" id="fs" min="0.1" max="3" step="0.05" value="0.5">
+  </div>
+  <div class="slider-box">
+    <label><span>メッセージ振幅</span><span id="av">1.00</span></label>
+    <input type="range" id="as" min="0.1" max="5" step="0.1" value="1.0">
+  </div>
+  <div class="slider-box">
+    <label><span>メッセージ種類</span><span id="tv">正弦波</span></label>
+    <input type="range" id="ts" min="0" max="3" step="1" value="0">
+  </div>
+  <div class="buttons">
+    <button id="reset">リセット</button>
+    <button id="wrong">受信器を壊す</button>
+  </div>
+  <div class="status">
+    <div>送信信号 s(t) = x(t) + m(t)</div>
+    <div>誤差 ||e|| = <span id="ev">0.000</span></div>
+    <div>復元信号 m_rec = s - x_r</div>
+  </div>
+  <div class="legend">
+    青: オリジナル m(t) &nbsp;|&nbsp; 灰: 送信 s(t) (カオスでマスク済み)<br>
+    赤: 復元 m_rec(t) &nbsp;|&nbsp; 下段: 同期誤差
+  </div>
+</div>
+
+<script>
+const sigC = document.getElementById('sig');
+const errC = document.getElementById('err');
+const sCtx = sigC.getContext('2d');
+const eCtx = errC.getContext('2d');
+
+const sigma = 10, b = 8/3, r = 28;
+let tx = [0.1, 0, 0];        // 送信側
+let rx = [0.0, 0, 0];        // 受信側
+let t = 0;
+let broken = false;
+
+let msgFreq = 0.5;
+let msgAmp = 1.0;
+let msgType = 0;  // 0: sin, 1: square, 2: triangle, 3: speech-like
+const typeNames = ['正弦波', '矩形波', '三角波', '音声風'];
+
+const history = [];  // {m, s, mr, t, err}
+const maxHistory = 500;
+
+function msg(t) {
+  const x = 2*Math.PI*msgFreq*t;
+  switch (msgType) {
+    case 0: return msgAmp * Math.sin(x);
+    case 1: return msgAmp * Math.sign(Math.sin(x));
+    case 2: return msgAmp * (2/Math.PI) * Math.asin(Math.sin(x));
+    case 3: return msgAmp * (Math.sin(x) * 0.6 + Math.sin(3*x) * 0.3 + Math.sin(5*x) * 0.1);
+  }
+  return 0;
+}
+
+function stepTx(dt) {
+  const [x, y, z] = tx;
+  tx = [
+    x + sigma*(y-x)*dt,
+    y + (r*x - y - x*z)*dt,
+    z + (x*y - b*z)*dt
+  ];
+}
+function stepRx(dt, driveX) {
+  // Cuomo-Oppenheim 受信側: y, z 方程式の x を駆動信号 s に置き換える。
+  // x_r は自身のダイナミクス dx_r/dt = σ(y_r - x_r) を持つ。
+  // これにより e = (x-x_r, y-y_r, z-z_r) → 0 (Lyapunov 関数で証明される、例題 9.6.1)。
+  const [x, y, z] = rx;
+  if (!broken) {
+    rx = [
+      x + sigma * (y - x) * dt,                    // x_r 独自のダイナミクス
+      y + (r * driveX - y - driveX * z) * dt,      // y_r は s=driveX で駆動
+      z + (driveX * y - b * z) * dt                // z_r も s=driveX で駆動
+    ];
+  } else {
+    // 壊した場合: 受信側が独自に Lorenz を解く (同期しない)
+    rx = [
+      x + sigma * (y - x) * dt,
+      y + (r * x - y - x * z) * dt,
+      z + (x * y - b * z) * dt
+    ];
+  }
+}
+
+function reset() {
+  tx = [0.1, 0, 0];
+  rx = [broken ? 0.0 : 0.1, 0, 0];
+  t = 0;
+  history.length = 0;
+}
+
+function draw() {
+  const dt = 0.008;
+  for (let k = 0; k < 4; k++) {
+    const m = msg(t);
+    const s = tx[0] + m;
+    stepTx(dt);
+    stepRx(dt, s);
+    const mr = s - rx[0];
+    const err = Math.hypot(tx[0]-rx[0], tx[1]-rx[1], tx[2]-rx[2]);
+    history.push({t, m, s, mr, err});
+    t += dt;
+  }
+  while (history.length > maxHistory) history.shift();
+
+  // 信号描画
+  const W = sigC.width, H = sigC.height;
+  sCtx.fillStyle = '#0f1a2e';
+  sCtx.fillRect(0, 0, W, H);
+  sCtx.strokeStyle = '#333';
+  sCtx.beginPath();
+  sCtx.moveTo(0, H/2); sCtx.lineTo(W, H/2);
+  sCtx.stroke();
+
+  let vmax = Math.max(msgAmp*2, 25);  // s は ~ ±20 の範囲を取る
+  // オリジナル m
+  sCtx.strokeStyle = '#4fc3f7';
+  sCtx.lineWidth = 1.2;
+  sCtx.beginPath();
+  history.forEach((h, i) => {
+    const x = i * W / maxHistory;
+    const y = H/2 - h.m / vmax * (H/2 - 3);
+    if (i === 0) sCtx.moveTo(x, y); else sCtx.lineTo(x, y);
+  });
+  sCtx.stroke();
+
+  // 送信 s
+  sCtx.strokeStyle = 'rgba(170, 170, 170, 0.5)';
+  sCtx.lineWidth = 0.6;
+  sCtx.beginPath();
+  history.forEach((h, i) => {
+    const x = i * W / maxHistory;
+    const y = H/2 - h.s / vmax * (H/2 - 3);
+    if (i === 0) sCtx.moveTo(x, y); else sCtx.lineTo(x, y);
+  });
+  sCtx.stroke();
+
+  // 復元 mr
+  sCtx.strokeStyle = '#e74c3c';
+  sCtx.lineWidth = 1;
+  sCtx.beginPath();
+  history.forEach((h, i) => {
+    const x = i * W / maxHistory;
+    const y = H/2 - h.mr / vmax * (H/2 - 3);
+    if (i === 0) sCtx.moveTo(x, y); else sCtx.lineTo(x, y);
+  });
+  sCtx.stroke();
+
+  sCtx.fillStyle = '#888';
+  sCtx.font = '10px sans-serif';
+  sCtx.fillText('信号', 4, 12);
+
+  // 誤差
+  const W2 = errC.width, H2 = errC.height;
+  eCtx.fillStyle = '#0f1a2e';
+  eCtx.fillRect(0, 0, W2, H2);
+  let emax = 0.1;
+  for (const h of history) if (h.err > emax) emax = h.err;
+  emax = Math.max(emax, 1);
+  eCtx.strokeStyle = '#f39c12';
+  eCtx.lineWidth = 1;
+  eCtx.beginPath();
+  history.forEach((h, i) => {
+    const x = i * W2 / maxHistory;
+    const y = H2 - 5 - h.err / emax * (H2 - 12);
+    if (i === 0) eCtx.moveTo(x, y); else eCtx.lineTo(x, y);
+  });
+  eCtx.stroke();
+  eCtx.fillStyle = '#888';
+  eCtx.font = '10px sans-serif';
+  eCtx.fillText('同期誤差 (対数スケールではない)', 4, 12);
+
+  if (history.length > 0) {
+    document.getElementById('ev').textContent = history[history.length-1].err.toFixed(3);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('fs').addEventListener('input', e => {
+  msgFreq = parseFloat(e.target.value);
+  document.getElementById('fv').textContent = msgFreq.toFixed(2);
+});
+document.getElementById('as').addEventListener('input', e => {
+  msgAmp = parseFloat(e.target.value);
+  document.getElementById('av').textContent = msgAmp.toFixed(2);
+});
+document.getElementById('ts').addEventListener('input', e => {
+  msgType = parseInt(e.target.value);
+  document.getElementById('tv').textContent = typeNames[msgType];
+});
+document.getElementById('reset').addEventListener('click', () => {
+  broken = false;
+  document.getElementById('wrong').classList.remove('active');
+  reset();
+});
+document.getElementById('wrong').addEventListener('click', function() {
+  broken = !broken;
+  this.classList.toggle('active');
+  reset();
+});
+
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strogatz 8.6節：結合振動子と準周期性</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        h3 {
+            font-size: 1em;
+            color: #4fc3f7;
+            margin: 15px 0 8px 0;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+            overflow-x: auto;
+        }
+        .equation-box .main-eq {
+            font-size: 1.2em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .param-list {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        .param-list li {
+            margin: 5px 0;
+            list-style: none;
+        }
+        .param-list li::before {
+            content: "•";
+            color: #4fc3f7;
+            margin-right: 8px;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .info-item .label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-item .value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            margin-top: 3px;
+        }
+        .regime-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .regime-lock { background: #2e7d32; }
+        .regime-quasi { background: #f57c00; }
+        .regime-periodic { background: #1976d2; }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #0f3460;
+        }
+        .comparison-table th {
+            background: #0f3460;
+            color: #4fc3f7;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: rgba(15, 52, 96, 0.3);
+        }
+        .note-box {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        button {
+            background: #4fc3f7;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin: 3px;
+        }
+        button:hover {
+            background: #81d4fa;
+        }
+        .button-row {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .knot-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .knot-btn {
+            padding: 5px 10px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Strogatz 8.6節：結合振動子と準周期性</h1>
+
+    <!-- Section 1: 導入 -->
+    <div class="section">
+        <h2>1. トーラス：新しい相空間</h2>
+        
+        <p>平面、円筒に続く第3の重要な相空間が<span class="highlight">トーラス（ドーナツ面）</span>。2つの角度変数 (θ₁, θ₂) を持つ系の自然な舞台。</p>
+        
+        <div class="equation-box">
+            <div>θ̇₁ = f₁(θ₁, θ₂)</div>
+            <div>θ̇₂ = f₂(θ₁, θ₂)</div>
+            <div style="font-size: 0.9em; margin-top: 8px;">f₁, f₂ は両変数について 2π 周期</div>
+        </div>
+        
+        <p>トーラスは正方形 [0, 2π] × [0, 2π] の対辺を貼り合わせたもの：</p>
+        <ul class="param-list">
+            <li>上辺と下辺を貼り合わせる → 円筒</li>
+            <li>円筒の両端を貼り合わせる → トーラス</li>
+        </ul>
+    </div>
+
+    <!-- Section 2: モデル方程式 -->
+    <div class="section">
+        <h2>2. 結合振動子のモデル</h2>
+        
+        <div class="equation-box">
+            <div class="main-eq">θ̇₁ = ω₁ + K₁ sin(θ₂ − θ₁)</div>
+            <div class="main-eq">θ̇₂ = ω₂ + K₂ sin(θ₁ − θ₂)</div>
+        </div>
+        
+        <h3>パラメータの意味</h3>
+        <ul class="param-list">
+            <li><strong>θ₁, θ₂</strong>：2つの振動子の位相</li>
+            <li><strong>ω₁, ω₂</strong>：自然振動数（結合がないときの速さ）</li>
+            <li><strong>K₁, K₂</strong>：結合強度（互いに引っ張り合う力）</li>
+        </ul>
+        
+        <h3>物理的イメージ</h3>
+        <p>円環状のトラックをジョギングする2人の友人：</p>
+        <ul class="param-list">
+            <li>ω₁, ω₂ = それぞれの自然なペース</li>
+            <li>K₁, K₂ = 友人を待ったり急いだりする傾向</li>
+        </ul>
+        
+        <div class="note-box">
+            <strong>応用例</strong>：概日リズムと睡眠覚醒サイクルの相互作用（Strogatz 1986, 1987）
+        </div>
+    </div>
+
+    <!-- Section 3: 結合なしの場合 -->
+    <div class="section">
+        <h2>3. 結合なしの場合 (K₁ = K₂ = 0)</h2>
+        
+        <div class="equation-box">
+            θ̇₁ = ω₁, &nbsp; θ̇₂ = ω₂
+        </div>
+        
+        <p>正方形上の軌道は傾き ω₂/ω₁ の直線。<span class="highlight">傾きが有理数か無理数か</span>で挙動が質的に異なる：</p>
+        
+        <table class="comparison-table">
+            <tr>
+                <th>ω₂/ω₁</th>
+                <th>軌道のタイプ</th>
+                <th>トーラス上での様子</th>
+            </tr>
+            <tr>
+                <td>有理数 p/q</td>
+                <td><span class="highlight">周期軌道</span></td>
+                <td>閉曲線（トーラス結び目）</td>
+            </tr>
+            <tr>
+                <td>無理数</td>
+                <td><span class="highlight">準周期軌道</span></td>
+                <td>閉じずに稠密に埋める</td>
+            </tr>
+        </table>
+        
+        <h3>トーラス結び目の例</h3>
+        <p>p:q = 3:2 のとき、軌道は<span class="highlight">三葉結び目 (trefoil knot)</span> を形成！</p>
+    </div>
+
+    <!-- Section 4: デモ1 - 結合なし -->
+    <div class="section">
+        <h2>4. デモ：結合なしの流れ</h2>
+        
+        <div class="controls">
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>ω₁（振動子1の速度）</span>
+                    <span class="slider-value" id="omega1Display">1.00</span>
+                </div>
+                <input type="range" id="omega1Slider" min="0.5" max="3" step="0.01" value="1.0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>ω₂（振動子2の速度）</span>
+                    <span class="slider-value" id="omega2Display">1.62</span>
+                </div>
+                <input type="range" id="omega2Slider" min="0.5" max="3" step="0.01" value="1.618">
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="label">回転数 ω₂/ω₁</div>
+                <div class="value" id="ratioDisplay">1.618</div>
+            </div>
+            <div class="info-item">
+                <div class="label">軌道タイプ</div>
+                <div class="value" id="orbitTypeDisplay">準周期</div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <span style="font-size: 0.9em; color: #81d4fa;">プリセット：</span>
+        </div>
+        <div class="knot-gallery">
+            <button class="knot-btn" onclick="setRatio(1, 1)">1:1</button>
+            <button class="knot-btn" onclick="setRatio(3, 2)">3:2</button>
+            <button class="knot-btn" onclick="setRatio(2, 1)">2:1</button>
+            <button class="knot-btn" onclick="setRatio(5, 3)">5:3</button>
+            <button class="knot-btn" onclick="setRatio(1.618, 1)">黄金比</button>
+            <button class="knot-btn" onclick="setRatio(Math.PI, 2)">π/2</button>
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="squareCanvas1" width="180" height="180"></canvas>
+                <div class="canvas-label">正方形（展開図）</div>
+            </div>
+            <div class="canvas-box">
+                <canvas id="torusCanvas1" width="180" height="180"></canvas>
+                <div class="canvas-label">トーラス（3D投影）</div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button onclick="resetDemo1()">リセット</button>
+            <button onclick="togglePause1()" id="pauseBtn1">一時停止</button>
+        </div>
+    </div>
+
+    <!-- Section 5: 結合ありの場合 -->
+    <div class="section">
+        <h2>5. 結合ありの場合：位相ロック</h2>
+        
+        <p>位相差 φ = θ₁ − θ₂ を考えると：</p>
+        
+        <div class="equation-box">
+            <div class="main-eq">φ̇ = (ω₁ − ω₂) − (K₁ + K₂) sin φ</div>
+        </div>
+        
+        <p>これは<span class="highlight">4.3節の非一様振動子</span>そのもの！</p>
+        
+        <h3>固定点の条件</h3>
+        <div class="equation-box">
+            sin φ* = (ω₁ − ω₂) / (K₁ + K₂)
+        </div>
+        
+        <ul class="param-list">
+            <li><strong>|ω₁ − ω₂| &lt; K₁ + K₂</strong>：固定点あり → <span class="highlight">位相ロック</span></li>
+            <li><strong>|ω₁ − ω₂| &gt; K₁ + K₂</strong>：固定点なし → 位相ドリフト（準周期）</li>
+            <li><strong>|ω₁ − ω₂| = K₁ + K₂</strong>：サドルノード分岐</li>
+        </ul>
+        
+        <h3>位相ロック時の妥協振動数</h3>
+        <div class="equation-box">
+            ω* = (K₁ω₂ + K₂ω₁) / (K₁ + K₂)
+        </div>
+        <p>2つの振動子は「妥協」して同じ振動数で進む。結合が強い方の振動数に引っ張られる。</p>
+    </div>
+
+    <!-- Section 6: デモ2 - 結合あり -->
+    <div class="section">
+        <h2>6. デモ：結合振動子</h2>
+        
+        <div class="controls">
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>ω₁（自然振動数1）</span>
+                    <span class="slider-value" id="omega1Display2">1.00</span>
+                </div>
+                <input type="range" id="omega1Slider2" min="0.5" max="2" step="0.01" value="1.0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>ω₂（自然振動数2）</span>
+                    <span class="slider-value" id="omega2Display2">1.50</span>
+                </div>
+                <input type="range" id="omega2Slider2" min="0.5" max="2" step="0.01" value="1.5">
+            </div>
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>K（結合強度、K₁ = K₂ = K）</span>
+                    <span class="slider-value" id="kDisplay2">0.30</span>
+                </div>
+                <input type="range" id="kSlider2" min="0" max="1" step="0.01" value="0.3">
+            </div>
+        </div>
+        
+        <div id="regimeIndicator2" class="regime-indicator regime-quasi">
+            準周期（位相ドリフト）
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="label">|ω₁ − ω₂|</div>
+                <div class="value" id="deltaOmegaDisplay">0.50</div>
+            </div>
+            <div class="info-item">
+                <div class="label">K₁ + K₂ = 2K</div>
+                <div class="value" id="totalKDisplay">0.60</div>
+            </div>
+            <div class="info-item">
+                <div class="label">位相差 φ</div>
+                <div class="value" id="phiDisplay">---</div>
+            </div>
+            <div class="info-item">
+                <div class="label">実効振動数</div>
+                <div class="value" id="effFreqDisplay">---</div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="squareCanvas2" width="180" height="180"></canvas>
+                <div class="canvas-label">トーラス展開図</div>
+            </div>
+            <div class="canvas-box">
+                <canvas id="phaseCanvas" width="180" height="180"></canvas>
+                <div class="canvas-label">位相差 φ の時間発展</div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="oscillatorCanvas" width="370" height="100"></canvas>
+                <div class="canvas-label">2つの振動子（円周上）</div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button onclick="resetDemo2()">リセット</button>
+            <button onclick="togglePause2()" id="pauseBtn2">一時停止</button>
+        </div>
+        
+        <div class="button-row">
+            <span style="font-size: 0.9em; color: #81d4fa;">プリセット：</span>
+            <button onclick="setPreset2('lock')">位相ロック</button>
+            <button onclick="setPreset2('drift')">位相ドリフト</button>
+            <button onclick="setPreset2('critical')">臨界点</button>
+        </div>
+    </div>
+
+    <!-- Section 7: まとめ -->
+    <div class="section">
+        <h2>7. まとめ：トーラス上の3つの挙動</h2>
+        
+        <table class="comparison-table">
+            <tr>
+                <th>条件</th>
+                <th>挙動</th>
+                <th>特徴</th>
+            </tr>
+            <tr>
+                <td>結合なし、有理数比</td>
+                <td>周期軌道</td>
+                <td>トーラス結び目</td>
+            </tr>
+            <tr>
+                <td>結合なし、無理数比</td>
+                <td>準周期</td>
+                <td>稠密、閉じない</td>
+            </tr>
+            <tr>
+                <td>結合あり、|Δω| &lt; ΣK</td>
+                <td>位相ロック</td>
+                <td>固定点に収束</td>
+            </tr>
+            <tr>
+                <td>結合あり、|Δω| &gt; ΣK</td>
+                <td>位相ドリフト</td>
+                <td>準周期的</td>
+            </tr>
+        </table>
+        
+        <div class="note-box">
+            <strong>次のステップ（カオスへ）</strong><br>
+            8.6節では2次元のトーラス上の流れ。これに<span class="highlight">外部周期駆動</span>や<span class="highlight">強い非線形性</span>を加えると、トーラスが崩壊してカオスが生まれる可能性がある。
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== Demo 1: Uncoupled oscillators =====
+    const squareCanvas1 = document.getElementById('squareCanvas1');
+    const torusCanvas1 = document.getElementById('torusCanvas1');
+    const sqCtx1 = squareCanvas1.getContext('2d');
+    const torCtx1 = torusCanvas1.getContext('2d');
+    
+    let omega1_1 = 1.0;
+    let omega2_1 = 1.618;
+    let theta1_1 = 0;
+    let theta2_1 = 0;
+    let trail1 = [];
+    const maxTrail1 = 500;
+    let paused1 = false;
+    
+    // ===== Demo 2: Coupled oscillators =====
+    const squareCanvas2 = document.getElementById('squareCanvas2');
+    const phaseCanvas = document.getElementById('phaseCanvas');
+    const oscillatorCanvas = document.getElementById('oscillatorCanvas');
+    const sqCtx2 = squareCanvas2.getContext('2d');
+    const phCtx = phaseCanvas.getContext('2d');
+    const oscCtx = oscillatorCanvas.getContext('2d');
+    
+    let omega1_2 = 1.0;
+    let omega2_2 = 1.5;
+    let K_2 = 0.3;
+    let theta1_2 = 0;
+    let theta2_2 = 0;
+    let trail2 = [];
+    let phiHistory = [];
+    const maxTrail2 = 500;
+    const maxPhiHistory = 200;
+    let paused2 = false;
+    
+    // Check if ratio is approximately rational
+    function isApproxRational(r, tolerance = 0.01) {
+        for (let q = 1; q <= 10; q++) {
+            for (let p = 1; p <= 30; p++) {
+                if (Math.abs(r - p/q) < tolerance) {
+                    return {isRational: true, p: p, q: q};
+                }
+            }
+        }
+        return {isRational: false};
+    }
+    
+    // Mod 2π
+    function mod2pi(x) {
+        return x - Math.floor(x / (2 * Math.PI)) * 2 * Math.PI;
+    }
+    
+    // Draw square (unfolded torus)
+    function drawSquare(ctx, canvas, trail, theta1, theta2) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const margin = 15;
+        const size = w - 2 * margin;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Grid
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const pos = margin + (i / 4) * size;
+            ctx.beginPath();
+            ctx.moveTo(pos, margin);
+            ctx.lineTo(pos, h - margin);
+            ctx.moveTo(margin, pos);
+            ctx.lineTo(w - margin, pos);
+            ctx.stroke();
+        }
+        
+        // Border
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(margin, margin, size, size);
+        
+        // Trail
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                const p = trail[i];
+                const prev = trail[i - 1];
+                
+                // Don't draw wrap-around lines
+                const dx = Math.abs(p.x - prev.x);
+                const dy = Math.abs(p.y - prev.y);
+                if (dx < size * 0.5 && dy < size * 0.5) {
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(p.x, p.y);
+                    ctx.strokeStyle = `rgba(46, 204, 113, ${alpha * 0.8})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // Current point
+        const x = margin + (mod2pi(theta1) / (2 * Math.PI)) * size;
+        const y = margin + (1 - mod2pi(theta2) / (2 * Math.PI)) * size;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ff5722';
+        ctx.fill();
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('θ₁', w - margin - 10, h - 3);
+        ctx.fillText('θ₂', 3, margin + 10);
+        ctx.fillText('0', margin - 5, h - margin + 12);
+        ctx.fillText('2π', w - margin - 12, h - margin + 12);
+        
+        return {x, y};
+    }
+    
+    // Draw torus (3D projection)
+    function drawTorus(ctx, canvas, trail, theta1, theta2) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const R = 50;  // Major radius
+        const r = 20;  // Minor radius
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Outer circle
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, R + r, (R + r) * 0.4, 0, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Inner circle
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, R - r, (R - r) * 0.4, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Project point on torus
+        function torusProject(th1, th2) {
+            const x3d = (R + r * Math.cos(th2)) * Math.cos(th1);
+            const y3d = (R + r * Math.cos(th2)) * Math.sin(th1);
+            const z3d = r * Math.sin(th2);
+            
+            const x2d = cx + x3d * 0.9 - y3d * 0.3;
+            const y2d = cy - z3d * 0.8 - y3d * 0.3;
+            return {x: x2d, y: y2d, z: z3d + y3d};
+        }
+        
+        // Draw trail on torus
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const p = torusProject(trail[i].theta1, trail[i].theta2);
+                const prev = torusProject(trail[i-1].theta1, trail[i-1].theta2);
+                const alpha = i / trail.length;
+                
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = `rgba(46, 204, 113, ${alpha * 0.7})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+        
+        // Current point
+        const current = torusProject(theta1, theta2);
+        ctx.beginPath();
+        ctx.arc(current.x, current.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ff5722';
+        ctx.fill();
+    }
+    
+    // Draw oscillators on circles
+    function drawOscillators(theta1, theta2) {
+        const ctx = oscCtx;
+        const w = oscillatorCanvas.width;
+        const h = oscillatorCanvas.height;
+        const r = 35;
+        const cx1 = w / 4;
+        const cx2 = 3 * w / 4;
+        const cy = h / 2;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Circle 1
+        ctx.beginPath();
+        ctx.arc(cx1, cy, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        const x1 = cx1 + r * Math.cos(theta1 - Math.PI/2);
+        const y1 = cy + r * Math.sin(theta1 - Math.PI/2);
+        ctx.beginPath();
+        ctx.arc(x1, y1, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fill();
+        
+        // Circle 2
+        ctx.beginPath();
+        ctx.arc(cx2, cy, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        const x2 = cx2 + r * Math.cos(theta2 - Math.PI/2);
+        const y2 = cy + r * Math.sin(theta2 - Math.PI/2);
+        ctx.beginPath();
+        ctx.arc(x2, y2, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ff9800';
+        ctx.fill();
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('振動子 1', cx1 - 25, h - 5);
+        ctx.fillText('振動子 2', cx2 - 25, h - 5);
+        
+        // Connection line
+        if (K_2 > 0) {
+            ctx.beginPath();
+            ctx.moveTo(cx1 + r + 10, cy);
+            ctx.lineTo(cx2 - r - 10, cy);
+            ctx.strokeStyle = `rgba(255, 152, 0, ${K_2})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+    
+    // Draw phase difference time series
+    function drawPhaseHistory() {
+        const ctx = phCtx;
+        const w = phaseCanvas.width;
+        const h = phaseCanvas.height;
+        const margin = 20;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Axes
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, h/2);
+        ctx.lineTo(w - 5, h/2);
+        ctx.moveTo(margin, 5);
+        ctx.lineTo(margin, h - 5);
+        ctx.stroke();
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('φ', 5, 15);
+        ctx.fillText('π', 5, h/4 + 3);
+        ctx.fillText('0', 5, h/2 + 3);
+        ctx.fillText('-π', 3, 3*h/4 + 3);
+        ctx.fillText('t', w - 12, h/2 - 5);
+        
+        // Reference lines
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(margin, h/4);
+        ctx.lineTo(w - 5, h/4);
+        ctx.moveTo(margin, 3*h/4);
+        ctx.lineTo(w - 5, 3*h/4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Plot
+        if (phiHistory.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 1.5;
+            
+            for (let i = 0; i < phiHistory.length; i++) {
+                const x = margin + (i / maxPhiHistory) * (w - margin - 5);
+                let phi = phiHistory[i];
+                while (phi > Math.PI) phi -= 2 * Math.PI;
+                while (phi < -Math.PI) phi += 2 * Math.PI;
+                const y = h/2 - (phi / Math.PI) * (h/2 - margin);
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+    }
+    
+    // Update Demo 1
+    function updateDemo1() {
+        if (paused1) return;
+        
+        const dt = 0.05;
+        theta1_1 += omega1_1 * dt;
+        theta2_1 += omega2_1 * dt;
+        
+        const margin = 15;
+        const size = squareCanvas1.width - 2 * margin;
+        const x = margin + (mod2pi(theta1_1) / (2 * Math.PI)) * size;
+        const y = margin + (1 - mod2pi(theta2_1) / (2 * Math.PI)) * size;
+        
+        trail1.push({x, y, theta1: theta1_1, theta2: theta2_1});
+        if (trail1.length > maxTrail1) trail1.shift();
+    }
+    
+    // Update Demo 2
+    function updateDemo2() {
+        if (paused2) return;
+        
+        const dt = 0.03;
+        const K1 = K_2;
+        const K2 = K_2;
+        
+        const dtheta1 = omega1_2 + K1 * Math.sin(theta2_2 - theta1_2);
+        const dtheta2 = omega2_2 + K2 * Math.sin(theta1_2 - theta2_2);
+        
+        theta1_2 += dtheta1 * dt;
+        theta2_2 += dtheta2 * dt;
+        
+        const margin = 15;
+        const size = squareCanvas2.width - 2 * margin;
+        const x = margin + (mod2pi(theta1_2) / (2 * Math.PI)) * size;
+        const y = margin + (1 - mod2pi(theta2_2) / (2 * Math.PI)) * size;
+        
+        trail2.push({x, y, theta1: theta1_2, theta2: theta2_2});
+        if (trail2.length > maxTrail2) trail2.shift();
+        
+        let phi = theta1_2 - theta2_2;
+        while (phi > Math.PI) phi -= 2 * Math.PI;
+        while (phi < -Math.PI) phi += 2 * Math.PI;
+        
+        phiHistory.push(phi);
+        if (phiHistory.length > maxPhiHistory) phiHistory.shift();
+    }
+    
+    // Main draw loop
+    function draw() {
+        // Demo 1
+        updateDemo1();
+        drawSquare(sqCtx1, squareCanvas1, trail1, theta1_1, theta2_1);
+        drawTorus(torCtx1, torusCanvas1, trail1, theta1_1, theta2_1);
+        
+        const ratio = omega2_1 / omega1_1;
+        document.getElementById('ratioDisplay').textContent = ratio.toFixed(3);
+        const ratCheck = isApproxRational(ratio);
+        if (ratCheck.isRational) {
+            document.getElementById('orbitTypeDisplay').textContent = `周期 (${ratCheck.p}:${ratCheck.q})`;
+            document.getElementById('orbitTypeDisplay').style.color = '#4caf50';
+        } else {
+            document.getElementById('orbitTypeDisplay').textContent = '準周期';
+            document.getElementById('orbitTypeDisplay').style.color = '#ff9800';
+        }
+        
+        // Demo 2
+        updateDemo2();
+        drawSquare(sqCtx2, squareCanvas2, trail2, theta1_2, theta2_2);
+        drawPhaseHistory();
+        drawOscillators(theta1_2, theta2_2);
+        
+        const deltaOmega = Math.abs(omega1_2 - omega2_2);
+        const totalK = 2 * K_2;
+        document.getElementById('deltaOmegaDisplay').textContent = deltaOmega.toFixed(2);
+        document.getElementById('totalKDisplay').textContent = totalK.toFixed(2);
+        
+        let phi = theta1_2 - theta2_2;
+        while (phi > Math.PI) phi -= 2 * Math.PI;
+        while (phi < -Math.PI) phi += 2 * Math.PI;
+        document.getElementById('phiDisplay').textContent = (phi / Math.PI).toFixed(2) + 'π';
+        
+        const indicator = document.getElementById('regimeIndicator2');
+        if (deltaOmega < totalK) {
+            indicator.className = 'regime-indicator regime-lock';
+            indicator.textContent = '位相ロック（同期）';
+            const effFreq = (K_2 * omega2_2 + K_2 * omega1_2) / totalK;
+            document.getElementById('effFreqDisplay').textContent = effFreq.toFixed(2);
+        } else if (Math.abs(deltaOmega - totalK) < 0.05) {
+            indicator.className = 'regime-indicator regime-periodic';
+            indicator.textContent = '臨界点（サドルノード分岐）';
+            document.getElementById('effFreqDisplay').textContent = '---';
+        } else {
+            indicator.className = 'regime-indicator regime-quasi';
+            indicator.textContent = '位相ドリフト（準周期）';
+            document.getElementById('effFreqDisplay').textContent = '---';
+        }
+        
+        requestAnimationFrame(draw);
+    }
+    
+    // Event listeners - Demo 1
+    document.getElementById('omega1Slider').addEventListener('input', (e) => {
+        omega1_1 = parseFloat(e.target.value);
+        document.getElementById('omega1Display').textContent = omega1_1.toFixed(2);
+    });
+    
+    document.getElementById('omega2Slider').addEventListener('input', (e) => {
+        omega2_1 = parseFloat(e.target.value);
+        document.getElementById('omega2Display').textContent = omega2_1.toFixed(2);
+    });
+    
+    // Event listeners - Demo 2
+    document.getElementById('omega1Slider2').addEventListener('input', (e) => {
+        omega1_2 = parseFloat(e.target.value);
+        document.getElementById('omega1Display2').textContent = omega1_2.toFixed(2);
+    });
+    
+    document.getElementById('omega2Slider2').addEventListener('input', (e) => {
+        omega2_2 = parseFloat(e.target.value);
+        document.getElementById('omega2Display2').textContent = omega2_2.toFixed(2);
+    });
+    
+    document.getElementById('kSlider2').addEventListener('input', (e) => {
+        K_2 = parseFloat(e.target.value);
+        document.getElementById('kDisplay2').textContent = K_2.toFixed(2);
+    });
+    
+    // Control functions
+    function setRatio(p, q) {
+        omega1_1 = 1.0;
+        omega2_1 = p / q;
+        document.getElementById('omega1Slider').value = omega1_1;
+        document.getElementById('omega2Slider').value = omega2_1;
+        document.getElementById('omega1Display').textContent = omega1_1.toFixed(2);
+        document.getElementById('omega2Display').textContent = omega2_1.toFixed(2);
+        resetDemo1();
+    }
+    
+    function resetDemo1() {
+        theta1_1 = 0;
+        theta2_1 = 0;
+        trail1 = [];
+    }
+    
+    function togglePause1() {
+        paused1 = !paused1;
+        document.getElementById('pauseBtn1').textContent = paused1 ? '再開' : '一時停止';
+    }
+    
+    function resetDemo2() {
+        theta1_2 = 0;
+        theta2_2 = Math.PI / 4;
+        trail2 = [];
+        phiHistory = [];
+    }
+    
+    function togglePause2() {
+        paused2 = !paused2;
+        document.getElementById('pauseBtn2').textContent = paused2 ? '再開' : '一時停止';
+    }
+    
+    function setPreset2(preset) {
+        if (preset === 'lock') {
+            omega1_2 = 1.0;
+            omega2_2 = 1.3;
+            K_2 = 0.5;
+        } else if (preset === 'drift') {
+            omega1_2 = 1.0;
+            omega2_2 = 1.8;
+            K_2 = 0.2;
+        } else if (preset === 'critical') {
+            omega1_2 = 1.0;
+            omega2_2 = 1.5;
+            K_2 = 0.25;
+        }
+        
+        document.getElementById('omega1Slider2').value = omega1_2;
+        document.getElementById('omega2Slider2').value = omega2_2;
+        document.getElementById('kSlider2').value = K_2;
+        document.getElementById('omega1Display2').textContent = omega1_2.toFixed(2);
+        document.getElementById('omega2Display2').textContent = omega2_2.toFixed(2);
+        document.getElementById('kDisplay2').textContent = K_2.toFixed(2);
+        
+        resetDemo2();
+    }
+    
+    // Start
+    draw();
+</script>
+
+</body>
+</html>

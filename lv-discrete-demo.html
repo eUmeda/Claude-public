@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>離散Lotka-Volterra：周期倍分岐からカオスへ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .equation-box .main-eq {
+            font-size: 1.15em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .status-box {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-fixed {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status-period2 {
+            background: #1e3a5f;
+            color: #4fc3f7;
+        }
+        .status-period4 {
+            background: #3a1e5f;
+            color: #ce93d8;
+        }
+        .status-chaos {
+            background: #5f1e1e;
+            color: #f44336;
+        }
+        .strogatz-box {
+            background: #0a2040;
+            border-left: 4px solid #4fc3f7;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .strogatz-label {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .chaos-box {
+            background: #4a1020;
+            border: 2px solid #f44336;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .chaos-title {
+            color: #f44336;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>離散Lotka-Volterra：カオスへの道</h1>
+
+        <div class="section">
+            <h2>離散化した被食-捕食モデル（Hassell-May型）</h2>
+            <div class="equation-box">
+                <div class="main-eq">
+                    x_{n+1} = x_n · exp(r(1 − x_n/K) − a·y_n)
+                </div>
+                <div style="margin-top: 8px;">
+                    y_{n+1} = y_n · exp(b·x_n − c)
+                </div>
+            </div>
+            <p>被食者に<span class="highlight">環境収容力 K</span>を導入。<span class="highlight">r を大きくすると周期倍分岐→カオス</span></p>
+        </div>
+
+        <div class="section">
+            <h2>アトラクター（相空間）</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="attractorCanvas" width="380" height="320"></canvas>
+                    <div class="canvas-label">xₙ vs yₙ</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>固定点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>周期軌道/カオス</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>成長率 r（分岐パラメータ）</span>
+                        <span class="slider-value" id="rDisplay">2.00</span>
+                    </div>
+                    <input type="range" id="rSlider" min="1.5" max="3.5" step="0.01" value="2.0">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="stepBtn">1ステップ</button>
+                <button class="btn btn-secondary" id="runBtn">実行/停止</button>
+            </div>
+
+            <div id="statusBox" class="status-box status-fixed">
+                固定点（安定）
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">現在 xₙ</div>
+                    <div class="info-value" id="xnDisplay">1.00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">現在 yₙ</div>
+                    <div class="info-value" id="ynDisplay">1.00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">反復回数 n</div>
+                    <div class="info-value" id="nDisplay">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>分岐図（r vs x）</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="bifurcationCanvas" width="380" height="200"></canvas>
+                    <div class="canvas-label">横軸：r、縦軸：アトラクターの x 値</div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="computeBifBtn">分岐図を計算</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>時系列</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="timeSeriesCanvas" width="380" height="150"></canvas>
+                    <div class="canvas-label">n vs xₙ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chaos-box">
+            <div class="chaos-title">周期倍分岐ルート（Feigenbaum）</div>
+            <p>r を増加させると：</p>
+            <ol style="margin-left: 20px; margin-top: 8px;">
+                <li><span class="highlight">固定点</span> → 安定な共存状態</li>
+                <li><span class="highlight">周期2</span> → 2年周期の個体数変動</li>
+                <li><span class="highlight">周期4</span> → 4年周期</li>
+                <li><span class="highlight">周期8, 16, 32...</span> → 周期倍分岐カスケード</li>
+                <li><span class="highlight">カオス</span> → 非周期的、予測不可能！</li>
+            </ol>
+            <p style="margin-top: 10px;"><strong>Feigenbaum定数 δ ≈ 4.669...</strong>：連続する分岐点の比が普遍定数に収束</p>
+        </div>
+
+        <div class="strogatz-box">
+            <div class="strogatz-label">Strogatz との接続</div>
+            <p style="margin-top: 8px;"><span class="highlight">10章</span>: 1次元写像と周期倍分岐</p>
+            <p><span class="highlight">10.3節</span>: ロジスティック写像（1次元版）</p>
+            <p><span class="highlight">10.6節</span>: Feigenbaum定数と普遍性</p>
+            <p><span class="highlight">8.7節</span>: ポアンカレ写像（連続系→離散系）</p>
+        </div>
+
+        <div class="section">
+            <h2>なぜ離散系でカオスが起きるのか？</h2>
+            <p><span class="highlight">Poincaré-Bendixson定理</span>は2次元<strong>連続系</strong>に適用される。</p>
+            <p>離散系（写像）ではこの制約がない：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>軌道が「自分自身を横切る」ことが可能</li>
+                <li>引き伸ばしと折りたたみが生じる</li>
+                <li>→ <span class="highlight">カオスが発生！</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const attractorCanvas = document.getElementById('attractorCanvas');
+        const attractorCtx = attractorCanvas.getContext('2d');
+        const bifurcationCanvas = document.getElementById('bifurcationCanvas');
+        const bifurcationCtx = bifurcationCanvas.getContext('2d');
+        const timeSeriesCanvas = document.getElementById('timeSeriesCanvas');
+        const timeSeriesCtx = timeSeriesCanvas.getContext('2d');
+
+        // Parameters
+        let r = 2.0;
+        const K = 3.0;  // 環境収容力（carrying capacity）
+        const a = 0.5;
+        const b = 0.5;
+        const c = 0.5;
+
+        // State
+        let x = 1.0, y = 1.0;
+        let orbit = [];
+        let timeSeries = [];
+        let n = 0;
+        let running = false;
+        let animationId = null;
+        let bifurcationData = null;
+
+        // UI elements
+        const rSlider = document.getElementById('rSlider');
+        const rDisplay = document.getElementById('rDisplay');
+        const statusBox = document.getElementById('statusBox');
+
+        // Phase space bounds
+        const xMin = 0, xMax = 4;
+        const yMin = 0, yMax = 3;
+
+        // Coordinate transforms
+        function toCanvasX(x) {
+            return 40 + (x - xMin) / (xMax - xMin) * (attractorCanvas.width - 60);
+        }
+        function toCanvasY(y) {
+            return 20 + (yMax - y) / (yMax - yMin) * (attractorCanvas.height - 50);
+        }
+
+        // Map iteration (with carrying capacity K)
+        function iterate(xn, yn) {
+            const xNew = xn * Math.exp(r * (1 - xn / K) - a * yn);
+            const yNew = yn * Math.exp(b * xn - c);
+            return { x: xNew, y: yNew };
+        }
+
+        // Fixed point (with carrying capacity K)
+        function getFixedPoint() {
+            // Solve: r(1 - x*/K) - a*y* = 0 and b*x* - c = 0
+            // => x* = c/b
+            // => y* = r(1 - c/(bK)) / a
+            const xStar = c / b;
+            const yStar = r * (1 - xStar / K) / a;
+            return { x: xStar, y: Math.max(0, yStar) };
+        }
+
+        // Determine attractor type
+        function getAttractorType() {
+            // This is a rough heuristic based on orbit behavior
+            if (orbit.length < 100) return 'unknown';
+
+            const recent = orbit.slice(-50);
+            const xVals = recent.map(p => p.x);
+
+            // Check for fixed point
+            const xMean = xVals.reduce((a, b) => a + b) / xVals.length;
+            const xVar = xVals.reduce((a, b) => a + (b - xMean) ** 2, 0) / xVals.length;
+
+            if (xVar < 0.001) return 'fixed';
+            if (xVar < 0.1) return 'period2';
+            if (xVar < 0.3) return 'period4';
+            return 'chaos';
+        }
+
+        // Draw attractor
+        function drawAttractor() {
+            attractorCtx.fillStyle = '#0a1628';
+            attractorCtx.fillRect(0, 0, attractorCanvas.width, attractorCanvas.height);
+
+            // Draw grid
+            attractorCtx.strokeStyle = '#1a3050';
+            attractorCtx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const cx = toCanvasX(i);
+                attractorCtx.beginPath();
+                attractorCtx.moveTo(cx, 20);
+                attractorCtx.lineTo(cx, attractorCanvas.height - 30);
+                attractorCtx.stroke();
+            }
+            for (let i = 0; i <= 3; i++) {
+                const cy = toCanvasY(i);
+                attractorCtx.beginPath();
+                attractorCtx.moveTo(40, cy);
+                attractorCtx.lineTo(attractorCanvas.width - 20, cy);
+                attractorCtx.stroke();
+            }
+
+            // Draw fixed point
+            const fp = getFixedPoint();
+            if (fp.x > 0 && fp.x < xMax && fp.y > 0 && fp.y < yMax) {
+                attractorCtx.beginPath();
+                attractorCtx.arc(toCanvasX(fp.x), toCanvasY(fp.y), 8, 0, 2 * Math.PI);
+                attractorCtx.fillStyle = '#4caf50';
+                attractorCtx.fill();
+                attractorCtx.strokeStyle = '#fff';
+                attractorCtx.lineWidth = 2;
+                attractorCtx.stroke();
+            }
+
+            // Draw orbit
+            if (orbit.length > 1) {
+                // Transient (gray)
+                const transient = Math.min(100, orbit.length - 50);
+                if (transient > 0) {
+                    attractorCtx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+                    attractorCtx.lineWidth = 1;
+                    attractorCtx.beginPath();
+                    for (let i = 0; i < transient; i++) {
+                        const pt = orbit[i];
+                        const cx = toCanvasX(pt.x);
+                        const cy = toCanvasY(pt.y);
+                        if (i === 0) attractorCtx.moveTo(cx, cy);
+                        else attractorCtx.lineTo(cx, cy);
+                    }
+                    attractorCtx.stroke();
+                }
+
+                // Attractor (colored)
+                const attractorStart = Math.max(0, orbit.length - 200);
+                attractorCtx.fillStyle = 'rgba(255, 152, 0, 0.6)';
+                for (let i = attractorStart; i < orbit.length; i++) {
+                    const pt = orbit[i];
+                    const cx = toCanvasX(pt.x);
+                    const cy = toCanvasY(pt.y);
+                    attractorCtx.beginPath();
+                    attractorCtx.arc(cx, cy, 2, 0, 2 * Math.PI);
+                    attractorCtx.fill();
+                }
+            }
+
+            // Current point
+            attractorCtx.beginPath();
+            attractorCtx.arc(toCanvasX(x), toCanvasY(y), 6, 0, 2 * Math.PI);
+            attractorCtx.fillStyle = '#ff9800';
+            attractorCtx.fill();
+            attractorCtx.strokeStyle = '#fff';
+            attractorCtx.lineWidth = 2;
+            attractorCtx.stroke();
+
+            // Labels
+            attractorCtx.fillStyle = '#81d4fa';
+            attractorCtx.font = '12px sans-serif';
+            attractorCtx.textAlign = 'center';
+            attractorCtx.fillText('xₙ', attractorCanvas.width / 2, attractorCanvas.height - 5);
+
+            attractorCtx.save();
+            attractorCtx.translate(12, attractorCanvas.height / 2);
+            attractorCtx.rotate(-Math.PI / 2);
+            attractorCtx.fillText('yₙ', 0, 0);
+            attractorCtx.restore();
+        }
+
+        // Draw time series
+        function drawTimeSeries() {
+            timeSeriesCtx.fillStyle = '#0a1628';
+            timeSeriesCtx.fillRect(0, 0, timeSeriesCanvas.width, timeSeriesCanvas.height);
+
+            if (timeSeries.length < 2) return;
+
+            const margin = { left: 30, right: 10, top: 10, bottom: 20 };
+            const width = timeSeriesCanvas.width - margin.left - margin.right;
+            const height = timeSeriesCanvas.height - margin.top - margin.bottom;
+
+            // Find bounds
+            let maxX = 1;
+            timeSeries.forEach(val => {
+                maxX = Math.max(maxX, val);
+            });
+
+            // Draw
+            timeSeriesCtx.strokeStyle = '#ff9800';
+            timeSeriesCtx.lineWidth = 1.5;
+            timeSeriesCtx.beginPath();
+            const showN = Math.min(200, timeSeries.length);
+            const start = timeSeries.length - showN;
+            for (let i = 0; i < showN; i++) {
+                const val = timeSeries[start + i];
+                const cx = margin.left + i / showN * width;
+                const cy = margin.top + height - val / maxX * height * 0.9;
+                if (i === 0) timeSeriesCtx.moveTo(cx, cy);
+                else timeSeriesCtx.lineTo(cx, cy);
+            }
+            timeSeriesCtx.stroke();
+
+            // Fixed point line
+            const fp = getFixedPoint();
+            timeSeriesCtx.strokeStyle = 'rgba(76, 175, 80, 0.5)';
+            timeSeriesCtx.setLineDash([3, 3]);
+            const fpY = margin.top + height - fp.x / maxX * height * 0.9;
+            timeSeriesCtx.beginPath();
+            timeSeriesCtx.moveTo(margin.left, fpY);
+            timeSeriesCtx.lineTo(margin.left + width, fpY);
+            timeSeriesCtx.stroke();
+            timeSeriesCtx.setLineDash([]);
+
+            // Axis
+            timeSeriesCtx.strokeStyle = '#4a6a90';
+            timeSeriesCtx.lineWidth = 1;
+            timeSeriesCtx.beginPath();
+            timeSeriesCtx.moveTo(margin.left, margin.top + height);
+            timeSeriesCtx.lineTo(margin.left + width, margin.top + height);
+            timeSeriesCtx.stroke();
+
+            timeSeriesCtx.fillStyle = '#81d4fa';
+            timeSeriesCtx.font = '10px sans-serif';
+            timeSeriesCtx.textAlign = 'center';
+            timeSeriesCtx.fillText('n', margin.left + width / 2, timeSeriesCanvas.height - 3);
+        }
+
+        // Draw bifurcation diagram
+        function drawBifurcationDiagram() {
+            bifurcationCtx.fillStyle = '#0a1628';
+            bifurcationCtx.fillRect(0, 0, bifurcationCanvas.width, bifurcationCanvas.height);
+
+            const margin = { left: 40, right: 10, top: 10, bottom: 25 };
+            const width = bifurcationCanvas.width - margin.left - margin.right;
+            const height = bifurcationCanvas.height - margin.top - margin.bottom;
+
+            // Axes
+            bifurcationCtx.strokeStyle = '#4a6a90';
+            bifurcationCtx.lineWidth = 1;
+            bifurcationCtx.beginPath();
+            bifurcationCtx.moveTo(margin.left, margin.top);
+            bifurcationCtx.lineTo(margin.left, margin.top + height);
+            bifurcationCtx.lineTo(margin.left + width, margin.top + height);
+            bifurcationCtx.stroke();
+
+            // Labels
+            bifurcationCtx.fillStyle = '#81d4fa';
+            bifurcationCtx.font = '10px sans-serif';
+            bifurcationCtx.textAlign = 'center';
+            bifurcationCtx.fillText('r', margin.left + width / 2, bifurcationCanvas.height - 3);
+            bifurcationCtx.fillText('1.5', margin.left, margin.top + height + 12);
+            bifurcationCtx.fillText('3.5', margin.left + width, margin.top + height + 12);
+
+            if (!bifurcationData) return;
+
+            // Draw data
+            bifurcationCtx.fillStyle = 'rgba(255, 152, 0, 0.5)';
+            const rMin = 1.5, rMax = 3.5;
+            const xMaxBif = 4;
+
+            bifurcationData.forEach(point => {
+                const px = margin.left + (point.r - rMin) / (rMax - rMin) * width;
+                const py = margin.top + height - point.x / xMaxBif * height;
+                bifurcationCtx.fillRect(px, py, 1, 1);
+            });
+
+            // Current r marker
+            const currentRx = margin.left + (r - rMin) / (rMax - rMin) * width;
+            bifurcationCtx.fillStyle = '#4fc3f7';
+            bifurcationCtx.beginPath();
+            bifurcationCtx.arc(currentRx, margin.top + height + 5, 4, 0, 2 * Math.PI);
+            bifurcationCtx.fill();
+        }
+
+        // Compute bifurcation diagram
+        function computeBifurcation() {
+            bifurcationData = [];
+            const rMin = 1.5, rMax = 3.5;
+            const steps = 300;
+
+            for (let i = 0; i <= steps; i++) {
+                const rVal = rMin + (rMax - rMin) * i / steps;
+
+                // Iterate with carrying capacity
+                let xIt = 1.0, yIt = 1.0;
+                // Transient
+                for (let j = 0; j < 200; j++) {
+                    const xNew = xIt * Math.exp(rVal * (1 - xIt / K) - a * yIt);
+                    const yNew = yIt * Math.exp(b * xIt - c);
+                    xIt = Math.min(10, Math.max(0.001, xNew));
+                    yIt = Math.min(10, Math.max(0.001, yNew));
+                }
+                // Record attractor
+                for (let j = 0; j < 50; j++) {
+                    const xNew = xIt * Math.exp(rVal * (1 - xIt / K) - a * yIt);
+                    const yNew = yIt * Math.exp(b * xIt - c);
+                    xIt = Math.min(10, Math.max(0.001, xNew));
+                    yIt = Math.min(10, Math.max(0.001, yNew));
+                    if (xIt > 0 && xIt < 10) {
+                        bifurcationData.push({ r: rVal, x: xIt });
+                    }
+                }
+            }
+
+            drawBifurcationDiagram();
+        }
+
+        // Update displays
+        function updateDisplays() {
+            rDisplay.textContent = r.toFixed(2);
+            document.getElementById('xnDisplay').textContent = x.toFixed(3);
+            document.getElementById('ynDisplay').textContent = y.toFixed(3);
+            document.getElementById('nDisplay').textContent = n;
+
+            const type = getAttractorType();
+            switch (type) {
+                case 'fixed':
+                    statusBox.className = 'status-box status-fixed';
+                    statusBox.textContent = '固定点（安定）';
+                    break;
+                case 'period2':
+                    statusBox.className = 'status-box status-period2';
+                    statusBox.textContent = '周期2軌道';
+                    break;
+                case 'period4':
+                    statusBox.className = 'status-box status-period4';
+                    statusBox.textContent = '周期4軌道';
+                    break;
+                case 'chaos':
+                    statusBox.className = 'status-box status-chaos';
+                    statusBox.textContent = 'カオス！';
+                    break;
+                default:
+                    statusBox.className = 'status-box status-fixed';
+                    statusBox.textContent = '計算中...';
+            }
+        }
+
+        // Single step
+        function step() {
+            const next = iterate(x, y);
+            x = Math.min(10, Math.max(0.001, next.x));
+            y = Math.min(10, Math.max(0.001, next.y));
+            orbit.push({ x, y });
+            timeSeries.push(x);
+            n++;
+
+            if (orbit.length > 500) orbit.shift();
+            if (timeSeries.length > 500) timeSeries.shift();
+
+            updateDisplays();
+            drawAttractor();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        }
+
+        // Animation
+        function animate() {
+            if (!running) return;
+
+            for (let i = 0; i < 3; i++) {
+                step();
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        rSlider.addEventListener('input', (e) => {
+            r = parseFloat(e.target.value);
+            // Reset orbit
+            const fp = getFixedPoint();
+            x = fp.x * 1.1;
+            y = fp.y * 0.9;
+            orbit = [{ x, y }];
+            timeSeries = [x];
+            n = 0;
+            updateDisplays();
+            drawAttractor();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            r = 2.0;
+            rSlider.value = r;
+            const fp = getFixedPoint();
+            x = fp.x * 1.1;
+            y = fp.y * 0.9;
+            orbit = [{ x, y }];
+            timeSeries = [x];
+            n = 0;
+            running = false;
+            updateDisplays();
+            drawAttractor();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', step);
+
+        document.getElementById('runBtn').addEventListener('click', () => {
+            running = !running;
+            if (running) {
+                animate();
+            }
+        });
+
+        document.getElementById('computeBifBtn').addEventListener('click', () => {
+            computeBifurcation();
+        });
+
+        // Initialize
+        const fp = getFixedPoint();
+        x = fp.x * 1.1;
+        y = fp.y * 0.9;
+        orbit = [{ x, y }];
+        timeSeries = [x];
+        updateDisplays();
+        drawAttractor();
+        drawTimeSeries();
+        drawBifurcationDiagram();
+    </script>
+</body>
+</html>

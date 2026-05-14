@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strogatz 8.7節：ポアンカレ写像</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        h3 {
+            font-size: 1em;
+            color: #4fc3f7;
+            margin: 15px 0 8px 0;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+            overflow-x: auto;
+        }
+        .equation-box .main-eq {
+            font-size: 1.2em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .param-list {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        .param-list li {
+            margin: 5px 0;
+            list-style: none;
+        }
+        .param-list li::before {
+            content: "•";
+            color: #4fc3f7;
+            margin-right: 8px;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .info-panel.three-col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .info-item {
+            background: #0a1628;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .info-item .label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-item .value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            margin-top: 3px;
+        }
+        .regime-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .regime-stable { background: #2e7d32; }
+        .regime-unstable { background: #c62828; }
+        .regime-critical { background: #f57c00; }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #0f3460;
+        }
+        .comparison-table th {
+            background: #0f3460;
+            color: #4fc3f7;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: rgba(15, 52, 96, 0.3);
+        }
+        .note-box {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        button {
+            background: #4fc3f7;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin: 3px;
+        }
+        button:hover {
+            background: #81d4fa;
+        }
+        .button-row {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .correspondence-box {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+            margin: 15px 0;
+        }
+        .correspondence-item {
+            background: #0a1628;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .correspondence-arrow {
+            font-size: 1.5em;
+            color: #4fc3f7;
+        }
+        .example-box {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 3px solid #2ecc71;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📐 Strogatz 8.7節：ポアンカレ写像</h1>
+
+        <!-- Section 1: 導入 -->
+        <div class="section">
+            <h2>1. ポアンカレ写像とは？</h2>
+            
+            <p>連続時間の微分方程式を<span class="highlight">離散時間の写像</span>に変換する強力な手法。</p>
+            
+            <h3>アイデア：流れに「ストロボを当てる」</h3>
+            <ul class="param-list">
+                <li>流れに<strong>横断的な断面 S</strong>（ポアンカレ断面）を置く</li>
+                <li>軌道が S を通過するたびに点を記録</li>
+                <li>連続: x(t) → 離散: x₀, x₁, x₂, ...</li>
+            </ul>
+            
+            <div class="equation-box">
+                <div class="main-eq">x<sub>n+1</sub> = P(x<sub>n</sub>)</div>
+                <div style="font-size: 0.9em; margin-top: 8px;">P: S → S がポアンカレ写像</div>
+            </div>
+        </div>
+
+        <!-- Section 2: 対応関係 -->
+        <div class="section">
+            <h2>2. 連続系と離散系の対応</h2>
+            
+            <div class="correspondence-box">
+                <div class="correspondence-item">
+                    <div style="color: #81d4fa; font-size: 0.9em;">連続系（微分方程式）</div>
+                    <div style="margin-top: 8px;"><strong>閉軌道</strong>（周期解）</div>
+                </div>
+                <div class="correspondence-arrow">⟺</div>
+                <div class="correspondence-item">
+                    <div style="color: #81d4fa; font-size: 0.9em;">離散系（写像）</div>
+                    <div style="margin-top: 8px;"><strong>固定点</strong> P(x*) = x*</div>
+                </div>
+            </div>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>連続系</th>
+                    <th>離散系（ポアンカレ写像）</th>
+                </tr>
+                <tr>
+                    <td>周期軌道</td>
+                    <td>固定点</td>
+                </tr>
+                <tr>
+                    <td>周期軌道の安定性</td>
+                    <td>固定点の安定性</td>
+                </tr>
+                <tr>
+                    <td>周期軌道の分岐</td>
+                    <td>写像の分岐</td>
+                </tr>
+                <tr>
+                    <td>n次元の流れ</td>
+                    <td>(n-1)次元の写像</td>
+                </tr>
+            </table>
+            
+            <div class="note-box">
+                <strong>次元削減の威力</strong>：3次元の流れ → 2次元の写像 → 解析が楽に！
+            </div>
+        </div>
+
+        <!-- Section 3: 特性乗数 -->
+        <div class="section">
+            <h2>3. 特性乗数（フロケ乗数）</h2>
+            
+            <p>周期軌道の安定性は、<span class="highlight">線形化したポアンカレ写像</span>の固有値で決まる。</p>
+            
+            <div class="equation-box">
+                <div>u<sub>n+1</sub> = [DP(x*)] u<sub>n</sub></div>
+                <div style="font-size: 0.9em; margin-top: 8px;">DP(x*) = ヤコビ行列、u = x* からの微小摂動</div>
+            </div>
+            
+            <h3>固有値 λ（特性乗数）による安定性判定</h3>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>|λ| の値</th>
+                    <th>周期軌道の安定性</th>
+                </tr>
+                <tr>
+                    <td>すべて |λ| &lt; 1</td>
+                    <td><span style="color: #4caf50;">安定</span>（摂動が減衰）</td>
+                </tr>
+                <tr>
+                    <td>いずれか |λ| &gt; 1</td>
+                    <td><span style="color: #f44336;">不安定</span>（摂動が成長）</td>
+                </tr>
+                <tr>
+                    <td>|λ| = 1</td>
+                    <td><span style="color: #ff9800;">境界的</span>（分岐点）</td>
+                </tr>
+            </table>
+            
+            <div class="note-box">
+                <strong>注意</strong>：周期軌道に沿う方向への摂動（時間並進）に対応する自明な乗数 λ = 1 は常に存在するが、これは無視する。
+            </div>
+        </div>
+
+        <!-- Section 4: デモ1 - 概念図 -->
+        <div class="section">
+            <h2>4. デモ1：ポアンカレ断面の概念</h2>
+            
+            <p>3次元空間で周期軌道を横切る断面 S を設置。軌道が S を通過するたびに点を打つ。</p>
+            
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="conceptCanvas" width="380" height="280"></canvas>
+                    <div class="canvas-label">周期軌道とポアンカレ断面（概念図）</div>
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button onclick="resetConcept()">リセット</button>
+                <button onclick="toggleConceptPause()" id="conceptPauseBtn">一時停止</button>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="label">断面通過回数</div>
+                    <div class="value" id="crossingCount">0</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">断面上の点</div>
+                    <div class="value" id="sectionPointDisplay">---</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: 例題 8.7.1 -->
+        <div class="section">
+            <h2>5. 例題 8.7.1：極座標系のリミットサイクル</h2>
+            
+            <div class="example-box">
+                <div class="equation-box" style="background: transparent; padding: 8px;">
+                    <div class="main-eq">ṙ = r(1 − r²), &nbsp; θ̇ = 1</div>
+                </div>
+                <p>r = 1 に安定なリミットサイクルを持つ。周期 T = 2π。</p>
+            </div>
+            
+            <h3>ポアンカレ写像の導出</h3>
+            <p>断面 S: θ = 0（正の x 軸）を選ぶ。</p>
+            
+            <div class="equation-box">
+                <div>ṙ = r(1 − r²) を解くと：</div>
+                <div class="main-eq" style="margin-top: 8px;">r<sub>n+1</sub> = P(r<sub>n</sub>) = [1 + e<sup>−4π</sup>(r<sub>n</sub><sup>−2</sup> − 1)]<sup>−1/2</sup></div>
+            </div>
+            
+            <h3>固定点と特性乗数</h3>
+            <ul class="param-list">
+                <li>固定点: r* = 1（リミットサイクル）</li>
+                <li>特性乗数: λ = P'(r*) = e<sup>−4π</sup> ≈ 3.5 × 10<sup>−6</sup></li>
+                <li>|λ| &lt; 1 なので<span class="highlight">安定</span></li>
+            </ul>
+        </div>
+
+        <!-- Section 6: デモ2 - 例題 8.7.1 -->
+        <div class="section">
+            <h2>6. デモ2：例題 8.7.1 の可視化</h2>
+            
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>初期値 r₀</span>
+                        <span class="slider-value" id="r0Display">0.50</span>
+                    </div>
+                    <input type="range" id="r0Slider" min="0.1" max="2.5" step="0.01" value="0.5">
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas" width="200" height="200"></canvas>
+                    <div class="canvas-label">相平面 (x, y)</div>
+                </div>
+                <div class="canvas-box">
+                    <canvas id="poincareCanvas" width="180" height="200"></canvas>
+                    <div class="canvas-label">ポアンカレ写像 P(r)</div>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="returnCanvas" width="380" height="120"></canvas>
+                    <div class="canvas-label">帰還点列 r₀, r₁, r₂, ... （断面 S 上の点）</div>
+                </div>
+            </div>
+            
+            <div id="stabilityIndicator" class="regime-indicator regime-stable">
+                リミットサイクルは安定（λ = e⁻⁴π ≈ 0）
+            </div>
+            
+            <div class="info-panel three-col">
+                <div class="info-item">
+                    <div class="label">現在の r</div>
+                    <div class="value" id="currentR">0.50</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">固定点 r*</div>
+                    <div class="value">1.000</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">特性乗数 λ</div>
+                    <div class="value" id="multiplierDisplay">3.5×10⁻⁶</div>
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button onclick="resetDemo2()">リセット</button>
+                <button onclick="toggleDemo2Pause()" id="demo2PauseBtn">一時停止</button>
+            </div>
+        </div>
+
+        <!-- Section 7: 一般化された系 -->
+        <div class="section">
+            <h2>7. デモ3：パラメータ付きの系</h2>
+            
+            <div class="equation-box">
+                <div class="main-eq">ṙ = r(μ − r²), &nbsp; θ̇ = 1</div>
+            </div>
+            
+            <p>μ &gt; 0 のとき r = √μ にリミットサイクル。μ の値で安定性の強さが変わる。</p>
+            
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>パラメータ μ</span>
+                        <span class="slider-value" id="muDisplay">1.00</span>
+                    </div>
+                    <input type="range" id="muSlider" min="0.1" max="3" step="0.01" value="1.0">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>初期値 r₀</span>
+                        <span class="slider-value" id="r0Display3">0.50</span>
+                    </div>
+                    <input type="range" id="r0Slider3" min="0.1" max="3" step="0.01" value="0.5">
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas3" width="200" height="200"></canvas>
+                    <div class="canvas-label">相平面</div>
+                </div>
+                <div class="canvas-box">
+                    <canvas id="cobwebCanvas3" width="180" height="200"></canvas>
+                    <div class="canvas-label">クモの巣図</div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="label">固定点 r* = √μ</div>
+                    <div class="value" id="rStarDisplay3">1.000</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">特性乗数 λ</div>
+                    <div class="value" id="lambdaDisplay3">---</div>
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button onclick="resetDemo3()">リセット</button>
+                <button onclick="toggleDemo3Pause()" id="demo3PauseBtn">一時停止</button>
+            </div>
+        </div>
+
+        <!-- Section 8: まとめ -->
+        <div class="section">
+            <h2>8. まとめ：なぜポアンカレ写像が重要か</h2>
+            
+            <ul class="param-list">
+                <li><strong>次元削減</strong>：n次元の連続系 → (n-1)次元の離散系</li>
+                <li><strong>周期軌道の解析</strong>：閉軌道 ↔ 固定点の対応</li>
+                <li><strong>安定性判定</strong>：特性乗数 |λ| で判定</li>
+                <li><strong>カオスへの橋渡し</strong>：ローレンツ系のストレンジアトラクター解析（9章）</li>
+                <li><strong>10章への準備</strong>：1次元写像のカオス（ロジスティック写像など）</li>
+            </ul>
+            
+            <div class="note-box">
+                <strong>カオスとの接続</strong><br>
+                ポアンカレ写像が「折り返す」（非単調になる）と、カオスが生まれる可能性がある。
+                これは8.6節のトーラス崩壊とも関連する重要なテーマ。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Demo 1: Concept visualization =====
+        const conceptCanvas = document.getElementById('conceptCanvas');
+        const conceptCtx = conceptCanvas.getContext('2d');
+        let conceptT = 0;
+        let conceptPaused = false;
+        let crossingCount = 0;
+        let lastY = 0;
+        let sectionPoints = [];
+        
+        function drawConcept() {
+            const ctx = conceptCtx;
+            const w = conceptCanvas.width;
+            const h = conceptCanvas.height;
+            
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, w, h);
+            
+            const cx = w * 0.4;
+            const cy = h * 0.5;
+            const rx = 80;
+            const ry = 40;
+            const amplitude = 30;
+            
+            // Draw Poincare section (vertical plane)
+            ctx.fillStyle = 'rgba(79, 195, 247, 0.2)';
+            ctx.fillRect(cx + rx - 5, cy - 80, 60, 160);
+            ctx.strokeStyle = '#4fc3f7';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx + rx - 5, cy - 80, 60, 160);
+            
+            ctx.fillStyle = '#4fc3f7';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('断面 S', cx + rx + 10, cy - 65);
+            
+            // Draw limit cycle (ellipse in 3D perspective)
+            ctx.strokeStyle = '#1a5a7c';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw trajectory (helix converging to limit cycle)
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const spiralPoints = [];
+            for (let t = 0; t <= conceptT; t += 0.05) {
+                const decay = Math.exp(-t * 0.15);
+                const r = 1 + 0.8 * decay * Math.sin(t * 0.5);
+                const x = cx + rx * r * Math.cos(t);
+                const y = cy + ry * r * Math.sin(t);
+                const z = amplitude * Math.sin(t * 2) * (1 - decay * 0.5);
+                
+                // Simple 3D projection
+                const px = x - z * 0.3;
+                const py = y - z * 0.5;
+                
+                spiralPoints.push({x: px, y: py, origX: x, origY: y, t: t});
+                
+                if (t === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            
+            // Current point
+            if (spiralPoints.length > 0) {
+                const last = spiralPoints[spiralPoints.length - 1];
+                ctx.beginPath();
+                ctx.arc(last.x, last.y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff5722';
+                ctx.fill();
+                
+                // Check crossing
+                const currentOrigX = last.origX;
+                if (lastY < cy && last.origY >= cy && currentOrigX > cx) {
+                    // Crossed section from below
+                    crossingCount++;
+                    const sectionY = last.y;
+                    sectionPoints.push(sectionY);
+                    if (sectionPoints.length > 5) sectionPoints.shift();
+                }
+                lastY = last.origY;
+            }
+            
+            // Draw section points
+            sectionPoints.forEach((py, i) => {
+                const alpha = (i + 1) / sectionPoints.length;
+                ctx.beginPath();
+                ctx.arc(cx + rx + 25, py, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = `rgba(255, 152, 0, ${alpha})`;
+                ctx.fill();
+            });
+            
+            // Labels
+            ctx.fillStyle = '#81d4fa';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('周期軌道', cx - 30, cy + ry + 20);
+            ctx.fillText('（リミットサイクル）', cx - 45, cy + ry + 35);
+            
+            // Update displays
+            document.getElementById('crossingCount').textContent = crossingCount;
+            if (sectionPoints.length > 0) {
+                document.getElementById('sectionPointDisplay').textContent = 
+                    `x₍${crossingCount}₎`;
+            }
+            
+            // Animate
+            if (!conceptPaused) {
+                conceptT += 0.08;
+            }
+            
+            requestAnimationFrame(drawConcept);
+        }
+        
+        function resetConcept() {
+            conceptT = 0;
+            crossingCount = 0;
+            lastY = 0;
+            sectionPoints = [];
+        }
+        
+        function toggleConceptPause() {
+            conceptPaused = !conceptPaused;
+            document.getElementById('conceptPauseBtn').textContent = 
+                conceptPaused ? '再開' : '一時停止';
+        }
+        
+        // ===== Demo 2: Example 8.7.1 =====
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const poincareCanvas = document.getElementById('poincareCanvas');
+        const returnCanvas = document.getElementById('returnCanvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
+        const poincareCtx = poincareCanvas.getContext('2d');
+        const returnCtx = returnCanvas.getContext('2d');
+        
+        let r0_2 = 0.5;
+        let r_2 = 0.5;
+        let theta_2 = 0;
+        let demo2Paused = false;
+        let returnPoints = [];
+        let trail2 = [];
+        const maxTrail2 = 300;
+        
+        // Poincare map for r' = r(1-r^2)
+        function poincareMap(r) {
+            const exp4pi = Math.exp(-4 * Math.PI);
+            return Math.pow(1 + exp4pi * (1/(r*r) - 1), -0.5);
+        }
+        
+        function drawDemo2() {
+            // Phase plane
+            const ctx1 = phaseCtx;
+            const w1 = phaseCanvas.width;
+            const h1 = phaseCanvas.height;
+            const cx = w1 / 2;
+            const cy = h1 / 2;
+            const scale = 35;
+            
+            ctx1.fillStyle = '#0a1628';
+            ctx1.fillRect(0, 0, w1, h1);
+            
+            // Axes
+            ctx1.strokeStyle = '#333';
+            ctx1.lineWidth = 1;
+            ctx1.beginPath();
+            ctx1.moveTo(0, cy);
+            ctx1.lineTo(w1, cy);
+            ctx1.moveTo(cx, 0);
+            ctx1.lineTo(cx, h1);
+            ctx1.stroke();
+            
+            // Limit cycle r = 1
+            ctx1.strokeStyle = '#4fc3f7';
+            ctx1.lineWidth = 2;
+            ctx1.beginPath();
+            ctx1.arc(cx, cy, scale, 0, 2 * Math.PI);
+            ctx1.stroke();
+            
+            // Poincare section (positive x-axis)
+            ctx1.strokeStyle = '#ff9800';
+            ctx1.lineWidth = 3;
+            ctx1.beginPath();
+            ctx1.moveTo(cx, cy);
+            ctx1.lineTo(w1 - 10, cy);
+            ctx1.stroke();
+            ctx1.fillStyle = '#ff9800';
+            ctx1.font = '10px sans-serif';
+            ctx1.fillText('S', w1 - 20, cy - 8);
+            
+            // Trail
+            if (trail2.length > 1) {
+                ctx1.beginPath();
+                ctx1.strokeStyle = 'rgba(46, 204, 113, 0.6)';
+                ctx1.lineWidth = 1.5;
+                for (let i = 0; i < trail2.length; i++) {
+                    const p = trail2[i];
+                    if (i === 0) ctx1.moveTo(p.x, p.y);
+                    else ctx1.lineTo(p.x, p.y);
+                }
+                ctx1.stroke();
+            }
+            
+            // Current point
+            const x = cx + r_2 * scale * Math.cos(theta_2);
+            const y = cy - r_2 * scale * Math.sin(theta_2);
+            ctx1.beginPath();
+            ctx1.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx1.fillStyle = '#ff5722';
+            ctx1.fill();
+            
+            trail2.push({x, y});
+            if (trail2.length > maxTrail2) trail2.shift();
+            
+            // Poincare map graph
+            const ctx2 = poincareCtx;
+            const w2 = poincareCanvas.width;
+            const h2 = poincareCanvas.height;
+            const margin = 25;
+            const size = Math.min(w2, h2) - 2 * margin;
+            
+            ctx2.fillStyle = '#0a1628';
+            ctx2.fillRect(0, 0, w2, h2);
+            
+            // Axes
+            ctx2.strokeStyle = '#333';
+            ctx2.lineWidth = 1;
+            ctx2.beginPath();
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(w2 - 5, h2 - margin);
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(margin, 5);
+            ctx2.stroke();
+            
+            // y = x line
+            ctx2.strokeStyle = '#4fc3f7';
+            ctx2.setLineDash([3, 3]);
+            ctx2.beginPath();
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(margin + size, h2 - margin - size);
+            ctx2.stroke();
+            ctx2.setLineDash([]);
+            
+            // Poincare map P(r)
+            ctx2.strokeStyle = '#ff9800';
+            ctx2.lineWidth = 2;
+            ctx2.beginPath();
+            const rMax = 2.5;
+            for (let i = 1; i <= 100; i++) {
+                const rIn = (i / 100) * rMax;
+                const rOut = poincareMap(rIn);
+                const px = margin + (rIn / rMax) * size;
+                const py = h2 - margin - (rOut / rMax) * size;
+                if (i === 1) ctx2.moveTo(px, py);
+                else ctx2.lineTo(px, py);
+            }
+            ctx2.stroke();
+            
+            // Fixed point
+            ctx2.beginPath();
+            ctx2.arc(margin + (1/rMax) * size, h2 - margin - (1/rMax) * size, 5, 0, 2 * Math.PI);
+            ctx2.fillStyle = '#2ecc71';
+            ctx2.fill();
+            
+            // Current point on map
+            const currentMapX = margin + (r_2 / rMax) * size;
+            const currentMapY = h2 - margin - (poincareMap(r_2) / rMax) * size;
+            ctx2.beginPath();
+            ctx2.arc(currentMapX, h2 - margin - (r_2 / rMax) * size, 4, 0, 2 * Math.PI);
+            ctx2.fillStyle = '#ff5722';
+            ctx2.fill();
+            
+            // Labels
+            ctx2.fillStyle = '#81d4fa';
+            ctx2.font = '10px sans-serif';
+            ctx2.fillText('rₙ', w2 - 15, h2 - 10);
+            ctx2.fillText('rₙ₊₁', 5, 15);
+            ctx2.fillText('P(r)', w2 - 35, 30);
+            
+            // Return sequence
+            const ctx3 = returnCtx;
+            const w3 = returnCanvas.width;
+            const h3 = returnCanvas.height;
+            const margin3 = 30;
+            
+            ctx3.fillStyle = '#0a1628';
+            ctx3.fillRect(0, 0, w3, h3);
+            
+            // Axes
+            ctx3.strokeStyle = '#333';
+            ctx3.lineWidth = 1;
+            ctx3.beginPath();
+            ctx3.moveTo(margin3, h3 - margin3);
+            ctx3.lineTo(w3 - 5, h3 - margin3);
+            ctx3.moveTo(margin3, h3 - margin3);
+            ctx3.lineTo(margin3, 5);
+            ctx3.stroke();
+            
+            // Reference line at r* = 1
+            ctx3.strokeStyle = '#4fc3f7';
+            ctx3.setLineDash([5, 5]);
+            const refY = h3 - margin3 - (1 / rMax) * (h3 - 2 * margin3);
+            ctx3.beginPath();
+            ctx3.moveTo(margin3, refY);
+            ctx3.lineTo(w3 - 5, refY);
+            ctx3.stroke();
+            ctx3.setLineDash([]);
+            
+            // Plot return points
+            if (returnPoints.length > 0) {
+                ctx3.fillStyle = '#2ecc71';
+                const maxPoints = 20;
+                const displayPoints = returnPoints.slice(-maxPoints);
+                displayPoints.forEach((rp, i) => {
+                    const px = margin3 + ((i + 1) / (maxPoints + 1)) * (w3 - margin3 - 10);
+                    const py = h3 - margin3 - (rp / rMax) * (h3 - 2 * margin3);
+                    ctx3.beginPath();
+                    ctx3.arc(px, py, 4, 0, 2 * Math.PI);
+                    ctx3.fill();
+                });
+                
+                // Connect with lines
+                ctx3.strokeStyle = 'rgba(46, 204, 113, 0.5)';
+                ctx3.lineWidth = 1;
+                ctx3.beginPath();
+                displayPoints.forEach((rp, i) => {
+                    const px = margin3 + ((i + 1) / (maxPoints + 1)) * (w3 - margin3 - 10);
+                    const py = h3 - margin3 - (rp / rMax) * (h3 - 2 * margin3);
+                    if (i === 0) ctx3.moveTo(px, py);
+                    else ctx3.lineTo(px, py);
+                });
+                ctx3.stroke();
+            }
+            
+            // Labels
+            ctx3.fillStyle = '#81d4fa';
+            ctx3.font = '10px sans-serif';
+            ctx3.fillText('n', w3 - 15, h3 - 10);
+            ctx3.fillText('rₙ', 8, 15);
+            ctx3.fillText('r*=1', w3 - 40, refY - 5);
+            
+            // Update r and theta
+            if (!demo2Paused) {
+                const dt = 0.05;
+                const dr = r_2 * (1 - r_2 * r_2) * dt;
+                r_2 += dr;
+                theta_2 += dt;
+                
+                // Check for section crossing
+                if (theta_2 >= 2 * Math.PI) {
+                    theta_2 -= 2 * Math.PI;
+                    returnPoints.push(r_2);
+                    if (returnPoints.length > 50) returnPoints.shift();
+                }
+            }
+            
+            // Update displays
+            document.getElementById('currentR').textContent = r_2.toFixed(3);
+            
+            requestAnimationFrame(drawDemo2);
+        }
+        
+        function resetDemo2() {
+            r0_2 = parseFloat(document.getElementById('r0Slider').value);
+            r_2 = r0_2;
+            theta_2 = 0;
+            returnPoints = [r0_2];
+            trail2 = [];
+        }
+        
+        function toggleDemo2Pause() {
+            demo2Paused = !demo2Paused;
+            document.getElementById('demo2PauseBtn').textContent = 
+                demo2Paused ? '再開' : '一時停止';
+        }
+        
+        document.getElementById('r0Slider').addEventListener('input', (e) => {
+            r0_2 = parseFloat(e.target.value);
+            document.getElementById('r0Display').textContent = r0_2.toFixed(2);
+            resetDemo2();
+        });
+        
+        // ===== Demo 3: Parameterized system =====
+        const phaseCanvas3 = document.getElementById('phaseCanvas3');
+        const cobwebCanvas3 = document.getElementById('cobwebCanvas3');
+        const phase3Ctx = phaseCanvas3.getContext('2d');
+        const cobweb3Ctx = cobwebCanvas3.getContext('2d');
+        
+        let mu_3 = 1.0;
+        let r0_3 = 0.5;
+        let r_3 = 0.5;
+        let theta_3 = 0;
+        let demo3Paused = false;
+        let trail3 = [];
+        let cobwebHistory3 = [];
+        const maxTrail3 = 300;
+        
+        // Poincare map for r' = r(μ - r^2)
+        function poincareMap3(r, mu) {
+            if (mu <= 0) return r;
+            const T = 2 * Math.PI;  // Period
+            const expTerm = Math.exp(-2 * mu * T);
+            return Math.sqrt(mu / (1 + (mu/(r*r) - 1) * expTerm));
+        }
+        
+        function drawDemo3() {
+            const rStar = Math.sqrt(mu_3);
+            
+            // Phase plane
+            const ctx1 = phase3Ctx;
+            const w1 = phaseCanvas3.width;
+            const h1 = phaseCanvas3.height;
+            const cx = w1 / 2;
+            const cy = h1 / 2;
+            const scale = 30;
+            
+            ctx1.fillStyle = '#0a1628';
+            ctx1.fillRect(0, 0, w1, h1);
+            
+            // Axes
+            ctx1.strokeStyle = '#333';
+            ctx1.lineWidth = 1;
+            ctx1.beginPath();
+            ctx1.moveTo(0, cy);
+            ctx1.lineTo(w1, cy);
+            ctx1.moveTo(cx, 0);
+            ctx1.lineTo(cx, h1);
+            ctx1.stroke();
+            
+            // Limit cycle r = sqrt(mu)
+            if (mu_3 > 0) {
+                ctx1.strokeStyle = '#4fc3f7';
+                ctx1.lineWidth = 2;
+                ctx1.beginPath();
+                ctx1.arc(cx, cy, rStar * scale, 0, 2 * Math.PI);
+                ctx1.stroke();
+            }
+            
+            // Trail
+            if (trail3.length > 1) {
+                ctx1.beginPath();
+                ctx1.strokeStyle = 'rgba(46, 204, 113, 0.6)';
+                ctx1.lineWidth = 1.5;
+                for (let i = 0; i < trail3.length; i++) {
+                    const p = trail3[i];
+                    if (i === 0) ctx1.moveTo(p.x, p.y);
+                    else ctx1.lineTo(p.x, p.y);
+                }
+                ctx1.stroke();
+            }
+            
+            // Current point
+            const x = cx + r_3 * scale * Math.cos(theta_3);
+            const y = cy - r_3 * scale * Math.sin(theta_3);
+            ctx1.beginPath();
+            ctx1.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx1.fillStyle = '#ff5722';
+            ctx1.fill();
+            
+            trail3.push({x, y});
+            if (trail3.length > maxTrail3) trail3.shift();
+            
+            // Cobweb diagram
+            const ctx2 = cobweb3Ctx;
+            const w2 = cobwebCanvas3.width;
+            const h2 = cobwebCanvas3.height;
+            const margin = 25;
+            const size = Math.min(w2, h2) - 2 * margin;
+            const rMax = 3;
+            
+            ctx2.fillStyle = '#0a1628';
+            ctx2.fillRect(0, 0, w2, h2);
+            
+            // Axes
+            ctx2.strokeStyle = '#333';
+            ctx2.lineWidth = 1;
+            ctx2.beginPath();
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(w2 - 5, h2 - margin);
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(margin, 5);
+            ctx2.stroke();
+            
+            // y = x line
+            ctx2.strokeStyle = '#4fc3f7';
+            ctx2.setLineDash([3, 3]);
+            ctx2.beginPath();
+            ctx2.moveTo(margin, h2 - margin);
+            ctx2.lineTo(margin + size, h2 - margin - size);
+            ctx2.stroke();
+            ctx2.setLineDash([]);
+            
+            // Poincare map P(r, mu)
+            ctx2.strokeStyle = '#ff9800';
+            ctx2.lineWidth = 2;
+            ctx2.beginPath();
+            for (let i = 1; i <= 100; i++) {
+                const rIn = (i / 100) * rMax;
+                const rOut = poincareMap3(rIn, mu_3);
+                const px = margin + (rIn / rMax) * size;
+                const py = h2 - margin - (Math.min(rOut, rMax) / rMax) * size;
+                if (i === 1) ctx2.moveTo(px, py);
+                else ctx2.lineTo(px, py);
+            }
+            ctx2.stroke();
+            
+            // Fixed point
+            if (mu_3 > 0) {
+                ctx2.beginPath();
+                ctx2.arc(margin + (rStar / rMax) * size, 
+                         h2 - margin - (rStar / rMax) * size, 5, 0, 2 * Math.PI);
+                ctx2.fillStyle = '#2ecc71';
+                ctx2.fill();
+            }
+            
+            // Cobweb
+            if (cobwebHistory3.length > 1) {
+                ctx2.strokeStyle = 'rgba(46, 204, 113, 0.7)';
+                ctx2.lineWidth = 1;
+                ctx2.beginPath();
+                
+                for (let i = 0; i < cobwebHistory3.length - 1; i++) {
+                    const r1 = cobwebHistory3[i];
+                    const r2 = cobwebHistory3[i + 1];
+                    
+                    // Vertical to curve
+                    const px1 = margin + (r1 / rMax) * size;
+                    const py1 = h2 - margin - (r1 / rMax) * size;
+                    const py2 = h2 - margin - (r2 / rMax) * size;
+                    
+                    if (i === 0) ctx2.moveTo(px1, py1);
+                    ctx2.lineTo(px1, py2);
+                    
+                    // Horizontal to diagonal
+                    const px2 = margin + (r2 / rMax) * size;
+                    ctx2.lineTo(px2, py2);
+                }
+                ctx2.stroke();
+            }
+            
+            // Labels
+            ctx2.fillStyle = '#81d4fa';
+            ctx2.font = '10px sans-serif';
+            ctx2.fillText('rₙ', w2 - 15, h2 - 10);
+            ctx2.fillText('rₙ₊₁', 5, 15);
+            
+            // Update dynamics
+            if (!demo3Paused && mu_3 > 0) {
+                const dt = 0.05;
+                const dr = r_3 * (mu_3 - r_3 * r_3) * dt;
+                r_3 += dr;
+                theta_3 += dt;
+                
+                // Check for section crossing
+                if (theta_3 >= 2 * Math.PI) {
+                    theta_3 -= 2 * Math.PI;
+                    cobwebHistory3.push(r_3);
+                    if (cobwebHistory3.length > 30) cobwebHistory3.shift();
+                }
+            }
+            
+            // Calculate characteristic multiplier
+            const T = 2 * Math.PI;
+            const lambda = Math.exp(-2 * mu_3 * T);
+            
+            // Update displays
+            document.getElementById('rStarDisplay3').textContent = rStar.toFixed(3);
+            document.getElementById('lambdaDisplay3').textContent = lambda.toExponential(2);
+            
+            requestAnimationFrame(drawDemo3);
+        }
+        
+        function resetDemo3() {
+            r0_3 = parseFloat(document.getElementById('r0Slider3').value);
+            r_3 = r0_3;
+            theta_3 = 0;
+            trail3 = [];
+            cobwebHistory3 = [r0_3];
+        }
+        
+        function toggleDemo3Pause() {
+            demo3Paused = !demo3Paused;
+            document.getElementById('demo3PauseBtn').textContent = 
+                demo3Paused ? '再開' : '一時停止';
+        }
+        
+        document.getElementById('muSlider').addEventListener('input', (e) => {
+            mu_3 = parseFloat(e.target.value);
+            document.getElementById('muDisplay').textContent = mu_3.toFixed(2);
+            resetDemo3();
+        });
+        
+        document.getElementById('r0Slider3').addEventListener('input', (e) => {
+            r0_3 = parseFloat(e.target.value);
+            document.getElementById('r0Display3').textContent = r0_3.toFixed(2);
+            resetDemo3();
+        });
+        
+        // Start all demos
+        drawConcept();
+        drawDemo2();
+        drawDemo3();
+    </script>
+</body>
+</html>

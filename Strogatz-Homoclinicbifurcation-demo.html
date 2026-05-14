@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ホモクリニック分岐デモ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .equation {
+            font-family: serif;
+            font-style: italic;
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        canvas {
+            background: #16213e;
+            border-radius: 12px;
+            max-width: 100%;
+            touch-action: none;
+        }
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            margin-top: 20px;
+        }
+        .slider-container {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        .mu-value {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -10px;
+            cursor: pointer;
+        }
+        .info-panel {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #0f3460;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-value {
+            font-family: monospace;
+            color: #4fc3f7;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.cycle {
+            background: #0d3b66;
+            color: #4fc3f7;
+        }
+        .status.critical {
+            background: #4a3000;
+            color: #ff9800;
+        }
+        .status.no-cycle {
+            background: #4a1010;
+            color: #f44336;
+        }
+        .key-point {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .key-point strong {
+            color: #4fc3f7;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        .speed-indicator {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+        }
+        .speed-bar {
+            height: 20px;
+            background: #1a1a2e;
+            border-radius: 10px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .speed-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <h1>ホモクリニック分岐 (Saddle-loop)</h1>
+    <div class="equation">
+        ẋ = y, &nbsp; ẏ = x − x² − μy
+    </div>
+
+<canvas id="canvas" width="350" height="350"></canvas>
+
+<div class="controls">
+    <div class="slider-container">
+        <div class="slider-label">
+            <span>パラメータ μ</span>
+            <span class="mu-value" id="muDisplay">0.20</span>
+        </div>
+        <input type="range" id="muSlider" min="0.05" max="0.8" step="0.01" value="0.20">
+    </div>
+    
+    <div class="info-panel">
+        <div class="info-row">
+            <span>サドル点への最接近距離</span>
+            <span class="info-value" id="distDisplay">---</span>
+        </div>
+        <div class="info-row">
+            <span>現在の速度 |v|</span>
+            <span class="info-value" id="speedDisplay">---</span>
+        </div>
+        <div class="info-row">
+            <span>周期の目安</span>
+            <span class="info-value" id="periodDisplay">---</span>
+        </div>
+        
+        <div class="speed-indicator">
+            <span>サドル付近での速度</span>
+            <div class="speed-bar">
+                <div class="speed-fill" id="speedBar"></div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f44336;"></div>
+                <span>サドル点</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4caf50;"></div>
+                <span>安定焦点</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff9800;"></div>
+                <span>不安定多様体</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #9c27b0;"></div>
+                <span>安定多様体</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status cycle" id="status">
+        リミットサイクル存在
+    </div>
+    
+    <div class="key-point">
+        <strong>ホモクリニック分岐の特徴：</strong><br>
+        • サドル点に近づくと<strong>対数的に遅くなる</strong><br>
+        • 周期 T ∝ |ln(μ − μc)|<br>
+        • 振幅は O(1) のまま<br>
+        • μ を小さくしてサドル付近での減速を観察！
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const muSlider = document.getElementById('muSlider');
+    const muDisplay = document.getElementById('muDisplay');
+    const distDisplay = document.getElementById('distDisplay');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const periodDisplay = document.getElementById('periodDisplay');
+    const speedBar = document.getElementById('speedBar');
+    const status = document.getElementById('status');
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const scale = 150;
+
+    let mu = 0.20;
+    let x = 0.5;
+    let y = 0.3;
+    let trail = [];
+    const maxTrailLength = 800;
+    let lastTime = performance.now();
+    let minDistToSaddle = Infinity;
+    let periodEstimate = 0;
+    let lastCrossTime = 0;
+
+    // 固定点
+    const saddle = { x: 0, y: 0 };
+    const focus = { x: 1, y: 0 };
+
+    function xDot(x, y) {
+        return y;
+    }
+
+    function yDot(x, y, mu) {
+        return x - x * x - mu * y;
+    }
+
+    function updateStatus() {
+        if (mu > 0.5) {
+            status.className = 'status no-cycle';
+            status.textContent = '減衰が強い（リミットサイクルなし）';
+        } else if (mu < 0.1) {
+            status.className = 'status critical';
+            status.textContent = '⚠️ ホモクリニック軌道に接近中！';
+        } else {
+            status.className = 'status cycle';
+            status.textContent = 'リミットサイクル存在';
+        }
+    }
+
+    function drawManifolds() {
+        // 不安定多様体（サドル点から出る）
+        ctx.strokeStyle = '#ff9800';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        
+        // 正の方向
+        let mx = 0.01, my = 0.01;
+        ctx.beginPath();
+        ctx.moveTo(centerX + saddle.x * scale, centerY - saddle.y * scale);
+        for (let i = 0; i < 200; i++) {
+            const dx = xDot(mx, my) * 0.02;
+            const dy = yDot(mx, my, mu) * 0.02;
+            mx += dx;
+            my += dy;
+            if (mx > 1.5 || mx < -0.5 || Math.abs(my) > 1) break;
+            ctx.lineTo(centerX + mx * scale, centerY - my * scale);
+        }
+        ctx.stroke();
+        
+        // 負の方向
+        mx = 0.01; my = -0.01;
+        ctx.beginPath();
+        ctx.moveTo(centerX + saddle.x * scale, centerY - saddle.y * scale);
+        for (let i = 0; i < 200; i++) {
+            const dx = xDot(mx, my) * 0.02;
+            const dy = yDot(mx, my, mu) * 0.02;
+            mx += dx;
+            my += dy;
+            if (mx > 1.5 || mx < -0.5 || Math.abs(my) > 1) break;
+            ctx.lineTo(centerX + mx * scale, centerY - my * scale);
+        }
+        ctx.stroke();
+        
+        // 安定多様体（サドル点に入る）- 逆時間
+        ctx.strokeStyle = '#9c27b0';
+        
+        mx = -0.01; my = 0.005;
+        ctx.beginPath();
+        ctx.moveTo(centerX + saddle.x * scale, centerY - saddle.y * scale);
+        for (let i = 0; i < 100; i++) {
+            const dx = -xDot(mx, my) * 0.02;
+            const dy = -yDot(mx, my, mu) * 0.02;
+            mx += dx;
+            my += dy;
+            if (mx < -0.8 || Math.abs(my) > 1) break;
+            ctx.lineTo(centerX + mx * scale, centerY - my * scale);
+        }
+        ctx.stroke();
+        
+        mx = -0.01; my = -0.005;
+        ctx.beginPath();
+        ctx.moveTo(centerX + saddle.x * scale, centerY - saddle.y * scale);
+        for (let i = 0; i < 100; i++) {
+            const dx = -xDot(mx, my) * 0.02;
+            const dy = -yDot(mx, my, mu) * 0.02;
+            mx += dx;
+            my += dy;
+            if (mx < -0.8 || Math.abs(my) > 1) break;
+            ctx.lineTo(centerX + mx * scale, centerY - my * scale);
+        }
+        ctx.stroke();
+        
+        ctx.setLineDash([]);
+    }
+
+    function draw() {
+        const currentTime = performance.now();
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.03);
+        lastTime = currentTime;
+
+        // RK4積分
+        const h = dt * 1.5;
+        const k1x = xDot(x, y);
+        const k1y = yDot(x, y, mu);
+        const k2x = xDot(x + h/2 * k1x, y + h/2 * k1y);
+        const k2y = yDot(x + h/2 * k1x, y + h/2 * k1y, mu);
+        const k3x = xDot(x + h/2 * k2x, y + h/2 * k2y);
+        const k3y = yDot(x + h/2 * k2x, y + h/2 * k2y, mu);
+        const k4x = xDot(x + h * k3x, y + h * k3y);
+        const k4y = yDot(x + h * k3x, y + h * k3y, mu);
+        
+        const prevY = y;
+        x += h/6 * (k1x + 2*k2x + 2*k3x + k4x);
+        y += h/6 * (k1y + 2*k2y + 2*k3y + k4y);
+
+        // 周期計測（y=0を正方向に横切る）
+        if (prevY < 0 && y >= 0 && x > 0.5) {
+            if (lastCrossTime > 0) {
+                periodEstimate = (currentTime - lastCrossTime) / 1000;
+            }
+            lastCrossTime = currentTime;
+            minDistToSaddle = Infinity;
+        }
+
+        // サドル点への距離
+        const distToSaddle = Math.sqrt(x * x + y * y);
+        if (distToSaddle < minDistToSaddle) {
+            minDistToSaddle = distToSaddle;
+        }
+
+        // 境界チェック
+        if (x < -0.5 || x > 1.5 || Math.abs(y) > 1.5) {
+            x = 0.5;
+            y = 0.3;
+            trail = [];
+        }
+
+        // 現在位置（画面座標）
+        const screenX = centerX + x * scale;
+        const screenY = centerY - y * scale;
+        
+        // 速度
+        const speed = Math.sqrt(xDot(x,y)**2 + yDot(x,y,mu)**2);
+
+        // 軌跡を記録
+        trail.push({ x: screenX, y: screenY, speed });
+        if (trail.length > maxTrailLength) {
+            trail.shift();
+        }
+
+        // 描画クリア
+        ctx.fillStyle = '#16213e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // グリッド
+        ctx.strokeStyle = '#2a2a4a';
+        ctx.lineWidth = 1;
+        for (let gx = -0.5; gx <= 1.5; gx += 0.5) {
+            ctx.beginPath();
+            ctx.moveTo(centerX + gx * scale, 0);
+            ctx.lineTo(centerX + gx * scale, canvas.height);
+            ctx.stroke();
+        }
+        for (let gy = -1; gy <= 1; gy += 0.5) {
+            ctx.beginPath();
+            ctx.moveTo(0, centerY - gy * scale);
+            ctx.lineTo(canvas.width, centerY - gy * scale);
+            ctx.stroke();
+        }
+
+        // 多様体を描画
+        drawManifolds();
+
+        // 軌跡を描画（速度で色分け）
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                const p = trail[i];
+                const prev = trail[i - 1];
+                
+                // 速度に基づく色（遅い=赤、速い=緑）
+                const normalizedSpeed = Math.min(p.speed / 0.5, 1);
+                const hue = normalizedSpeed * 120;
+                
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = `hsla(${hue}, 80%, 50%, ${alpha * 0.9})`;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+        }
+
+        // 固定点：サドル（原点）
+        ctx.beginPath();
+        ctx.arc(centerX + saddle.x * scale, centerY - saddle.y * scale, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#f44336';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('サドル', centerX + saddle.x * scale - 15, centerY - saddle.y * scale + 25);
+
+        // 固定点：安定焦点 (1, 0)
+        ctx.beginPath();
+        ctx.arc(centerX + focus.x * scale, centerY - focus.y * scale, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#4caf50';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillText('焦点', centerX + focus.x * scale - 10, centerY - focus.y * scale + 25);
+
+        // 現在位置
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, 8, 0, 2 * Math.PI);
+        const pointHue = Math.min(speed / 0.5, 1) * 120;
+        ctx.fillStyle = `hsl(${pointHue}, 80%, 50%)`;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 情報更新
+        distDisplay.textContent = minDistToSaddle.toFixed(3);
+        speedDisplay.textContent = speed.toFixed(3);
+        if (periodEstimate > 0) {
+            periodDisplay.textContent = periodEstimate.toFixed(2) + 's';
+        } else {
+            periodDisplay.textContent = '計測中...';
+        }
+        
+        // 速度バー
+        const speedPercent = Math.min(speed / 0.5 * 100, 100);
+        speedBar.style.width = speedPercent + '%';
+
+        requestAnimationFrame(draw);
+    }
+
+    muSlider.addEventListener('input', (e) => {
+        mu = parseFloat(e.target.value);
+        muDisplay.textContent = mu.toFixed(2);
+        updateStatus();
+        trail = [];
+        minDistToSaddle = Infinity;
+        periodEstimate = 0;
+        lastCrossTime = 0;
+    });
+
+    // クリックで初期位置をリセット
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left - centerX) / scale;
+        const clickY = -(e.clientY - rect.top - centerY) / scale;
+        
+        x = clickX;
+        y = clickY;
+        trail = [];
+        minDistToSaddle = Infinity;
+        periodEstimate = 0;
+        lastCrossTime = 0;
+    });
+
+    updateStatus();
+    draw();
+</script>
+
+</body>
+</html>

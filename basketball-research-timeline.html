@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>バスケットボール学術研究 時系列フロー</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0e13;--panel:#0d1219;--card:#111820;--border:#1a2332;
+  --text:#d8e2ed;--muted:#7b8fa3;--dim:#4a5b6e;--accent:#7dd3fc;
+  --sans:'IBM Plex Sans JP','Hiragino Kaku Gothic ProN',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  /* 7 stream colors */
+  --s-biomech:#fb923c;--s-med:#ef4444;--s-psych:#f472b6;
+  --s-physio:#a3e635;--s-analytics:#22d3ee;--s-aicv:#60a5fa;
+  --s-coaching:#c084fc;--s-econ:#fbbf24;--s-bridge:#34d399;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;background:rgba(10,14,19,.96);backdrop-filter:blur(10px)}
+.header .logo{font-size:15px;font-weight:700;white-space:nowrap}
+.header .logo span{color:var(--accent)}
+.header .sub{color:var(--muted);font-size:12px;border-left:1px solid var(--border);padding-left:16px}
+
+.wrap{max-width:1400px;margin:0 auto;padding:32px 24px}
+.title-area{text-align:center;margin-bottom:36px}
+.title-area h1{font-size:clamp(22px,3.5vw,32px);font-weight:700;line-height:1.3}
+.title-area h1 em{font-style:normal;color:var(--accent)}
+.title-area .lead{color:var(--muted);font-size:14px;margin-top:10px;max-width:760px;margin-inline:auto}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:28px}
+.legend .lc{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);padding:3px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border)}
+.legend .lc .sw{width:8px;height:8px;border-radius:2px}
+
+.flow-area{overflow-x:auto;overflow-y:visible;padding-bottom:24px}
+
+svg.flow{display:block;margin:0 auto}
+svg.flow text{font-family:var(--sans)}
+svg.flow .year-label{fill:var(--dim);font-size:11px;font-weight:600;font-family:var(--mono)}
+svg.flow .year-line{stroke:var(--border);stroke-width:1;stroke-dasharray:4,4}
+svg.flow .node-box{rx:7;ry:7;stroke-width:1.4;cursor:default;transition:filter .15s}
+svg.flow .node-box:hover{filter:brightness(1.4)}
+svg.flow .node-text{fill:var(--text);font-size:10.5px;font-weight:500;pointer-events:none}
+svg.flow .node-sub{fill:var(--muted);font-size:8.5px;pointer-events:none}
+svg.flow .node-id{font-family:var(--mono);font-size:8px;font-weight:600;pointer-events:none}
+svg.flow .edge{fill:none;stroke-width:1.3;opacity:.4}
+svg.flow .edge-strong{stroke-width:2.2;opacity:.6}
+svg.flow .edge-bridge{stroke-dasharray:5,3;opacity:.45}
+svg.flow .stream-label{fill:var(--muted);font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+svg.flow .era-band{fill:rgba(255,255,255,.015)}
+svg.flow .era-label{fill:var(--dim);font-size:10px;font-weight:500;font-style:italic}
+svg.flow .landmark{rx:9;ry:9;stroke-width:2;stroke-dasharray:none}
+
+.note{max-width:960px;margin:32px auto 0;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--bridge);border-radius:10px;padding:14px 18px;font-size:12px;color:var(--muted);line-height:1.7}
+.note strong{color:var(--text)}
+
+.footer{border-top:1px solid var(--border);padding:20px 24px;text-align:center;color:var(--dim);font-size:12px;margin-top:40px}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">🏀 <span>Basketball Research</span> Timeline</div>
+  <div class="sub">10サブコミュニティの研究系譜 1985–2025</div>
+  <nav style="margin-left:auto;display:flex;gap:.8rem;font-size:12px">
+    <a href="basketball-research-map.html">← 研究マップ</a>
+    <a href="oliver-research-tree.html">Oliver読解</a>
+    <a href="NBAlandscape.html">NBA勢力図</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="title-area">
+    <h1>バスケットボール学術研究の<em>時系列フロー</em></h1>
+    <p class="lead">縦軸が時間（1985→2025）。横に7つの研究ストリームを配置し、各サブコミュニティのランドマーク論文・イベントを時系列で追う。破線は分野間の橋渡し。太線が各分野の幹線。</p>
+  </div>
+
+  <div class="legend">
+    <div class="lc"><div class="sw" style="background:var(--s-biomech)"></div>バイオメカニクス</div>
+    <div class="lc"><div class="sw" style="background:var(--s-med)"></div>スポーツ医学</div>
+    <div class="lc"><div class="sw" style="background:var(--s-psych)"></div>心理学/Quiet Eye</div>
+    <div class="lc"><div class="sw" style="background:var(--s-analytics)"></div>アナリティクス</div>
+    <div class="lc"><div class="sw" style="background:var(--s-aicv)"></div>AI/CV</div>
+    <div class="lc"><div class="sw" style="background:var(--s-coaching)"></div>コーチング/教育</div>
+    <div class="lc"><div class="sw" style="background:var(--s-econ)"></div>経済学/審判/テク</div>
+    <div class="lc"><div class="sw" style="background:var(--s-bridge)"></div>橋渡し（破線）</div>
+  </div>
+
+  <div class="flow-area" id="flowArea"></div>
+
+  <div class="note">
+    <strong>読み方：</strong>
+    3つの大きな潮流が見える。
+    (1) アナリティクス幹線 — Oliver 2004→JQAS 2007→RAPM/EPV/レビュー（中央列）が最も密な引用チェーンを形成。
+    (2) バイオメカ/医学 ← → AI/CVの技術融合 — マーカーレスMoCapとHawk-Eye 3Dが2020年代に両分野を接続（左→右への破線）。
+    (3) 心理学の独立進行 — Quiet Eyeパラダイム（Vickers 1996→2016→Sirnik 2022メタ分析）はアナリティクスとほぼ接触がない。
+    2019年のPiggott et al.「サイロ批判」レビューが、この断片化を初めて明示的に指摘した。
+  </div>
+</div>
+
+<footer class="footer">
+  <a href="basketball-research-map.html">← 全体地図（10サブコミュニティ）</a> ｜
+  <a href="oliver-research-tree.html">Oliver読解マップ</a> ｜
+  <a href="oliver-research-flow.html">Oliver時系列フロー</a>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════
+const COLORS = {
+  biomech:'#fb923c', med:'#ef4444', psych:'#f472b6',
+  analytics:'#22d3ee', aicv:'#60a5fa', coaching:'#c084fc',
+  econ:'#fbbf24', bridge:'#34d399', physio:'#a3e635'
+};
+
+// 7 columns
+const STREAMS = [
+  {id:'biomech',  label:'バイオメカ'},
+  {id:'med',      label:'スポーツ医学'},
+  {id:'psych',    label:'心理学/QE'},
+  {id:'analytics',label:'アナリティクス'},
+  {id:'aicv',     label:'AI / CV'},
+  {id:'coaching', label:'コーチング'},
+  {id:'econ',     label:'経済/審判/テク'}
+];
+
+const Y_START = 1983;
+const Y_END   = 2026.5;
+
+const NODES = [
+  // ── Pre-2000 ──
+  {id:'GVT85',    year:1985,   si:3, label:'GVT 1985',         sub:'Hot hand — 証拠なし (Cognitive Psychol.)', cat:'analytics'},
+  {id:'ISBS82',   year:1985.5, si:0, label:'ISBS 1982–',       sub:'国際スポーツバイオメカニクス学会', cat:'biomech', w:130},
+  {id:'KNU93',    year:1993,   si:0, label:'Knudson 1993',      sub:'シュート指導6ポイント (JOPERD)', cat:'biomech'},
+  {id:'VIC96',    year:1996,   si:2, label:'Vickers 1996',      sub:'Quiet Eye発見 (J Exp Psychol)', cat:'psych', w:145},
+
+  // ── 2000-2005: Oliver時代 ──
+  {id:'OLIVER',   year:2004, si:3, label:'Oliver 2004',         sub:'Basketball on Paper — ポゼッション効率体系', cat:'oliver', w:200},
+  {id:'HEW05',    year:2005, si:1, label:'Hewett 2005',         sub:'膝外反→ACL予測 前向き研究 (AJSM)', cat:'med', w:160},
+  {id:'JQAS05',   year:2005.4, si:3, label:'JQAS 2005–',       sub:'J Quant Analysis in Sports 創刊', cat:'analytics', w:145},
+
+  // ── 2006-2010: 制度化 ──
+  {id:'SSAC06',   year:2006, si:3, label:'MIT Sloan SSAC 2006', sub:'Daryl Morey創設 — 2500名参加', cat:'analytics', w:165},
+  {id:'KROSS07',  year:2007, si:1, label:'Krosshaug 2007',      sub:'ACL損傷ビデオ分析39例 (AJSM)', cat:'med'},
+  {id:'KUB07',    year:2007.3, si:3, label:'Kubatko 2007',      sub:'JQAS — ポゼッション語彙の査読化', cat:'analytics', w:165},
+  {id:'NESSIS07', year:2007.6, si:3, label:'NESSIS 2007–',      sub:'Harvard — 隔年統計シンポジウム', cat:'analytics', w:140},
+  {id:'WILSON09', year:2009, si:2, label:'Wilson & Vine 2009',  sub:'不安→フリースロー視覚注意 (JSEP)', cat:'psych'},
+  {id:'SILL10',   year:2010, si:3, label:'Sill 2010',           sub:'RAPM正則化 (MIT Sloan)', cat:'analytics'},
+  {id:'PW10',     year:2010.3, si:6, label:'Price & Wolfers 2010', sub:'審判人種バイアス (QJE)', cat:'econ'},
+
+  // ── 2011-2015: トラッキング革命 ──
+  {id:'2NDSP13',  year:2013, si:4, label:'Second Spectrum 2013', sub:'USC発 — NBA公式トラッキング', cat:'aicv', w:160},
+  {id:'NBAEMR',   year:2013.3, si:1, label:'NBA傷害DB 2013–',  sub:'EMRベース 年1550-1892件記録', cat:'med', w:145},
+  {id:'MIL14',    year:2014, si:4, label:'Miller et al. 2014',  sub:'因子化ポイントプロセス (ICML)', cat:'aicv'},
+  {id:'FRANK15',  year:2015, si:3, label:'Franks 2015',         sub:'守備スキル空間構造 (AOAS)', cat:'analytics'},
+  {id:'CVSPORTS', year:2015.3, si:4, label:'CVsports 2015–',   sub:'CVPR併催ワークショップ', cat:'aicv', w:130},
+  {id:'OKA15',    year:2015.5, si:0, label:'Okazaki 2015',      sub:'ジャンプシュート総説 (Sports Biomech)', cat:'biomech'},
+
+  // ── 2016-2020: EPV+QE+統合 ──
+  {id:'EPV16',    year:2016, si:3, label:'Cervone EPV 2016',    sub:'ポゼッション価値 多解像度モデル (JASA)', cat:'analytics', w:185},
+  {id:'VIC16',    year:2016.3, si:2, label:'Vickers 2016',      sub:'Quiet Eye起源と争点 (CISS)', cat:'psych'},
+  {id:'WB18',     year:2018, si:3, label:'Wu & Bornn 2018',     sub:'SportVUオフェンス移動 (Am Stat)', cat:'analytics'},
+  {id:'MS18',     year:2018.3, si:3, label:'Miller & Sanjurjo 2018', sub:'Hot hand反転 (Econometrica)', cat:'analytics', w:170},
+  {id:'DAVIDS',   year:2019, si:5, label:'Davids CLA',          sub:'制約主導アプローチ・非線形教育学', cat:'coaching', w:145},
+  {id:'PIG19',    year:2019.3, si:5, label:'Piggott 2019',      sub:'サイロ批判レビュー (EJSS)', cat:'bridge', w:150},
+  {id:'HVAT19',   year:2019.5, si:3, label:'Hvattum 2019',      sub:'±系包括レビュー (IJCSS)', cat:'analytics'},
+  {id:'ZHAN19',   year:2019.7, si:4, label:'Zhang 2019',        sub:'NBAシミュレーション PhD (UPM)', cat:'aicv'},
+
+  // ── 2021-2025: 統合加速 ──
+  {id:'GENIUS21', year:2021, si:4, label:'Genius Sports 2021',  sub:'Second Spectrum $200M買収', cat:'aicv', w:155},
+  {id:'TF21',     year:2021.2, si:3, label:'Terner & Franks 2021', sub:'Annual Review 包括レビュー', cat:'analytics', w:165},
+  {id:'COHAN21',  year:2021.5, si:1, label:'Cohan METIC 2021',  sub:'Transformer型NBA傷害分類', cat:'bridge'},
+  {id:'SIR22',    year:2022, si:2, label:'Sirnik 2022',         sub:'視覚的注意メタ分析 (IJSSC)', cat:'psych'},
+  {id:'CECCHIN',  year:2022.3, si:3, label:'Cecchin 2022',      sub:'Four Factors因果妥当化', cat:'analytics'},
+  {id:'HAWKEYE',  year:2023, si:4, label:'Hawk-Eye 3D 2023–',   sub:'Sony — 29身体ポイント光学追跡', cat:'aicv', w:160},
+  {id:'CHAR23',   year:2023.3, si:3, label:'Charamis 2023',     sub:'Euroleagueポゼッション検証', cat:'analytics'},
+  {id:'CMSAC24',  year:2024, si:3, label:'CMSAC 2024',          sub:'Carnegie Mellon センター設立', cat:'analytics', w:140},
+  {id:'PENNER',   year:2025, si:4, label:'Penner 2025',         sub:'9アーキタイプ k-means (Front Sports)', cat:'analytics'},
+  {id:'CHEN25',   year:2025.3, si:5, label:'Chen 2025',         sub:'206論文レビュー — ボックススコア依存を指摘', cat:'coaching', w:185},
+];
+
+// Edges
+const EDGES = [
+  // ── Analytics trunk ──
+  {from:'OLIVER', to:'JQAS05', cat:'analytics', strong:true},
+  {from:'OLIVER', to:'SSAC06', cat:'analytics', strong:true},
+  {from:'OLIVER', to:'KUB07', cat:'analytics', strong:true},
+  {from:'JQAS05', to:'NESSIS07', cat:'analytics'},
+  {from:'KUB07', to:'SILL10', cat:'analytics'},
+  {from:'KUB07', to:'FRANK15', cat:'analytics'},
+  {from:'FRANK15', to:'EPV16', cat:'analytics', strong:true},
+  {from:'SILL10', to:'HVAT19', cat:'analytics'},
+  {from:'EPV16', to:'WB18', cat:'analytics'},
+  {from:'EPV16', to:'TF21', cat:'analytics', strong:true},
+  {from:'KUB07', to:'CECCHIN', cat:'analytics'},
+  {from:'CECCHIN', to:'CHAR23', cat:'analytics'},
+  {from:'TF21', to:'CMSAC24', cat:'analytics'},
+  {from:'GVT85', to:'OLIVER', cat:'analytics'},
+  {from:'GVT85', to:'MS18', cat:'analytics', strong:true},
+
+  // ── Biomech lineage ──
+  {from:'KNU93', to:'OKA15', cat:'biomech', strong:true},
+
+  // ── Sports Med lineage ──
+  {from:'HEW05', to:'KROSS07', cat:'med', strong:true},
+  {from:'NBAEMR', to:'COHAN21', cat:'med'},
+
+  // ── Psychology / QE ──
+  {from:'VIC96', to:'WILSON09', cat:'psych', strong:true},
+  {from:'WILSON09', to:'VIC16', cat:'psych'},
+  {from:'VIC16', to:'SIR22', cat:'psych', strong:true},
+
+  // ── AI/CV lineage ──
+  {from:'2NDSP13', to:'MIL14', cat:'aicv', strong:true},
+  {from:'MIL14', to:'CVSPORTS', cat:'aicv'},
+  {from:'2NDSP13', to:'GENIUS21', cat:'aicv', strong:true},
+  {from:'GENIUS21', to:'HAWKEYE', cat:'aicv', strong:true},
+  {from:'ZHAN19', to:'PENNER', cat:'aicv'},
+
+  // ── Coaching ──
+  {from:'DAVIDS', to:'PIG19', cat:'coaching'},
+  {from:'PIG19', to:'CHEN25', cat:'coaching'},
+
+  // ── Economics ──
+  {from:'OLIVER', to:'PW10', cat:'econ'},
+
+  // ═══ BRIDGES (dashed) ═══
+  // Analytics ↔ AI/CV
+  {from:'EPV16', to:'ZHAN19', cat:'bridge', bridge:true},
+  {from:'WB18', to:'ZHAN19', cat:'bridge', bridge:true},
+  {from:'HVAT19', to:'PENNER', cat:'bridge', bridge:true},
+  // AI/CV ↔ Biomech (markerless MoCap)
+  {from:'HAWKEYE', to:'OKA15', cat:'bridge', bridge:true, label:'マーカーレスMoCap'},
+  // AI/CV ↔ Med (injury prediction)
+  {from:'GENIUS21', to:'COHAN21', cat:'bridge', bridge:true},
+  // Analytics ↔ Coaching (silo critique)
+  {from:'TF21', to:'CHEN25', cat:'bridge', bridge:true},
+  // Biomech → Analytics (efficiency mechanisms — weak)
+  {from:'OKA15', to:'TF21', cat:'bridge', bridge:true},
+];
+
+// ══════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════
+const MARGIN = {top:52, right:30, bottom:30, left:70};
+const COL_W = 165;
+const COL_GAP = 16;
+const SVG_W = MARGIN.left + STREAMS.length*(COL_W+COL_GAP) - COL_GAP + MARGIN.right;
+const yearToY = y => MARGIN.top + ((y-Y_START)/(Y_END-Y_START))*1050;
+const NODE_H = 40;
+const SVG_H = yearToY(Y_END) + MARGIN.bottom;
+const colX = i => MARGIN.left + i*(COL_W+COL_GAP);
+
+const area = document.getElementById('flowArea');
+const ns = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(ns,'svg');
+svg.setAttribute('class','flow');
+svg.setAttribute('width',SVG_W);
+svg.setAttribute('height',SVG_H);
+svg.setAttribute('viewBox',`0 0 ${SVG_W} ${SVG_H}`);
+area.appendChild(svg);
+
+// Arrow markers
+const defs = document.createElementNS(ns,'defs');
+Object.entries(COLORS).forEach(([key,color]) => {
+  const m = document.createElementNS(ns,'marker');
+  m.setAttribute('id','a-'+key); m.setAttribute('viewBox','0 0 10 10');
+  m.setAttribute('refX','10'); m.setAttribute('refY','5');
+  m.setAttribute('markerWidth','5'); m.setAttribute('markerHeight','5');
+  m.setAttribute('orient','auto');
+  const p = document.createElementNS(ns,'path');
+  p.setAttribute('d','M 0 0 L 10 5 L 0 10 z');
+  p.setAttribute('fill',color); p.setAttribute('opacity','0.6');
+  m.appendChild(p); defs.appendChild(m);
+});
+svg.appendChild(defs);
+
+// Era bands
+const eras = [
+  {y1:1983, y2:2000, label:'前史'},
+  {y1:2000, y2:2006, label:'Oliver時代'},
+  {y1:2006, y2:2013, label:'制度化'},
+  {y1:2013, y2:2020, label:'トラッキング革命'},
+  {y1:2020, y2:2026.5, label:'統合加速'}
+];
+eras.forEach((e,i) => {
+  if (i%2===1) {
+    const rect = document.createElementNS(ns,'rect');
+    rect.setAttribute('class','era-band');
+    rect.setAttribute('x',MARGIN.left-10);
+    rect.setAttribute('y',yearToY(e.y1));
+    rect.setAttribute('width',SVG_W-MARGIN.left-MARGIN.right+20);
+    rect.setAttribute('height',yearToY(e.y2)-yearToY(e.y1));
+    svg.appendChild(rect);
+  }
+  const txt = document.createElementNS(ns,'text');
+  txt.setAttribute('class','era-label');
+  txt.setAttribute('x', SVG_W - MARGIN.right + 4);
+  txt.setAttribute('y', yearToY((e.y1+e.y2)/2)+4);
+  txt.setAttribute('text-anchor','start');
+  txt.setAttribute('writing-mode','tb');
+  txt.textContent = e.label;
+  svg.appendChild(txt);
+});
+
+// Year grid
+const yearMarks = [1985,1990,1995,2000,2004,2006,2010,2013,2015,2018,2020,2022,2025];
+yearMarks.forEach(y => {
+  const yy = yearToY(y);
+  const line = document.createElementNS(ns,'line');
+  line.setAttribute('class','year-line');
+  line.setAttribute('x1',MARGIN.left-10); line.setAttribute('x2',SVG_W-MARGIN.right);
+  line.setAttribute('y1',yy); line.setAttribute('y2',yy);
+  svg.appendChild(line);
+  const txt = document.createElementNS(ns,'text');
+  txt.setAttribute('class','year-label');
+  txt.setAttribute('x',MARGIN.left-16); txt.setAttribute('y',yy+4);
+  txt.setAttribute('text-anchor','end');
+  txt.textContent = y;
+  svg.appendChild(txt);
+});
+
+// Stream labels
+STREAMS.forEach((s,i) => {
+  const txt = document.createElementNS(ns,'text');
+  txt.setAttribute('class','stream-label');
+  txt.setAttribute('x',colX(i)+COL_W/2);
+  txt.setAttribute('y',MARGIN.top-16);
+  txt.setAttribute('text-anchor','middle');
+  txt.setAttribute('fill', COLORS[s.id] || '#888');
+  txt.textContent = s.label;
+  svg.appendChild(txt);
+});
+
+// Column separators
+STREAMS.forEach((s,i) => {
+  if(i===0) return;
+  const x = colX(i)-COL_GAP/2;
+  const line = document.createElementNS(ns,'line');
+  line.setAttribute('x1',x); line.setAttribute('x2',x);
+  line.setAttribute('y1',MARGIN.top-8); line.setAttribute('y2',SVG_H-MARGIN.bottom);
+  line.setAttribute('stroke','rgba(26,35,50,.35)'); line.setAttribute('stroke-width','1');
+  svg.appendChild(line);
+});
+
+// Node positions
+const nodePos = {};
+NODES.forEach(n => {
+  const x = colX(n.si);
+  const y = yearToY(n.year);
+  const w = n.w || 145;
+  nodePos[n.id] = {x:x+(COL_W-w)/2, y:y-NODE_H/2, w, cx:x+COL_W/2, cy:y};
+});
+
+// Draw edges
+const edgeG = document.createElementNS(ns,'g');
+svg.appendChild(edgeG);
+EDGES.forEach(e => {
+  const from = nodePos[e.from];
+  const to = nodePos[e.to];
+  if(!from||!to) return;
+
+  const color = COLORS[e.cat]||'#666';
+  const path = document.createElementNS(ns,'path');
+
+  let x1=from.cx, y1=from.cy+NODE_H/2;
+  let x2=to.cx, y2=to.cy-NODE_H/2;
+  if(y1>y2){y1=from.cy-NODE_H/2; y2=to.cy+NODE_H/2;}
+
+  const dy=y2-y1;
+  const d=`M ${x1} ${y1} C ${x1} ${y1+dy*0.45}, ${x2} ${y2-dy*0.45}, ${x2} ${y2}`;
+  path.setAttribute('d',d);
+
+  let cls='edge';
+  if(e.strong) cls+=' edge-strong';
+  if(e.bridge) cls+=' edge-bridge';
+  path.setAttribute('class',cls);
+  path.setAttribute('stroke',color);
+  path.setAttribute('marker-end',`url(#a-${e.cat})`);
+  edgeG.appendChild(path);
+});
+
+// Draw nodes
+const nodeG = document.createElementNS(ns,'g');
+svg.appendChild(nodeG);
+NODES.forEach(n => {
+  const pos = nodePos[n.id];
+  const g = document.createElementNS(ns,'g');
+  const isOliver = n.cat==='oliver';
+  const isBridge = n.cat==='bridge';
+  const color = isOliver?'#22d3ee':(isBridge?COLORS.bridge:(COLORS[n.cat]||'#666'));
+
+  const rect = document.createElementNS(ns,'rect');
+  rect.setAttribute('class', isOliver?'landmark':'node-box');
+  rect.setAttribute('x',pos.x); rect.setAttribute('y',pos.y);
+  rect.setAttribute('width',pos.w); rect.setAttribute('height',NODE_H);
+  rect.setAttribute('fill', color+(isOliver?'18':'10'));
+  rect.setAttribute('stroke',color);
+  rect.setAttribute('stroke-opacity',isOliver?0.9:0.5);
+  g.appendChild(rect);
+
+  const label = document.createElementNS(ns,'text');
+  label.setAttribute('class','node-text');
+  label.setAttribute('x',pos.x+pos.w/2); label.setAttribute('y',pos.y+15);
+  label.setAttribute('text-anchor','middle');
+  if(isOliver){label.setAttribute('fill','#22d3ee');label.setAttribute('font-size','12px');label.setAttribute('font-weight','700');}
+  label.textContent = n.label;
+  g.appendChild(label);
+
+  const sub = document.createElementNS(ns,'text');
+  sub.setAttribute('class','node-sub');
+  sub.setAttribute('x',pos.x+pos.w/2); sub.setAttribute('y',pos.y+29);
+  sub.setAttribute('text-anchor','middle');
+  if(isOliver){sub.setAttribute('fill','#22d3ee88');sub.setAttribute('font-size','9px');}
+  sub.textContent = n.sub.length > 40 ? n.sub.slice(0,38)+'…' : n.sub;
+  g.appendChild(sub);
+
+  nodeG.appendChild(g);
+});
+</script>
+</body>
+</html>

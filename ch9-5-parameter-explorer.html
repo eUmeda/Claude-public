@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>9.5 パラメーター空間の探索</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; }
+.canvas-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 90px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.78em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.legend {
+  font-size: 0.78em; color: #aaa; margin-top: 6px;
+}
+</style>
+</head>
+<body>
+<h1>ローレンツ系 r-探索 (σ=10, b=8/3 固定)</h1>
+<div class="note">
+r を変えて現象のカタログを見る。主な目印:<br>
+• r&lt;1: 原点のみ安定<br>
+• 13.926: ホモクリニック分岐、過渡カオス出現<br>
+• 24.06: ストレンジアトラクター出現 (C± とヒステリシス)<br>
+• 24.74: 亜臨界ホップ、C± が不安定化<br>
+• 100〜166: 周期窓、間欠カオス、ノイズ的周期性 (Sparrow 1982)
+</div>
+
+<div class="canvas-row">
+  <canvas id="xy" width="340" height="260"></canvas>
+  <canvas id="ts" width="340" height="140"></canvas>
+</div>
+<div class="canvas-row">
+  <canvas id="xz" width="340" height="180"></canvas>
+</div>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>r</span><span id="rv">28.0</span></label>
+    <input type="range" id="rs" min="0.5" max="220" step="0.1" value="28">
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="0.8">r=0.8 (安定)</button>
+    <button class="preset" data-r="13">r=13 (C±)</button>
+    <button class="preset" data-r="21">r=21 (過渡)</button>
+    <button class="preset" data-r="28">r=28 (標準)</button>
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="100">r=100 (周期)</button>
+    <button class="preset" data-r="145">r=145</button>
+    <button class="preset" data-r="166.3">r=166.3 (間欠)</button>
+    <button class="preset" data-r="212">r=212 (ノイズ周期)</button>
+  </div>
+  <div class="buttons">
+    <button id="reset">リセット</button>
+    <button id="clearAll">軌跡消去</button>
+  </div>
+  <div class="status">
+    <div>現象: <span id="phen">ストレンジアトラクター</span></div>
+    <div>軌道長: <span id="tt">0.0</span></div>
+  </div>
+  <div class="legend">x-y 平面（左上）、時系列 y(t)（右上）、x-z 平面（下）</div>
+</div>
+
+<script>
+const xyC = document.getElementById('xy');
+const xzC = document.getElementById('xz');
+const tsC = document.getElementById('ts');
+const xyCtx = xyC.getContext('2d');
+const xzCtx = xzC.getContext('2d');
+const tsCtx = tsC.getContext('2d');
+
+let r = 28, sigma = 10, b = 8/3;
+let state = [0.1, 0, 0];
+let t = 0;
+const yTime = [];
+const trailXY = [];
+const trailXZ = [];
+
+function rhs(s) {
+  return [sigma*(s[1]-s[0]), r*s[0]-s[1]-s[0]*s[2], s[0]*s[1]-b*s[2]];
+}
+function rk4(s, dt) {
+  const k1 = rhs(s);
+  const k2 = rhs(s.map((v,i)=>v+0.5*dt*k1[i]));
+  const k3 = rhs(s.map((v,i)=>v+0.5*dt*k2[i]));
+  const k4 = rhs(s.map((v,i)=>v+dt*k3[i]));
+  return s.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+
+function reset() {
+  state = [0.1, 0, 0];
+  t = 0;
+  yTime.length = 0; trailXY.length = 0; trailXZ.length = 0;
+}
+
+function phenomenon() {
+  if (r < 1) return '原点が大域安定';
+  if (r < 13.926) return 'C± 安定固定点';
+  if (r < 24.06) return 'C± 安定 + 過渡カオス';
+  if (r < 30.1) return 'ストレンジアトラクター';
+  if (r < 99) return 'カオス領域';
+  if (r > 99.5 && r < 100.8) return '周期3窓';
+  if (r > 145 && r < 166.07) return '周期倍分岐の逆カスケード';
+  if (r > 166.07 && r < 166.1) return '接線分岐';
+  if (r > 166.1 && r < 168) return 'I型間欠性';
+  if (r > 210 && r < 215) return 'ノイズ的周期性';
+  if (r > 214.4) return '高r周期窓';
+  return 'カオス的挙動';
+}
+
+function project(v, vmin, vmax, min, max) {
+  return min + (v - vmin) / (vmax - vmin) * (max - min);
+}
+
+function draw() {
+  // 大きなrでは速くなるので dt を調整
+  const dt = 0.005;
+  const steps = r > 100 ? 8 : 15;
+  for (let k = 0; k < steps; k++) {
+    state = rk4(state, dt);
+    t += dt;
+    trailXY.push([state[0], state[1]]);
+    trailXZ.push([state[0], state[2]]);
+    yTime.push(state[1]);
+  }
+  while (trailXY.length > 5000) trailXY.shift();
+  while (trailXZ.length > 5000) trailXZ.shift();
+  while (yTime.length > 800) yTime.shift();
+
+  // x-y
+  const W1 = xyC.width, H1 = xyC.height;
+  xyCtx.fillStyle = 'rgba(15, 26, 46, 0.1)';
+  xyCtx.fillRect(0, 0, W1, H1);
+  let xr = Math.max(25, Math.sqrt(r)*3);
+  let yr = xr * 1.5;
+  xyCtx.strokeStyle = '#4fc3f7';
+  xyCtx.lineWidth = 0.6;
+  xyCtx.beginPath();
+  for (let i = 1; i < trailXY.length; i++) {
+    const x1 = W1/2 + trailXY[i-1][0] * (W1/2-5) / xr;
+    const y1 = H1/2 - trailXY[i-1][1] * (H1/2-5) / yr;
+    const x2 = W1/2 + trailXY[i][0] * (W1/2-5) / xr;
+    const y2 = H1/2 - trailXY[i][1] * (H1/2-5) / yr;
+    xyCtx.moveTo(x1, y1); xyCtx.lineTo(x2, y2);
+  }
+  xyCtx.stroke();
+  xyCtx.fillStyle = '#888';
+  xyCtx.font = '10px sans-serif';
+  xyCtx.fillText('x-y', 4, 12);
+
+  // x-z
+  const W3 = xzC.width, H3 = xzC.height;
+  xzCtx.fillStyle = 'rgba(15, 26, 46, 0.1)';
+  xzCtx.fillRect(0, 0, W3, H3);
+  let zmax = Math.max(55, r * 1.5);
+  xzCtx.strokeStyle = '#81c784';
+  xzCtx.lineWidth = 0.6;
+  xzCtx.beginPath();
+  for (let i = 1; i < trailXZ.length; i++) {
+    const x1 = W3/2 + trailXZ[i-1][0] * (W3/2-5) / xr;
+    const y1 = H3 - 5 - trailXZ[i-1][1] * (H3 - 10) / zmax;
+    const x2 = W3/2 + trailXZ[i][0] * (W3/2-5) / xr;
+    const y2 = H3 - 5 - trailXZ[i][1] * (H3 - 10) / zmax;
+    xzCtx.moveTo(x1, y1); xzCtx.lineTo(x2, y2);
+  }
+  xzCtx.stroke();
+  xzCtx.fillStyle = '#888';
+  xzCtx.font = '10px sans-serif';
+  xzCtx.fillText('x-z', 4, 12);
+
+  // 時系列
+  const W2 = tsC.width, H2 = tsC.height;
+  tsCtx.fillStyle = '#0f1a2e';
+  tsCtx.fillRect(0, 0, W2, H2);
+  tsCtx.strokeStyle = '#444';
+  tsCtx.beginPath();
+  tsCtx.moveTo(0, H2/2); tsCtx.lineTo(W2, H2/2);
+  tsCtx.stroke();
+  let maxY = yr;
+  tsCtx.strokeStyle = '#9b59b6';
+  tsCtx.beginPath();
+  for (let i = 0; i < yTime.length; i++) {
+    const x = i * W2 / yTime.length;
+    const y = H2/2 - yTime[i] / maxY * (H2/2 - 3);
+    if (i === 0) tsCtx.moveTo(x, y); else tsCtx.lineTo(x, y);
+  }
+  tsCtx.stroke();
+  tsCtx.fillStyle = '#888';
+  tsCtx.font = '10px sans-serif';
+  tsCtx.fillText('y(t)', 4, 12);
+
+  document.getElementById('phen').textContent = phenomenon();
+  document.getElementById('tt').textContent = t.toFixed(1);
+
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(1);
+  reset();
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r = parseFloat(btn.dataset.r);
+    document.getElementById('rs').value = r;
+    document.getElementById('rv').textContent = r.toFixed(1);
+    reset();
+  });
+});
+document.getElementById('reset').addEventListener('click', reset);
+document.getElementById('clearAll').addEventListener('click', () => {
+  trailXY.length = 0; trailXZ.length = 0; yTime.length = 0;
+});
+
+draw();
+</script>
+</body>
+</html>

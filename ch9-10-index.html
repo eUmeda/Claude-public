@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strogatz 9-10章 シミュレータ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 20px;
+}
+.container { max-width: 700px; margin: 0 auto; }
+h1 { font-size: 1.4em; margin-bottom: 16px; color: #4fc3f7; }
+h2 {
+  font-size: 1.1em; margin: 20px 0 10px; color: #81d4fa;
+  padding-bottom: 6px; border-bottom: 1px solid #0f3460;
+}
+.card {
+  background: #16213e; padding: 14px; border-radius: 10px;
+  margin-bottom: 8px; display: block; color: #eee;
+  text-decoration: none; transition: background 0.1s;
+}
+.card:active, .card:hover { background: #1e2d50; }
+.card-title {
+  font-size: 1em; font-weight: bold; color: #4fc3f7;
+  margin-bottom: 4px;
+}
+.card-desc { font-size: 0.82em; color: #bbb; line-height: 1.5; }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.7em; background: #0f3460; margin-right: 6px;
+}
+.note {
+  font-size: 0.78em; color: #888; padding: 8px 12px;
+  background: #0f1a2e; border-left: 3px solid #4fc3f7;
+  border-radius: 4px; margin: 8px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Strogatz 9-10章 シミュレータ</h1>
+
+<h2>9章: ローレンツ方程式</h2>
+
+<a class="card" href="ch9-1-waterwheel.html">
+  <div class="card-title"><span class="tag">9.1</span>カオス的な水車</div>
+  <div class="card-desc">Malkus-Howard の水車を N=48 チェンバーで離散化。流入 Q、漏れ K、減衰 ν を変えて定常/振動/カオス回転を見る。</div>
+</a>
+
+<a class="card" href="ch9-3-lorenz-attractor.html">
+  <div class="card-title"><span class="tag">9.2-9.3</span>ローレンツ・アトラクター</div>
+  <div class="card-desc">x-z 位相図と y(t) 時系列。r/σ/b を調整。双子軌道モードで鋭敏な依存性を可視化。固定点 C± とホップ分岐 r_H もマーキング。</div>
+</a>
+
+<a class="card" href="ch9-4-lorenz-map.html">
+  <div class="card-title"><span class="tag">9.4</span>ローレンツ写像</div>
+  <div class="card-desc">z(t) の極大を順番に記録して z_{n+1} vs z_n をプロット。|f'|&gt;1 であることが見える (カオスの直接証拠)。</div>
+</a>
+
+<a class="card" href="ch9-5-parameter-explorer.html">
+  <div class="card-title"><span class="tag">9.5</span>パラメーター空間の探索</div>
+  <div class="card-desc">r=0.8〜214 のプリセットで各レジームをカタログ。間欠カオス (r=166.3)、ノイズ的周期性 (r=212)、周期窓 (r=100)。</div>
+</a>
+
+<a class="card" href="ch9-6-chaos-masking.html">
+  <div class="card-title"><span class="tag">9.6</span>カオスマスク通信</div>
+  <div class="card-desc">Cuomo-Oppenheim の同期スキーム。x(t)+m(t) でマスクして送信、受信側 (x_r, y_r, z_r) が同期して m を復元。Lyapunov 関数で e→0 が保証される。</div>
+</a>
+
+<h2>10章: 1次元写像</h2>
+
+<a class="card" href="ch10-1-cobweb.html">
+  <div class="card-title"><span class="tag">10.1</span>クモの巣図法</div>
+  <div class="card-desc">8種類の写像を切り替え可能 (ロジスティック, cos, 正弦, テント, 10進シフト, 2進シフト, 線形, 2次)。不動点候補を二分法で検出。</div>
+</a>
+
+<a class="card" href="ch10-2-logistic-timeseries.html">
+  <div class="card-title"><span class="tag">10.2</span>ロジスティック時系列</div>
+  <div class="card-desc">r を変えて周期1→2→4→8→カオスの遷移を時系列とヒストグラムで確認。周期自動検出 (1, 2, 3, 4, 5, 6, 8 ...)。</div>
+</a>
+
+<a class="card" href="ch10-2-orbit-diagram.html">
+  <div class="card-title"><span class="tag">10.2</span>軌道図 (分岐図)</div>
+  <div class="card-desc">イチジクの木状のフラクタル構造。矩形ドラッグで拡大。ロジスティック/サイン/テント/三次写像に対応。10.3 の解析結果もここで視覚確認できる。</div>
+</a>
+
+<div class="note">
+10.3 (ロジスティック写像の解析) は専用シミュレータなし。<br>
+ch10-2-logistic-timeseries.html の周期検出と ch10-2-orbit-diagram.html の分岐構造で、例題 10.3.1-10.3.3 の代数結果を視覚的に確認できる。
+</div>
+
+<a class="card" href="ch10-4-period3-window.html">
+  <div class="card-title"><span class="tag">10.4</span>3周期窓と接線分岐</div>
+  <div class="card-desc">r₁ = 1+√8 ≈ 3.8284 で 3周期窓が誕生。f³(x) と対角線の3交点が見える。直下では I型間欠性 (Pomeau-Manneville)。</div>
+</a>
+
+<a class="card" href="ch10-5-lyapunov.html">
+  <div class="card-title"><span class="tag">10.5</span>リアプノフ指数</div>
+  <div class="card-desc">λ(r) のプロット。λ&lt;0 (周期), λ=0 (倍分岐), λ&gt;0 (カオス) の対応。軌道図オーバーレイ機能あり。</div>
+</a>
+
+<a class="card" href="ch10-6-universality.html">
+  <div class="card-title"><span class="tag">10.6</span>普遍性 (サイン vs ロジスティック)</div>
+  <div class="card-desc">U系列が定性的に一致することを上下の分岐図で比較。超安定軌道 R_n から Feigenbaum δ を計算。</div>
+</a>
+
+<a class="card" href="ch10-7-renormalization.html">
+  <div class="card-title"><span class="tag">10.7</span>くりこみ理論</div>
+  <div class="card-desc">f(x, R_n) と α·f²(x/α, R_{n+1}) の3パネル比較で自己相似性を可視化。α の経験的推定機能あり (n≥1 で動作)。</div>
+</a>
+
+</div>
+</body>
+</html>

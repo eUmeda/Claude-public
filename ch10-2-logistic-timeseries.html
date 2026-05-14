@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.2 ロジスティック写像 時系列</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; margin-bottom: 6px; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 80px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.78em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.period-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-weight: bold; margin-left: 4px;
+}
+.p-extinct { background: #555; }
+.p-fp { background: #2e7d4f; }
+.p-2 { background: #3498db; }
+.p-4 { background: #16a085; }
+.p-8 { background: #f39c12; }
+.p-chaos { background: #c0392b; }
+.p-window { background: #9b59b6; }
+</style>
+</head>
+<body>
+<h1>ロジスティック写像 x<sub>n+1</sub> = r·x<sub>n</sub>(1 - x<sub>n</sub>)</h1>
+<div class="note">
+May (1976) の論文の例示。r を上げると周期倍分岐のカスケードが起こり、
+r ≈ 3.57 でカオスに突入。Feigenbaum 定数 δ = 4.669... は周期倍分岐の
+間隔比の極限。3周期窓は 1+√8 = 3.828 付近にある。
+</div>
+
+<canvas id="ts" width="360" height="260"></canvas>
+<canvas id="hist" width="360" height="140"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>r</span><span id="rv">3.200</span></label>
+    <input type="range" id="rs" min="0" max="4" step="0.001" value="3.2">
+  </div>
+  <div class="slider-box">
+    <label><span>初期値 x₀</span><span id="xv">0.100</span></label>
+    <input type="range" id="xs" min="0.001" max="0.999" step="0.001" value="0.1">
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="0.8">r=0.8</button>
+    <button class="preset" data-r="2.8">r=2.8</button>
+    <button class="preset" data-r="3.2">r=3.2</button>
+    <button class="preset" data-r="3.5">r=3.5</button>
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="3.55">r=3.55</button>
+    <button class="preset" data-r="3.57">r=3.57</button>
+    <button class="preset" data-r="3.83">r=3.83</button>
+    <button class="preset" data-r="4">r=4</button>
+  </div>
+  <div class="buttons">
+    <button id="compare">2軌道比較</button>
+    <button id="redraw">再描画</button>
+  </div>
+  <div class="status">
+    <div>周期: <span id="period" class="period-tag p-fp">1</span></div>
+    <div>漸近値(複数): <span id="limit">-</span></div>
+    <div>周期倍分岐境界: r<sub>1</sub>=3, r<sub>2</sub>=3.449, r<sub>3</sub>=3.544, r<sub>∞</sub>=3.5699</div>
+  </div>
+</div>
+
+<script>
+const tsC = document.getElementById('ts');
+const hC = document.getElementById('hist');
+const tsCtx = tsC.getContext('2d');
+const hCtx = hC.getContext('2d');
+
+let r = 3.2, x0 = 0.1;
+let compareMode = false;
+
+function iterate(x0v, n) {
+  const arr = [x0v];
+  let x = x0v;
+  for (let i = 0; i < n; i++) {
+    x = r * x * (1 - x);
+    arr.push(x);
+  }
+  return arr;
+}
+
+function detectPeriod(tail) {
+  // tail の末尾から周期を検出
+  const eps = 1e-4;
+  for (let p = 1; p <= 16; p++) {
+    let ok = true;
+    for (let k = 0; k < Math.min(8, tail.length - p); k++) {
+      const i = tail.length - 1 - k;
+      const j = tail.length - 1 - k - p;
+      if (j < 0) { ok = false; break; }
+      if (Math.abs(tail[i] - tail[j]) > eps) { ok = false; break; }
+    }
+    if (ok) return p;
+  }
+  return 0;  // 非周期
+}
+
+function draw() {
+  const N = 80;
+  const warmup = 400;
+  const all = iterate(x0, warmup + N);
+  const tail = all.slice(warmup);
+
+  // 時系列
+  const W = tsC.width, H = tsC.height;
+  tsCtx.fillStyle = '#0f1a2e';
+  tsCtx.fillRect(0, 0, W, H);
+  const PAD = 25;
+  const toX = i => PAD + i * (W - 2*PAD) / (N - 1);
+  const toY = x => H - PAD - x * (H - 2*PAD);
+
+  // 枠
+  tsCtx.strokeStyle = '#444';
+  tsCtx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  // y軸ラベル
+  tsCtx.fillStyle = '#666';
+  tsCtx.font = '10px sans-serif';
+  tsCtx.fillText('1', 6, PAD + 4);
+  tsCtx.fillText('0', 6, H - PAD + 4);
+  tsCtx.fillText('x_n', PAD, 14);
+  tsCtx.fillText('n', W - 15, H - 6);
+
+  // 線分で接続
+  tsCtx.strokeStyle = '#4fc3f7';
+  tsCtx.lineWidth = 1;
+  tsCtx.beginPath();
+  for (let i = 0; i < tail.length; i++) {
+    const x = toX(i);
+    const y = toY(tail[i]);
+    if (i === 0) tsCtx.moveTo(x, y); else tsCtx.lineTo(x, y);
+  }
+  tsCtx.stroke();
+
+  // ドット
+  tsCtx.fillStyle = '#4fc3f7';
+  for (let i = 0; i < tail.length; i++) {
+    tsCtx.beginPath();
+    tsCtx.arc(toX(i), toY(tail[i]), 2, 0, 2*Math.PI);
+    tsCtx.fill();
+  }
+
+  // 比較軌道
+  if (compareMode) {
+    const all2 = iterate(x0 + 0.001, warmup + N);
+    const tail2 = all2.slice(warmup);
+    tsCtx.strokeStyle = '#e74c3c';
+    tsCtx.lineWidth = 1;
+    tsCtx.beginPath();
+    for (let i = 0; i < tail2.length; i++) {
+      const x = toX(i);
+      const y = toY(tail2[i]);
+      if (i === 0) tsCtx.moveTo(x, y); else tsCtx.lineTo(x, y);
+    }
+    tsCtx.stroke();
+    tsCtx.fillStyle = '#e74c3c';
+    for (let i = 0; i < tail2.length; i++) {
+      tsCtx.beginPath();
+      tsCtx.arc(toX(i), toY(tail2[i]), 2, 0, 2*Math.PI);
+      tsCtx.fill();
+    }
+  }
+
+  // ヒストグラム (末尾 3000 点)
+  const longTail = [];
+  let xl = x0;
+  for (let i = 0; i < 1000; i++) xl = r * xl * (1 - xl);
+  for (let i = 0; i < 3000; i++) { xl = r * xl * (1 - xl); longTail.push(xl); }
+  const W2 = hC.width, H2 = hC.height;
+  hCtx.fillStyle = '#0f1a2e';
+  hCtx.fillRect(0, 0, W2, H2);
+  const bins = 80;
+  const counts = new Array(bins).fill(0);
+  for (const v of longTail) {
+    const k = Math.min(bins-1, Math.max(0, Math.floor(v * bins)));
+    counts[k]++;
+  }
+  let cmax = 0;
+  for (const c of counts) if (c > cmax) cmax = c;
+  hCtx.fillStyle = '#81c784';
+  for (let i = 0; i < bins; i++) {
+    const h = counts[i] / cmax * (H2 - 25);
+    hCtx.fillRect(15 + i * (W2-20) / bins, H2 - 10 - h, (W2-20)/bins - 1, h);
+  }
+  hCtx.fillStyle = '#888';
+  hCtx.font = '10px sans-serif';
+  hCtx.fillText('x の分布 (過渡除去後 3000 点)', 4, 12);
+  hCtx.fillText('0', 4, H2 - 4);
+  hCtx.fillText('1', W2 - 10, H2 - 4);
+
+  // 周期検出
+  const p = detectPeriod(tail);
+  const pel = document.getElementById('period');
+  const lel = document.getElementById('limit');
+  if (r < 1) {
+    pel.textContent = '絶滅 (x→0)';
+    pel.className = 'period-tag p-extinct';
+    lel.textContent = '0';
+  } else if (p === 1) {
+    pel.textContent = '不動点 (周期1)';
+    pel.className = 'period-tag p-fp';
+    lel.textContent = tail[tail.length-1].toFixed(4);
+  } else if (p === 2) {
+    pel.textContent = '2周期';
+    pel.className = 'period-tag p-2';
+    lel.textContent = `${tail[tail.length-2].toFixed(4)}, ${tail[tail.length-1].toFixed(4)}`;
+  } else if (p === 4) {
+    pel.textContent = '4周期';
+    pel.className = 'period-tag p-4';
+    lel.textContent = tail.slice(-4).map(v => v.toFixed(3)).join(', ');
+  } else if (p === 8) {
+    pel.textContent = '8周期';
+    pel.className = 'period-tag p-8';
+    lel.textContent = tail.slice(-8).map(v => v.toFixed(2)).join(', ');
+  } else if (p === 3 || p === 5 || p === 6 || p === 7) {
+    pel.textContent = `${p}周期 (周期窓)`;
+    pel.className = 'period-tag p-window';
+    lel.textContent = tail.slice(-p).map(v => v.toFixed(3)).join(', ');
+  } else if (p === 0) {
+    pel.textContent = 'カオス (非周期)';
+    pel.className = 'period-tag p-chaos';
+    lel.textContent = '連続的な分布';
+  } else {
+    pel.textContent = `${p}周期`;
+    pel.className = 'period-tag p-window';
+    lel.textContent = '...';
+  }
+}
+
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(3);
+  draw();
+});
+document.getElementById('xs').addEventListener('input', e => {
+  x0 = parseFloat(e.target.value);
+  document.getElementById('xv').textContent = x0.toFixed(3);
+  draw();
+});
+document.getElementById('redraw').addEventListener('click', draw);
+document.getElementById('compare').addEventListener('click', function() {
+  compareMode = !compareMode;
+  this.classList.toggle('active');
+  draw();
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r = parseFloat(btn.dataset.r);
+    document.getElementById('rs').value = r;
+    document.getElementById('rv').textContent = r.toFixed(3);
+    draw();
+  });
+});
+
+draw();
+</script>
+</body>
+</html>

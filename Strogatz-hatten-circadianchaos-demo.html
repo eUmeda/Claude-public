@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>概日リズムとカオス：トーラスの崩壊</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        h3 {
+            font-size: 1em;
+            color: #4fc3f7;
+            margin: 15px 0 8px 0;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+            overflow-x: auto;
+        }
+        .equation-box .main-eq {
+            font-size: 1.2em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .param-list {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        .param-list li {
+            margin: 5px 0;
+            list-style: none;
+        }
+        .param-list li::before {
+            content: "•";
+            color: #4fc3f7;
+            margin-right: 8px;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .info-item .label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-item .value {
+            font-size: 1.1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            margin-top: 3px;
+        }
+        .regime-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .regime-lock { background: #2e7d32; }
+        .regime-quasi { background: #f57c00; }
+        .regime-chaos { background: #c62828; }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #0f3460;
+        }
+        .comparison-table th {
+            background: #0f3460;
+            color: #4fc3f7;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: rgba(15, 52, 96, 0.3);
+        }
+        .note-box {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .bio-interpretation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .bio-card {
+            background: #0a1628;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .bio-card .icon {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        .bio-card .title {
+            font-size: 0.85em;
+            color: #81d4fa;
+        }
+        .bio-card .desc {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 3px;
+        }
+        button {
+            background: #4fc3f7;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #81d4fa;
+        }
+        .button-row {
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌙 概日リズムとカオス：トーラスの崩壊 ☀️</h1>
+
+    <!-- Section 1: 理論的背景 -->
+    <div class="section">
+        <h2>1. Strogatz 8.6節からの出発点</h2>
+        
+        <p>8.6節では、2つの結合振動子のモデルを学んだ：</p>
+        
+        <div class="equation-box">
+            <div>θ̇₁ = ω₁ + K₁ sin(θ₂ − θ₁)</div>
+            <div>θ̇₂ = ω₂ + K₂ sin(θ₁ − θ₂)</div>
+        </div>
+        
+        <p>これは<span class="highlight">概日リズム（体内時計）と睡眠覚醒サイクル</span>の相互作用をモデル化したもの。位相差 φ = θ₁ − θ₂ を考えると：</p>
+        
+        <div class="equation-box">
+            φ̇ = (ω₁ − ω₂) − (K₁ + K₂) sin φ
+        </div>
+        
+        <p>これは<span class="highlight">円周上の1次元系</span>に帰着 → カオスは起きない。</p>
+    </div>
+
+    <!-- Section 2: カオスへの拡張 -->
+    <div class="section">
+        <h2>2. カオスへの自然な拡張：Circle Map</h2>
+        
+        <p>現実の概日リズムでは、<span class="highlight">外部の明暗サイクル（光）</span>が体内時計を同調させる。これを離散時間でモデル化したのが <strong>Circle Map</strong>：</p>
+        
+        <div class="equation-box">
+            <div class="main-eq">θ<sub>n+1</sub> = θ<sub>n</sub> + Ω − (K/2π) sin(2πθ<sub>n</sub>)  (mod 1)</div>
+        </div>
+        
+        <h3>パラメータの意味</h3>
+        <ul class="param-list">
+            <li><strong>θ<sub>n</sub></strong>：n日目の夜に測った体内時計の位相（0〜1）</li>
+            <li><strong>Ω</strong>：体内周期/外部周期の比（ヒトでは ≈ 24.2/24 ≈ 1.008）</li>
+            <li><strong>K</strong>：光の同調力（結合強度）</li>
+        </ul>
+        
+        <div class="note-box">
+            <strong>なぜ離散時間？</strong><br>
+            光は主に朝に体内時計をリセットする。毎朝の「位相リセット」を1ステップとして離散化。
+        </div>
+    </div>
+
+    <!-- Section 3: 3つのレジーム -->
+    <div class="section">
+        <h2>3. 結合強度 K による3つのレジーム</h2>
+        
+        <table class="comparison-table">
+            <tr>
+                <th>K の範囲</th>
+                <th>挙動</th>
+                <th>生物学的解釈</th>
+            </tr>
+            <tr>
+                <td>K = 0</td>
+                <td>純粋な回転（準周期）</td>
+                <td>光のない環境、free-running</td>
+            </tr>
+            <tr>
+                <td>0 &lt; K &lt; 1</td>
+                <td>位相ロック or 準周期</td>
+                <td>正常な同調 or 軽い時差ボケ</td>
+            </tr>
+            <tr>
+                <td>K = 1</td>
+                <td>臨界点</td>
+                <td>同調の限界</td>
+            </tr>
+            <tr>
+                <td>K &gt; 1</td>
+                <td><span class="highlight">カオス</span></td>
+                <td>リズム崩壊、深刻な睡眠障害</td>
+            </tr>
+        </table>
+        
+        <div class="bio-interpretation">
+            <div class="bio-card">
+                <div class="icon">😴</div>
+                <div class="title">位相ロック</div>
+                <div class="desc">健康な睡眠</div>
+            </div>
+            <div class="bio-card">
+                <div class="icon">🌀</div>
+                <div class="title">準周期</div>
+                <div class="desc">時差ボケ</div>
+            </div>
+            <div class="bio-card">
+                <div class="icon">💥</div>
+                <div class="title">カオス</div>
+                <div class="desc">リズム障害</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: インタラクティブデモ -->
+    <div class="section">
+        <h2>4. インタラクティブ・デモ</h2>
+        
+        <div class="controls">
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>結合強度 K（光の強さ）</span>
+                    <span class="slider-value" id="kDisplay">0.50</span>
+                </div>
+                <input type="range" id="kSlider" min="0" max="2" step="0.01" value="0.5">
+            </div>
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>回転数 Ω（周期比）</span>
+                    <span class="slider-value" id="omegaDisplay">0.618</span>
+                </div>
+                <input type="range" id="omegaSlider" min="0.5" max="1.0" step="0.001" value="0.618">
+            </div>
+        </div>
+        
+        <div id="regimeIndicator" class="regime-indicator regime-quasi">
+            準周期（トーラス上の流れ）
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="circleCanvas" width="180" height="180"></canvas>
+                <div class="canvas-label">Circle Map 軌道</div>
+            </div>
+            <div class="canvas-box">
+                <canvas id="cobwebCanvas" width="180" height="180"></canvas>
+                <div class="canvas-label">クモの巣図</div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="timeSeriesCanvas" width="370" height="120"></canvas>
+                <div class="canvas-label">時系列 θ<sub>n</sub>（体内時計の位相）</div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="label">リアプノフ指数 λ</div>
+                <div class="value" id="lyapunovDisplay">---</div>
+            </div>
+            <div class="info-item">
+                <div class="label">状態</div>
+                <div class="value" id="stateDisplay">---</div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button onclick="resetSimulation()">リセット</button>
+            <button onclick="setPreset('lock')">位相ロック</button>
+            <button onclick="setPreset('quasi')">準周期</button>
+            <button onclick="setPreset('chaos')">カオス</button>
+        </div>
+    </div>
+
+    <!-- Section 5: 分岐図 -->
+    <div class="section">
+        <h2>5. 分岐図：トーラスの崩壊を可視化</h2>
+        
+        <div class="canvas-container">
+            <div class="canvas-box">
+                <canvas id="bifurcationCanvas" width="370" height="200"></canvas>
+                <div class="canvas-label">K vs θ 分岐図（Ω = <span id="bifOmegaDisplay">0.618</span>）</div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button onclick="drawBifurcation()">分岐図を描画</button>
+        </div>
+        
+        <p style="font-size: 0.85em; text-align: center; color: #aaa;">
+            K = 1 付近でトーラスが崩壊し、カオス領域（点が散らばる）が現れる
+        </p>
+    </div>
+
+    <!-- Section 6: 数学的背景 -->
+    <div class="section">
+        <h2>6. なぜ K &gt; 1 でカオス？</h2>
+        
+        <h3>写像の微分</h3>
+        <div class="equation-box">
+            f'(θ) = dθ<sub>n+1</sub>/dθ<sub>n</sub> = 1 − K cos(2πθ)
+        </div>
+        
+        <ul class="param-list">
+            <li><strong>K &lt; 1</strong>：|f'(θ)| ≤ 1 + K &lt; 2、写像は単調増加を保つ</li>
+            <li><strong>K = 1</strong>：θ = 0 で f'(0) = 0（臨界点）</li>
+            <li><strong>K &gt; 1</strong>：f'(θ) が負になる領域が出現 → <span class="highlight">写像が非単調（折り返す）</span></li>
+        </ul>
+        
+        <div class="note-box">
+            <strong>カオスの本質</strong><br>
+            K &gt; 1 では写像が「折り返す」ため、近接した2点が反対方向に引き伸ばされる。
+            これが<span class="highlight">初期条件への鋭敏な依存性</span>を生む。
+        </div>
+        
+        <h3>リアプノフ指数</h3>
+        <div class="equation-box">
+            λ = lim<sub>N→∞</sub> (1/N) Σ log|f'(θ<sub>n</sub>)| = lim<sub>N→∞</sub> (1/N) Σ log|1 − K cos(2πθ<sub>n</sub>)|
+        </div>
+        
+        <ul class="param-list">
+            <li><strong>λ &lt; 0</strong>：周期軌道に収束（位相ロック）</li>
+            <li><strong>λ = 0</strong>：準周期（トーラス上を漂う）</li>
+            <li><strong>λ &gt; 0</strong>：カオス（軌道が指数関数的に分離）</li>
+        </ul>
+    </div>
+
+    <!-- Section 7: 生物学的意義 -->
+    <div class="section">
+        <h2>7. 生物学的・医学的意義</h2>
+        
+        <h3>実際の概日リズム障害との対応</h3>
+        
+        <table class="comparison-table">
+            <tr>
+                <th>数学的状態</th>
+                <th>臨床的状態</th>
+                <th>例</th>
+            </tr>
+            <tr>
+                <td>1:1 位相ロック</td>
+                <td>正常な同調</td>
+                <td>健康な人の睡眠</td>
+            </tr>
+            <tr>
+                <td>位相ロック外れ</td>
+                <td>自由継続リズム</td>
+                <td>全盲者、北極圏の冬</td>
+            </tr>
+            <tr>
+                <td>準周期</td>
+                <td>周期的な不調</td>
+                <td>時差ボケ、シフトワーク</td>
+            </tr>
+            <tr>
+                <td>カオス</td>
+                <td>完全なリズム崩壊</td>
+                <td>ICU症候群、重度うつ病</td>
+            </tr>
+        </table>
+        
+        <div class="note-box">
+            <strong>注意</strong><br>
+            実際の概日リズム系はもっと複雑（多数の時計遺伝子、フィードバックループ）。
+            Circle Map は本質を捉えた<span class="highlight">最小モデル</span>。
+        </div>
+    </div>
+
+    <!-- Section 8: まとめ -->
+    <div class="section">
+        <h2>8. まとめ：8.6節からカオスへ</h2>
+        
+        <div class="equation-box">
+            <div style="font-size: 0.9em;">
+                8.6節（連続時間、2振動子）<br>
+                ↓ 外部周期駆動を追加 ↓<br>
+                Circle Map（離散時間）<br>
+                ↓ K を増加 ↓<br>
+                <span class="highlight">トーラス崩壊 → カオス</span>
+            </div>
+        </div>
+        
+        <p>
+            Strogatz 8.6節の結合振動子は<span class="highlight">トーラス T² 上の流れ</span>を記述していた。
+            外部駆動と非線形性を強めると、トーラスが「しわくちゃ」になり、
+            最終的に<span class="highlight">ストレンジアトラクター</span>が現れる。
+            これが <strong>Ruelle-Takens のカオスへのルート</strong> の一例。
+        </p>
+    </div>
+</div>
+
+<script>
+    // Canvas contexts
+    const circleCanvas = document.getElementById('circleCanvas');
+    const cobwebCanvas = document.getElementById('cobwebCanvas');
+    const timeSeriesCanvas = document.getElementById('timeSeriesCanvas');
+    const bifurcationCanvas = document.getElementById('bifurcationCanvas');
+    
+    const circleCtx = circleCanvas.getContext('2d');
+    const cobwebCtx = cobwebCanvas.getContext('2d');
+    const timeCtx = timeSeriesCanvas.getContext('2d');
+    const bifCtx = bifurcationCanvas.getContext('2d');
+    
+    // Parameters
+    let K = 0.5;
+    let Omega = 0.618;  // Golden ratio - maximally irrational
+    let theta = 0.1;
+    let history = [];
+    const maxHistory = 200;
+    
+    // Circle map function
+    function circleMap(theta, K, Omega) {
+        let newTheta = theta + Omega - (K / (2 * Math.PI)) * Math.sin(2 * Math.PI * theta);
+        return newTheta - Math.floor(newTheta);  // mod 1
+    }
+    
+    // Derivative of circle map
+    function circleMapDerivative(theta, K) {
+        return 1 - K * Math.cos(2 * Math.PI * theta);
+    }
+    
+    // Calculate Lyapunov exponent
+    function calculateLyapunov(K, Omega, iterations = 1000, transient = 200) {
+        let theta = Math.random();
+        let sum = 0;
+        
+        // Transient
+        for (let i = 0; i < transient; i++) {
+            theta = circleMap(theta, K, Omega);
+        }
+        
+        // Calculate
+        for (let i = 0; i < iterations; i++) {
+            const deriv = Math.abs(circleMapDerivative(theta, K));
+            if (deriv > 1e-10) {
+                sum += Math.log(deriv);
+            }
+            theta = circleMap(theta, K, Omega);
+        }
+        
+        return sum / iterations;
+    }
+    
+    // Determine regime
+    function getRegime(lyap, K) {
+        if (K > 1 && lyap > 0.01) return 'chaos';
+        if (lyap < -0.01) return 'lock';
+        return 'quasi';
+    }
+    
+    // Draw circle with points
+    function drawCircle() {
+        const ctx = circleCtx;
+        const w = circleCanvas.width;
+        const h = circleCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = 70;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw points from history
+        const displayPoints = Math.min(history.length, 100);
+        for (let i = history.length - displayPoints; i < history.length; i++) {
+            const th = history[i];
+            const alpha = (i - (history.length - displayPoints)) / displayPoints;
+            const x = cx + r * Math.cos(2 * Math.PI * th - Math.PI / 2);
+            const y = cy + r * Math.sin(2 * Math.PI * th - Math.PI / 2);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = `rgba(46, 204, 113, ${alpha})`;
+            ctx.fill();
+        }
+        
+        // Draw current point
+        if (history.length > 0) {
+            const th = history[history.length - 1];
+            const x = cx + r * Math.cos(2 * Math.PI * th - Math.PI / 2);
+            const y = cy + r * Math.sin(2 * Math.PI * th - Math.PI / 2);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff5722';
+            ctx.fill();
+        }
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('0', cx - 3, cy - r - 5);
+        ctx.fillText('0.5', cx - 8, cy + r + 12);
+    }
+    
+    // Draw cobweb diagram
+    function drawCobweb() {
+        const ctx = cobwebCtx;
+        const w = cobwebCanvas.width;
+        const h = cobwebCanvas.height;
+        const margin = 20;
+        const size = w - 2 * margin;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Draw axes
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(w - margin, h - margin);
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(margin, margin);
+        ctx.stroke();
+        
+        // Draw y = x line
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(w - margin, margin);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Draw circle map function
+        ctx.strokeStyle = '#ff9800';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= 100; i++) {
+            const x = i / 100;
+            const y = circleMap(x, K, Omega);
+            const px = margin + x * size;
+            const py = h - margin - y * size;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        
+        // Draw cobweb
+        if (history.length > 1) {
+            ctx.strokeStyle = 'rgba(46, 204, 113, 0.7)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            const startIdx = Math.max(0, history.length - 50);
+            for (let i = startIdx; i < history.length - 1; i++) {
+                const x = history[i];
+                const y = history[i + 1];
+                
+                // Vertical line to function
+                const px1 = margin + x * size;
+                const py1 = h - margin - x * size;
+                const py2 = h - margin - y * size;
+                
+                if (i === startIdx) ctx.moveTo(px1, py1);
+                ctx.lineTo(px1, py2);
+                
+                // Horizontal line to diagonal
+                const px2 = margin + y * size;
+                ctx.lineTo(px2, py2);
+            }
+            ctx.stroke();
+        }
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('θₙ', w - margin - 10, h - 5);
+        ctx.fillText('θₙ₊₁', 5, margin + 10);
+    }
+    
+    // Draw time series
+    function drawTimeSeries() {
+        const ctx = timeCtx;
+        const w = timeSeriesCanvas.width;
+        const h = timeSeriesCanvas.height;
+        const margin = 25;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Draw axes
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(w - 5, h - margin);
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(margin, 5);
+        ctx.stroke();
+        
+        // Draw time series
+        if (history.length > 1) {
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            
+            const displayPoints = Math.min(history.length, maxHistory);
+            const startIdx = history.length - displayPoints;
+            
+            for (let i = 0; i < displayPoints; i++) {
+                const x = margin + (i / displayPoints) * (w - margin - 5);
+                const y = h - margin - history[startIdx + i] * (h - margin - 10);
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('n', w - 15, h - 8);
+        ctx.fillText('θ', 8, 15);
+        ctx.fillText('1', 10, 12);
+        ctx.fillText('0', 10, h - margin + 3);
+    }
+    
+    // Draw bifurcation diagram
+    function drawBifurcation() {
+        const ctx = bifCtx;
+        const w = bifurcationCanvas.width;
+        const h = bifurcationCanvas.height;
+        const margin = 30;
+        
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, w, h);
+        
+        // Draw axes
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(w - 5, h - margin);
+        ctx.moveTo(margin, h - margin);
+        ctx.lineTo(margin, 5);
+        ctx.stroke();
+        
+        // Labels
+        ctx.fillStyle = '#81d4fa';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('K', w - 15, h - 10);
+        ctx.fillText('θ', 10, 15);
+        ctx.fillText('0', margin - 5, h - margin + 12);
+        ctx.fillText('2', w - 15, h - margin + 12);
+        ctx.fillText('1', (w - margin) / 2 + margin, h - margin + 12);
+        
+        // Draw critical line K = 1
+        ctx.strokeStyle = 'rgba(255, 152, 0, 0.5)';
+        ctx.setLineDash([5, 5]);
+        const k1x = margin + (1 / 2) * (w - margin - 5);
+        ctx.beginPath();
+        ctx.moveTo(k1x, h - margin);
+        ctx.lineTo(k1x, 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ff9800';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('K=1', k1x - 12, 15);
+        
+        // Draw bifurcation diagram
+        const currentOmega = Omega;
+        document.getElementById('bifOmegaDisplay').textContent = currentOmega.toFixed(3);
+        
+        const kMin = 0;
+        const kMax = 2;
+        const kSteps = 300;
+        const transient = 200;
+        const plotPoints = 50;
+        
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
+        
+        for (let ki = 0; ki < kSteps; ki++) {
+            const kVal = kMin + (ki / kSteps) * (kMax - kMin);
+            let th = Math.random();
+            
+            // Transient
+            for (let i = 0; i < transient; i++) {
+                th = circleMap(th, kVal, currentOmega);
+            }
+            
+            // Plot points
+            for (let i = 0; i < plotPoints; i++) {
+                th = circleMap(th, kVal, currentOmega);
+                const x = margin + (kVal / kMax) * (w - margin - 5);
+                const y = h - margin - th * (h - margin - 10);
+                
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+    
+    // Update displays
+    function updateDisplays() {
+        const lyap = calculateLyapunov(K, Omega);
+        const regime = getRegime(lyap, K);
+        
+        document.getElementById('lyapunovDisplay').textContent = lyap.toFixed(4);
+        
+        const indicator = document.getElementById('regimeIndicator');
+        const stateDisplay = document.getElementById('stateDisplay');
+        
+        indicator.className = 'regime-indicator';
+        if (regime === 'lock') {
+            indicator.classList.add('regime-lock');
+            indicator.textContent = '位相ロック（周期軌道）';
+            stateDisplay.textContent = '安定';
+            stateDisplay.style.color = '#4caf50';
+        } else if (regime === 'quasi') {
+            indicator.classList.add('regime-quasi');
+            indicator.textContent = '準周期（トーラス上の流れ）';
+            stateDisplay.textContent = '中立';
+            stateDisplay.style.color = '#ff9800';
+        } else {
+            indicator.classList.add('regime-chaos');
+            indicator.textContent = 'カオス（トーラス崩壊）';
+            stateDisplay.textContent = 'カオス';
+            stateDisplay.style.color = '#f44336';
+        }
+    }
+    
+    // Animation loop
+    function animate() {
+        // Iterate circle map
+        theta = circleMap(theta, K, Omega);
+        history.push(theta);
+        if (history.length > maxHistory) {
+            history.shift();
+        }
+        
+        // Draw all canvases
+        drawCircle();
+        drawCobweb();
+        drawTimeSeries();
+        updateDisplays();
+        
+        setTimeout(() => requestAnimationFrame(animate), 50);
+    }
+    
+    // Reset simulation
+    function resetSimulation() {
+        theta = Math.random();
+        history = [theta];
+    }
+    
+    // Set presets
+    function setPreset(preset) {
+        if (preset === 'lock') {
+            K = 0.8;
+            Omega = 0.5;  // Rational - will lock
+        } else if (preset === 'quasi') {
+            K = 0.5;
+            Omega = 0.618;  // Golden ratio
+        } else if (preset === 'chaos') {
+            K = 1.5;
+            Omega = 0.618;
+        }
+        
+        document.getElementById('kSlider').value = K;
+        document.getElementById('omegaSlider').value = Omega;
+        document.getElementById('kDisplay').textContent = K.toFixed(2);
+        document.getElementById('omegaDisplay').textContent = Omega.toFixed(3);
+        
+        resetSimulation();
+    }
+    
+    // Event listeners
+    document.getElementById('kSlider').addEventListener('input', (e) => {
+        K = parseFloat(e.target.value);
+        document.getElementById('kDisplay').textContent = K.toFixed(2);
+    });
+    
+    document.getElementById('omegaSlider').addEventListener('input', (e) => {
+        Omega = parseFloat(e.target.value);
+        document.getElementById('omegaDisplay').textContent = Omega.toFixed(3);
+    });
+    
+    // Initialize
+    resetSimulation();
+    animate();
+</script>
+
+</body>
+</html>

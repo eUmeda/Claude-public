@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Rosenzweig-MacArthur モデル：Paradox of Enrichment</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .equation-box .main-eq {
+            font-size: 1.15em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .highlight-green {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .highlight-red {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.75em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .status-box {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-stable {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status-hopf {
+            background: #4a3000;
+            color: #ff9800;
+        }
+        .status-homoclinic {
+            background: #4a1040;
+            color: #e91e63;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .bifurcation-bar {
+            height: 30px;
+            background: linear-gradient(90deg,
+                #4caf50 0%, #4caf50 30%,
+                #ff9800 30%, #ff9800 70%,
+                #f44336 70%, #f44336 100%);
+            border-radius: 5px;
+            margin: 10px 0;
+            position: relative;
+        }
+        .bifurcation-marker {
+            position: absolute;
+            top: -5px;
+            width: 4px;
+            height: 40px;
+            background: #fff;
+            border-radius: 2px;
+        }
+        .bifurcation-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        .paradox-box {
+            background: #4a1040;
+            border: 2px solid #e91e63;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .paradox-title {
+            color: #e91e63;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rosenzweig-MacArthur モデル</h1>
+
+        <div class="section">
+            <h2>モデル方程式</h2>
+            <div class="equation-box">
+                <div class="main-eq">
+                    dx/dt = rx(1 − x/K) − axy/(1 + ahx)
+                </div>
+                <div style="margin-top: 8px;">
+                    dy/dt = eaxy/(1 + ahx) − my
+                </div>
+            </div>
+            <p>x: 被食者密度、y: 捕食者密度、<span class="highlight">K: 環境収容力</span></p>
+            <p>古典的Lotka-Volterraに「環境収容力」と「飽和効果」を追加したモデル</p>
+        </div>
+
+        <div class="section">
+            <h2>相図</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas" width="380" height="320"></canvas>
+                    <div class="canvas-label">x-y 相平面</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>安定固定点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span>不安定固定点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>軌道</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4fc3f7; opacity: 0.5;"></div>
+                    <span>ヌルクライン</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>環境収容力 K</span>
+                        <span class="slider-value" id="KDisplay">1.00</span>
+                    </div>
+                    <input type="range" id="KSlider" min="0.5" max="3" step="0.01" value="1.0">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>捕食者死亡率 m</span>
+                        <span class="slider-value" id="mDisplay">0.30</span>
+                    </div>
+                    <input type="range" id="mSlider" min="0.1" max="0.6" step="0.01" value="0.3">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="addTrajectoryBtn">軌道追加</button>
+                <button class="btn btn-secondary" id="clearBtn">クリア</button>
+            </div>
+
+            <div id="statusBox" class="status-box status-stable">
+                安定な共存平衡
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">共存点 x*</div>
+                    <div class="info-value" id="xStarDisplay">0.50</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">共存点 y*</div>
+                    <div class="info-value" id="yStarDisplay">0.35</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">ホップ分岐 K_H</div>
+                    <div class="info-value" id="KHDisplay">1.50</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>分岐ダイアグラム</h2>
+            <p>K を増加させると系の振る舞いが変化：</p>
+            <div class="bifurcation-bar">
+                <div class="bifurcation-marker" id="KMarker" style="left: 20%;"></div>
+            </div>
+            <div class="bifurcation-labels">
+                <span>K小：安定共存</span>
+                <span>K_H：ホップ分岐</span>
+                <span>K大：大振幅振動</span>
+            </div>
+            <div class="canvas-container" style="margin-top: 15px;">
+                <div class="canvas-box">
+                    <canvas id="bifurcationCanvas" width="360" height="180"></canvas>
+                    <div class="canvas-label">分岐図（K vs 個体数）</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="paradox-box">
+            <div class="paradox-title">Paradox of Enrichment（富栄養化のパラドックス）</div>
+            <p>環境を「豊かに」する（K を増加）と、直感に反して：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li><span class="highlight-green">K 小</span>：安定な共存 → 両種が一定密度で共存</li>
+                <li><span class="highlight">K 中</span>：ホップ分岐後 → リミットサイクル（周期的な個体数変動）</li>
+                <li><span class="highlight-red">K 大</span>：大振幅振動 → 絶滅リスク増大！</li>
+            </ul>
+            <p style="margin-top: 10px;"><strong>Rosenzweig (1971)</strong>: 「湖の富栄養化は生態系を不安定化させる」</p>
+        </div>
+
+        <div class="section">
+            <h2>時系列</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="timeSeriesCanvas" width="360" height="150"></canvas>
+                    <div class="canvas-label">個体数の時間変化</div>
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4fc3f7;"></div>
+                    <span>被食者 x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>捕食者 y</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>8章との接続</h2>
+            <p>このモデルで観察できる分岐：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li><span class="highlight">ホップ分岐（8.2節）</span>：K = K_H で安定スパイラル → リミットサイクル</li>
+                <li><span class="highlight">ホモクリニック分岐（8.4節）</span>：K → 大 でサイクルがサドル点に接近</li>
+                <li><span class="highlight">大域分岐（8.4節）</span>：相空間の広い領域に関わる変化</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
+        const bifurcationCanvas = document.getElementById('bifurcationCanvas');
+        const bifurcationCtx = bifurcationCanvas.getContext('2d');
+        const timeSeriesCanvas = document.getElementById('timeSeriesCanvas');
+        const timeSeriesCtx = timeSeriesCanvas.getContext('2d');
+
+        // Model parameters (simplified)
+        let K = 1.0;  // Carrying capacity
+        let m = 0.3;  // Predator mortality
+        const r = 1.0;  // Prey growth rate
+        const a = 1.0;  // Attack rate
+        const h = 0.5;  // Handling time
+        const e = 0.5;  // Conversion efficiency
+
+        // Trajectories
+        let trajectories = [];
+        let timeSeriesData = [];
+        let animationId = null;
+
+        // UI elements
+        const KSlider = document.getElementById('KSlider');
+        const mSlider = document.getElementById('mSlider');
+        const KDisplay = document.getElementById('KDisplay');
+        const mDisplay = document.getElementById('mDisplay');
+        const statusBox = document.getElementById('statusBox');
+        const xStarDisplay = document.getElementById('xStarDisplay');
+        const yStarDisplay = document.getElementById('yStarDisplay');
+        const KHDisplay = document.getElementById('KHDisplay');
+        const KMarker = document.getElementById('KMarker');
+
+        // Phase space bounds
+        const xMin = 0, xMax = 3;
+        const yMin = 0, yMax = 2;
+
+        // Coordinate transforms
+        function toCanvasX(x) {
+            return 40 + (x - xMin) / (xMax - xMin) * (phaseCanvas.width - 60);
+        }
+        function toCanvasY(y) {
+            return 20 + (yMax - y) / (yMax - yMin) * (phaseCanvas.height - 50);
+        }
+        function fromCanvasX(cx) {
+            return xMin + (cx - 40) / (phaseCanvas.width - 60) * (xMax - xMin);
+        }
+        function fromCanvasY(cy) {
+            return yMax - (cy - 20) / (phaseCanvas.height - 50) * (yMax - yMin);
+        }
+
+        // Dynamics
+        function dxdt(x, y) {
+            const functional = a * x / (1 + a * h * x);
+            return r * x * (1 - x / K) - functional * y;
+        }
+        function dydt(x, y) {
+            const functional = a * x / (1 + a * h * x);
+            return e * functional * y - m * y;
+        }
+
+        // RK4 integration
+        function rk4Step(x, y, dt) {
+            const k1_x = dxdt(x, y);
+            const k1_y = dydt(x, y);
+
+            const k2_x = dxdt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+            const k2_y = dydt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+
+            const k3_x = dxdt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+            const k3_y = dydt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+
+            const k4_x = dxdt(x + dt*k3_x, y + dt*k3_y);
+            const k4_y = dydt(x + dt*k3_x, y + dt*k3_y);
+
+            return {
+                x: x + dt/6 * (k1_x + 2*k2_x + 2*k3_x + k4_x),
+                y: y + dt/6 * (k1_y + 2*k2_y + 2*k3_y + k4_y)
+            };
+        }
+
+        // Find coexistence fixed point
+        function getCoexistencePoint() {
+            // y-nullcline: x* = m / (e*a - a*h*m)
+            const xStar = m / (e * a - a * h * m);
+            if (xStar <= 0 || xStar >= K) return null;
+
+            // x-nullcline at x*: y* = r(1 - x*/K)(1 + ahx*)/a
+            const yStar = r * (1 - xStar / K) * (1 + a * h * xStar) / a;
+            if (yStar <= 0) return null;
+
+            return { x: xStar, y: yStar };
+        }
+
+        // Calculate Hopf bifurcation point
+        function getHopfK() {
+            // Hopf occurs when trace of Jacobian = 0
+            // Approximate: K_H ≈ (1 + 2*m/(e*a - a*h*m)) * m / (e*a - a*h*m)
+            const xStar = m / (e * a - a * h * m);
+            // More accurate approximation based on Jacobian analysis
+            const KH = xStar * (1 + a * h * xStar) / (a * h * xStar - 1 + 2 * a * h * xStar);
+            return Math.max(xStar * 1.5, xStar + 0.5);  // Simplified
+        }
+
+        // Check stability of coexistence point
+        function isCoexistenceStable() {
+            const fp = getCoexistencePoint();
+            if (!fp) return false;
+
+            const x = fp.x;
+            const functional = a * x / (1 + a * h * x);
+            const dfunctional_dx = a / Math.pow(1 + a * h * x, 2);
+
+            // Jacobian elements
+            const J11 = r * (1 - 2 * x / K) - dfunctional_dx * fp.y;
+            const J12 = -functional;
+            const J21 = e * dfunctional_dx * fp.y;
+            const J22 = 0;  // At equilibrium
+
+            const trace = J11 + J22;
+            const det = J11 * J22 - J12 * J21;
+
+            return trace < 0 && det > 0;
+        }
+
+        // Draw phase portrait
+        function drawPhasePortrait() {
+            phaseCtx.fillStyle = '#0a1628';
+            phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+            // Draw nullclines
+            // x-nullcline: y = r(1-x/K)(1+ahx)/a
+            phaseCtx.strokeStyle = 'rgba(79, 195, 247, 0.6)';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.beginPath();
+            let first = true;
+            for (let cx = 40; cx < phaseCanvas.width - 20; cx += 2) {
+                const x = fromCanvasX(cx);
+                if (x < 0 || x > K) continue;
+                const yNull = r * (1 - x / K) * (1 + a * h * x) / a;
+                if (yNull >= yMin && yNull <= yMax) {
+                    const cy = toCanvasY(yNull);
+                    if (first) {
+                        phaseCtx.moveTo(cx, cy);
+                        first = false;
+                    } else {
+                        phaseCtx.lineTo(cx, cy);
+                    }
+                }
+            }
+            phaseCtx.stroke();
+
+            // y-nullcline: vertical line at x* = m/(ea - ahm)
+            const xStar = m / (e * a - a * h * m);
+            if (xStar > 0 && xStar < xMax) {
+                phaseCtx.strokeStyle = 'rgba(255, 152, 0, 0.6)';
+                phaseCtx.beginPath();
+                phaseCtx.moveTo(toCanvasX(xStar), toCanvasY(yMin));
+                phaseCtx.lineTo(toCanvasX(xStar), toCanvasY(yMax));
+                phaseCtx.stroke();
+            }
+
+            // Draw vector field
+            phaseCtx.strokeStyle = '#2a4a70';
+            phaseCtx.lineWidth = 1;
+            const step = 30;
+            for (let cx = 50; cx < phaseCanvas.width - 20; cx += step) {
+                for (let cy = 30; cy < phaseCanvas.height - 30; cy += step) {
+                    const x = fromCanvasX(cx);
+                    const y = fromCanvasY(cy);
+                    if (x <= 0 || y <= 0) continue;
+
+                    const dx = dxdt(x, y);
+                    const dy = dydt(x, y);
+                    const mag = Math.sqrt(dx*dx + dy*dy);
+                    if (mag > 0.001) {
+                        const scale = 10 / Math.max(mag, 0.3);
+                        const vx = dx * scale;
+                        const vy = -dy * scale;
+                        phaseCtx.beginPath();
+                        phaseCtx.moveTo(cx, cy);
+                        phaseCtx.lineTo(cx + vx, cy + vy);
+                        phaseCtx.stroke();
+                    }
+                }
+            }
+
+            // Draw trajectories
+            trajectories.forEach((traj, idx) => {
+                if (traj.length < 2) return;
+                phaseCtx.strokeStyle = `hsla(${30 + idx * 30}, 80%, 60%, 0.9)`;
+                phaseCtx.lineWidth = 2;
+                phaseCtx.beginPath();
+                traj.forEach((pt, i) => {
+                    const cx = toCanvasX(pt.x);
+                    const cy = toCanvasY(pt.y);
+                    if (i === 0) phaseCtx.moveTo(cx, cy);
+                    else phaseCtx.lineTo(cx, cy);
+                });
+                phaseCtx.stroke();
+
+                // Current point
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    phaseCtx.beginPath();
+                    phaseCtx.arc(toCanvasX(last.x), toCanvasY(last.y), 5, 0, 2 * Math.PI);
+                    phaseCtx.fillStyle = `hsl(${30 + idx * 30}, 80%, 60%)`;
+                    phaseCtx.fill();
+                }
+            });
+
+            // Draw fixed points
+            // Origin (always saddle or unstable node with predator)
+            phaseCtx.beginPath();
+            phaseCtx.arc(toCanvasX(0), toCanvasY(0), 6, 0, 2 * Math.PI);
+            phaseCtx.fillStyle = '#888';
+            phaseCtx.fill();
+
+            // Prey-only equilibrium (K, 0)
+            phaseCtx.beginPath();
+            phaseCtx.arc(toCanvasX(K), toCanvasY(0), 7, 0, 2 * Math.PI);
+            phaseCtx.fillStyle = '#f44336';  // Saddle
+            phaseCtx.fill();
+            phaseCtx.strokeStyle = '#fff';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.stroke();
+
+            // Coexistence point
+            const fp = getCoexistencePoint();
+            if (fp && fp.x > 0 && fp.x < K && fp.y > 0) {
+                phaseCtx.beginPath();
+                phaseCtx.arc(toCanvasX(fp.x), toCanvasY(fp.y), 8, 0, 2 * Math.PI);
+                phaseCtx.fillStyle = isCoexistenceStable() ? '#4caf50' : '#f44336';
+                phaseCtx.fill();
+                phaseCtx.strokeStyle = '#fff';
+                phaseCtx.lineWidth = 2;
+                phaseCtx.stroke();
+            }
+
+            // Axes labels
+            phaseCtx.fillStyle = '#81d4fa';
+            phaseCtx.font = '12px sans-serif';
+            phaseCtx.textAlign = 'center';
+            phaseCtx.fillText('x (被食者)', phaseCanvas.width / 2, phaseCanvas.height - 5);
+            phaseCtx.fillText('0', toCanvasX(0), phaseCanvas.height - 20);
+            phaseCtx.fillText('K=' + K.toFixed(1), toCanvasX(K), phaseCanvas.height - 20);
+
+            phaseCtx.save();
+            phaseCtx.translate(12, phaseCanvas.height / 2);
+            phaseCtx.rotate(-Math.PI / 2);
+            phaseCtx.fillText('y (捕食者)', 0, 0);
+            phaseCtx.restore();
+        }
+
+        // Draw bifurcation diagram
+        function drawBifurcationDiagram() {
+            bifurcationCtx.fillStyle = '#0a1628';
+            bifurcationCtx.fillRect(0, 0, bifurcationCanvas.width, bifurcationCanvas.height);
+
+            const margin = { left: 40, right: 20, top: 20, bottom: 30 };
+            const width = bifurcationCanvas.width - margin.left - margin.right;
+            const height = bifurcationCanvas.height - margin.top - margin.bottom;
+
+            // Axes
+            bifurcationCtx.strokeStyle = '#4a6a90';
+            bifurcationCtx.lineWidth = 1;
+            bifurcationCtx.beginPath();
+            bifurcationCtx.moveTo(margin.left, margin.top);
+            bifurcationCtx.lineTo(margin.left, margin.top + height);
+            bifurcationCtx.lineTo(margin.left + width, margin.top + height);
+            bifurcationCtx.stroke();
+
+            // K range: 0.5 to 3
+            const KMin = 0.5, KMax = 3;
+            const KHApprox = getHopfK();
+
+            // Stable branch (before Hopf)
+            bifurcationCtx.strokeStyle = '#4caf50';
+            bifurcationCtx.lineWidth = 3;
+            bifurcationCtx.beginPath();
+            for (let kx = margin.left; kx < margin.left + width; kx += 2) {
+                const Kval = KMin + (kx - margin.left) / width * (KMax - KMin);
+                if (Kval > KHApprox) break;
+
+                const xStar = m / (e * a - a * h * m);
+                const yStar = r * (1 - xStar / Kval) * (1 + a * h * xStar) / a;
+                if (yStar > 0 && xStar < Kval) {
+                    const cy = margin.top + height - yStar / 1.5 * height;
+                    if (kx === margin.left || Kval <= KHApprox) {
+                        bifurcationCtx.lineTo(kx, Math.max(margin.top, Math.min(margin.top + height, cy)));
+                    }
+                }
+            }
+            bifurcationCtx.stroke();
+
+            // Unstable branch + limit cycle (after Hopf)
+            // Unstable equilibrium
+            bifurcationCtx.strokeStyle = '#f44336';
+            bifurcationCtx.setLineDash([4, 4]);
+            bifurcationCtx.beginPath();
+            let started = false;
+            for (let kx = margin.left; kx < margin.left + width; kx += 2) {
+                const Kval = KMin + (kx - margin.left) / width * (KMax - KMin);
+                if (Kval < KHApprox) continue;
+
+                const xStar = m / (e * a - a * h * m);
+                const yStar = r * (1 - xStar / Kval) * (1 + a * h * xStar) / a;
+                if (yStar > 0 && xStar < Kval) {
+                    const cy = margin.top + height - yStar / 1.5 * height;
+                    if (!started) {
+                        bifurcationCtx.moveTo(kx, cy);
+                        started = true;
+                    } else {
+                        bifurcationCtx.lineTo(kx, Math.max(margin.top, Math.min(margin.top + height, cy)));
+                    }
+                }
+            }
+            bifurcationCtx.stroke();
+            bifurcationCtx.setLineDash([]);
+
+            // Limit cycle envelope (approximate)
+            bifurcationCtx.strokeStyle = '#ff9800';
+            bifurcationCtx.lineWidth = 2;
+            // Upper envelope
+            bifurcationCtx.beginPath();
+            started = false;
+            for (let kx = margin.left; kx < margin.left + width; kx += 2) {
+                const Kval = KMin + (kx - margin.left) / width * (KMax - KMin);
+                if (Kval < KHApprox) continue;
+
+                const amplitude = Math.sqrt(Kval - KHApprox) * 0.5;
+                const xStar = m / (e * a - a * h * m);
+                const yStar = r * (1 - xStar / Kval) * (1 + a * h * xStar) / a;
+                const yMax = yStar + amplitude;
+                const cy = margin.top + height - yMax / 1.5 * height;
+                if (!started) {
+                    bifurcationCtx.moveTo(kx, Math.max(margin.top, cy));
+                    started = true;
+                } else {
+                    bifurcationCtx.lineTo(kx, Math.max(margin.top, cy));
+                }
+            }
+            bifurcationCtx.stroke();
+
+            // Lower envelope
+            bifurcationCtx.beginPath();
+            started = false;
+            for (let kx = margin.left; kx < margin.left + width; kx += 2) {
+                const Kval = KMin + (kx - margin.left) / width * (KMax - KMin);
+                if (Kval < KHApprox) continue;
+
+                const amplitude = Math.sqrt(Kval - KHApprox) * 0.5;
+                const xStar = m / (e * a - a * h * m);
+                const yStar = r * (1 - xStar / Kval) * (1 + a * h * xStar) / a;
+                const yMin = Math.max(0.01, yStar - amplitude);
+                const cy = margin.top + height - yMin / 1.5 * height;
+                if (!started) {
+                    bifurcationCtx.moveTo(kx, Math.min(margin.top + height, cy));
+                    started = true;
+                } else {
+                    bifurcationCtx.lineTo(kx, Math.min(margin.top + height, cy));
+                }
+            }
+            bifurcationCtx.stroke();
+
+            // Current K marker
+            const currentKx = margin.left + (K - KMin) / (KMax - KMin) * width;
+            bifurcationCtx.fillStyle = '#4fc3f7';
+            bifurcationCtx.beginPath();
+            bifurcationCtx.arc(currentKx, margin.top + height + 8, 5, 0, 2 * Math.PI);
+            bifurcationCtx.fill();
+
+            // Hopf point marker
+            const hopfKx = margin.left + (KHApprox - KMin) / (KMax - KMin) * width;
+            bifurcationCtx.fillStyle = '#ff9800';
+            bifurcationCtx.font = '10px sans-serif';
+            bifurcationCtx.textAlign = 'center';
+            bifurcationCtx.fillText('K_H', hopfKx, margin.top + 12);
+
+            // Labels
+            bifurcationCtx.fillStyle = '#81d4fa';
+            bifurcationCtx.fillText('K', margin.left + width / 2, bifurcationCanvas.height - 3);
+        }
+
+        // Draw time series
+        function drawTimeSeries() {
+            timeSeriesCtx.fillStyle = '#0a1628';
+            timeSeriesCtx.fillRect(0, 0, timeSeriesCanvas.width, timeSeriesCanvas.height);
+
+            if (timeSeriesData.length < 2) return;
+
+            const margin = { left: 30, right: 10, top: 10, bottom: 20 };
+            const width = timeSeriesCanvas.width - margin.left - margin.right;
+            const height = timeSeriesCanvas.height - margin.top - margin.bottom;
+
+            // Find max values
+            let maxX = 0, maxY = 0;
+            timeSeriesData.forEach(pt => {
+                maxX = Math.max(maxX, pt.x);
+                maxY = Math.max(maxY, pt.y);
+            });
+            const maxVal = Math.max(maxX, maxY, 1);
+
+            // Draw x (prey)
+            timeSeriesCtx.strokeStyle = '#4fc3f7';
+            timeSeriesCtx.lineWidth = 2;
+            timeSeriesCtx.beginPath();
+            timeSeriesData.forEach((pt, i) => {
+                const cx = margin.left + i / timeSeriesData.length * width;
+                const cy = margin.top + height - pt.x / maxVal * height;
+                if (i === 0) timeSeriesCtx.moveTo(cx, cy);
+                else timeSeriesCtx.lineTo(cx, cy);
+            });
+            timeSeriesCtx.stroke();
+
+            // Draw y (predator)
+            timeSeriesCtx.strokeStyle = '#ff9800';
+            timeSeriesCtx.beginPath();
+            timeSeriesData.forEach((pt, i) => {
+                const cx = margin.left + i / timeSeriesData.length * width;
+                const cy = margin.top + height - pt.y / maxVal * height;
+                if (i === 0) timeSeriesCtx.moveTo(cx, cy);
+                else timeSeriesCtx.lineTo(cx, cy);
+            });
+            timeSeriesCtx.stroke();
+
+            // Axis
+            timeSeriesCtx.strokeStyle = '#4a6a90';
+            timeSeriesCtx.lineWidth = 1;
+            timeSeriesCtx.beginPath();
+            timeSeriesCtx.moveTo(margin.left, margin.top + height);
+            timeSeriesCtx.lineTo(margin.left + width, margin.top + height);
+            timeSeriesCtx.stroke();
+
+            timeSeriesCtx.fillStyle = '#81d4fa';
+            timeSeriesCtx.font = '10px sans-serif';
+            timeSeriesCtx.textAlign = 'center';
+            timeSeriesCtx.fillText('時間', margin.left + width / 2, timeSeriesCanvas.height - 3);
+        }
+
+        // Update displays
+        function updateDisplays() {
+            KDisplay.textContent = K.toFixed(2);
+            mDisplay.textContent = m.toFixed(2);
+
+            const fp = getCoexistencePoint();
+            const KH = getHopfK();
+            const stable = isCoexistenceStable();
+
+            if (fp) {
+                xStarDisplay.textContent = fp.x.toFixed(2);
+                yStarDisplay.textContent = fp.y.toFixed(2);
+            } else {
+                xStarDisplay.textContent = '---';
+                yStarDisplay.textContent = '---';
+            }
+            KHDisplay.textContent = KH.toFixed(2);
+
+            // Status
+            if (K < KH) {
+                statusBox.className = 'status-box status-stable';
+                statusBox.textContent = '安定な共存平衡（K < K_H）';
+            } else {
+                statusBox.className = 'status-box status-hopf';
+                statusBox.textContent = 'リミットサイクル（K > K_H）';
+            }
+
+            // Update K marker
+            const markerPos = Math.min(95, Math.max(5, (K - 0.5) / 2.5 * 100));
+            KMarker.style.left = markerPos + '%';
+        }
+
+        // Animation
+        function animate() {
+            const dt = 0.05;
+            trajectories.forEach(traj => {
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    for (let i = 0; i < 3; i++) {
+                        const next = rk4Step(last.x, last.y, dt);
+                        last.x = Math.max(0.001, next.x);
+                        last.y = Math.max(0.001, next.y);
+                    }
+                    traj.push({ x: last.x, y: last.y });
+                    if (traj.length > 800) traj.shift();
+
+                    // Update time series with first trajectory
+                    if (traj === trajectories[0]) {
+                        timeSeriesData.push({ x: last.x, y: last.y });
+                        if (timeSeriesData.length > 300) timeSeriesData.shift();
+                    }
+                }
+            });
+
+            drawPhasePortrait();
+            drawTimeSeries();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Click to add trajectory
+        phaseCanvas.addEventListener('click', (e) => {
+            const rect = phaseCanvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const x = Math.max(0.01, fromCanvasX(cx));
+            const y = Math.max(0.01, fromCanvasY(cy));
+            trajectories.push([{ x, y }]);
+            if (trajectories.length === 1) {
+                timeSeriesData = [{ x, y }];
+            }
+        });
+
+        // Event listeners
+        KSlider.addEventListener('input', (e) => {
+            K = parseFloat(e.target.value);
+            updateDisplays();
+            drawBifurcationDiagram();
+        });
+
+        mSlider.addEventListener('input', (e) => {
+            m = parseFloat(e.target.value);
+            updateDisplays();
+            drawBifurcationDiagram();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            K = 1.0;
+            m = 0.3;
+            KSlider.value = K;
+            mSlider.value = m;
+            trajectories = [];
+            timeSeriesData = [];
+            updateDisplays();
+            drawBifurcationDiagram();
+        });
+
+        document.getElementById('addTrajectoryBtn').addEventListener('click', () => {
+            const x = 0.1 + Math.random() * (K - 0.2);
+            const y = 0.1 + Math.random() * 0.8;
+            trajectories.push([{ x, y }]);
+            if (trajectories.length === 1) {
+                timeSeriesData = [{ x, y }];
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            trajectories = [];
+            timeSeriesData = [];
+        });
+
+        // Initialize
+        updateDisplays();
+        drawPhasePortrait();
+        drawBifurcationDiagram();
+        drawTimeSeries();
+
+        // Add initial trajectory
+        const fp = getCoexistencePoint();
+        if (fp) {
+            trajectories.push([{ x: fp.x * 1.5, y: fp.y * 0.5 }]);
+            timeSeriesData = [{ x: fp.x * 1.5, y: fp.y * 0.5 }];
+        }
+
+        animate();
+    </script>
+</body>
+</html>

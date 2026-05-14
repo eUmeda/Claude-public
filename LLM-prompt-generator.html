@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Prompt Generator</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #fff;
+  --surface2: #f0f0f2;
+  --border: #d1d1d6;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --accent: #0071e3;
+  --accent-hover: #0060c0;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --red: #ff453a;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --shadow2: 0 4px 12px rgba(0,0,0,.1);
+  --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* --- Header --- */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+header h1 span { font-size: 22px; }
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.header-actions select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* --- Layout --- */
+.app {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: calc(100vh - 49px);
+}
+.builder {
+  overflow-y: auto;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+}
+.preview {
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--surface2);
+}
+
+/* --- Section cards --- */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.section-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+}
+.section-header.open { border-bottom-color: var(--border); }
+.section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-header .badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+.badge-required { background: #fff0f0; color: var(--red); }
+.badge-recommended { background: #fff8e6; color: #b25000; }
+.badge-optional { background: #f0f0f2; color: var(--text2); }
+.section-header .chevron {
+  transition: transform .2s;
+  color: var(--text2);
+  font-size: 12px;
+}
+.section-header.open .chevron { transform: rotate(90deg); }
+.section-body {
+  padding: 16px;
+  display: none;
+}
+.section-body.open { display: block; }
+
+/* --- Tip --- */
+.tip {
+  background: #f0f7ff;
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 12px;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.5;
+}
+
+/* --- Form elements --- */
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+input[type="text"], textarea, select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface);
+  transition: border-color .15s;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,113,227,.1);
+}
+textarea { resize: vertical; min-height: 60px; }
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.row { display: flex; gap: 12px; }
+.row > .field { flex: 1; }
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn:hover { background: var(--surface2); border-color: #aaa; }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-danger {
+  color: var(--red);
+  border-color: #ffccc9;
+}
+.btn-danger:hover { background: #fff0f0; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* --- Dynamic lists --- */
+.dyn-list { display: flex; flex-direction: column; gap: 8px; }
+.dyn-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  background: var(--surface2);
+  border-radius: 8px;
+}
+.dyn-item textarea, .dyn-item input { background: var(--surface); }
+.dyn-item .dyn-num {
+  min-width: 24px;
+  height: 24px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.dyn-item .dyn-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.dyn-item .btn-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.dyn-item .btn-remove:hover { background: #ffeceb; color: var(--red); }
+
+/* --- Toggle --- */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-row span { font-size: 13px; }
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+.toggle input { display: none; }
+.toggle .slider {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 12px;
+  transition: .2s;
+}
+.toggle .slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: .2s;
+}
+.toggle input:checked + .slider { background: var(--accent); }
+.toggle input:checked + .slider::before { left: 22px; }
+
+/* --- Preview panel --- */
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.preview-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.preview-actions { display: flex; gap: 6px; }
+.prompt-output {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 300px;
+  box-shadow: var(--shadow);
+}
+.prompt-output .tag { color: #0071e3; }
+.prompt-output .role-block { color: #6e6e73; font-style: italic; }
+
+/* --- Quality checklist --- */
+.quality {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: var(--shadow);
+}
+.quality h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.quality-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.quality-item .qi-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.qi-pass { background: #e8fce8; color: #1a8917; }
+.qi-warn { background: #fff8e6; color: #b25000; }
+.qi-fail { background: #ffeceb; color: var(--red); }
+.quality-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.score-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s, background .3s;
+}
+.score-label { font-size: 13px; font-weight: 600; min-width: 40px; text-align: right; }
+
+/* --- Gemini Panel --- */
+.gemini-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: var(--shadow);
+}
+.gemini-panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gemini-result {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 10px;
+  display: none;
+  white-space: pre-wrap;
+}
+.gemini-result.show { display: block; }
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Example pair --- */
+.example-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  .builder { border-right: none; border-bottom: 1px solid var(--border); }
+  .preview { min-height: 50vh; }
+  .example-pair { grid-template-columns: 1fr; }
+}
+
+/* --- Copy toast --- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1d1d1f;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: all .3s;
+  z-index: 999;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>⚡</span> LLM Prompt Generator</h1>
+  <div class="header-actions">
+    <select id="preset-select" onchange="loadPreset(this.value)">
+      <option value="">プリセットを選択...</option>
+      <option value="analysis">📊 分析タスク</option>
+      <option value="writing">✍️ 文章作成</option>
+      <option value="code">💻 コード生成</option>
+      <option value="data">🔄 データ処理</option>
+      <option value="summary">📝 要約</option>
+      <option value="translation">🌐 翻訳</option>
+    </select>
+    <button class="btn" onclick="resetAll()">リセット</button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ===== Builder ===== -->
+  <div class="builder">
+
+    <!-- 1. Task Overview -->
+    <div class="section" data-section="task">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <h2>📋 タスク概要 <span class="badge badge-required">必須</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body open">
+        <div class="tip">黄金律: プロンプトをタスクのコンテキストが最小限の同僚に見せて、指示に従えるか確認する。同僚が混乱するなら、LLMも混乱する。</div>
+        <div class="field">
+          <label>タスクの説明</label>
+          <textarea id="task-desc" rows="3" placeholder="LLMに何をさせたいか、具体的に書く..." oninput="updatePreview()"></textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>対象読者</label>
+            <input type="text" id="task-audience" placeholder="例: NBA初心者の家族" oninput="updatePreview()">
+          </div>
+          <div class="field">
+            <label>使用目的</label>
+            <input type="text" id="task-purpose" placeholder="例: 週次ニュースレター" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="field">
+          <label>成功基準</label>
+          <textarea id="task-criteria" rows="2" placeholder="どうなれば成功か？例: 全30チームについて150-320文字のレポートが生成される" oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Role -->
+    <div class="section" data-section="role">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <h2>🎭 ロール設定 <span class="badge badge-recommended">推奨</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body open">
+        <div class="tip">適切なロールは汎用アシスタントをバーチャルな領域専門家に変える。同じデータでも「data scientist」と「marketing strategist」では異なるインサイトが得られる。</div>
+        <div class="row">
+          <div class="field">
+            <label>ロール名</label>
+            <input type="text" id="role-name" placeholder="例: スポーツ新聞のベテランNBAコラムニスト" oninput="updatePreview()">
+          </div>
+          <div class="field">
+            <label>専門分野</label>
+            <input type="text" id="role-expertise" placeholder="例: 15年のNBA取材経験" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="field">
+          <label>トーン / スタイル</label>
+          <select id="role-tone" onchange="updatePreview()">
+            <option value="">指定なし</option>
+            <option value="professional">プロフェッショナル</option>
+            <option value="casual">カジュアル</option>
+            <option value="academic">アカデミック</option>
+            <option value="journalistic">ジャーナリスティック</option>
+            <option value="technical">テクニカル</option>
+            <option value="friendly">フレンドリー</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>追加のロール詳細</label>
+          <textarea id="role-details" rows="2" placeholder="ロールの背景や制約を自由記述..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Instructions -->
+    <div class="section" data-section="instructions">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <h2>📝 指示ステップ <span class="badge badge-required">必須</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body open">
+        <div class="tip">番号付きステップで指示を与えると、LLMが正確にタスクを実行する確率が上がる。各ステップは単一の明確なアクションにする。</div>
+        <div class="dyn-list" id="instructions-list">
+          <div class="dyn-item">
+            <div class="dyn-num">1</div>
+            <div class="dyn-fields">
+              <input type="text" placeholder="ステップ1の指示..." oninput="updatePreview()">
+            </div>
+            <button class="btn-remove" onclick="removeItem(this)" title="削除">×</button>
+          </div>
+        </div>
+        <button class="btn btn-sm" onclick="addInstruction()" style="margin-top:8px">＋ ステップ追加</button>
+      </div>
+    </div>
+
+    <!-- 4. Context / Data -->
+    <div class="section" data-section="context">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>📦 コンテキスト / データ <span class="badge badge-optional">任意</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body">
+        <div class="tip">XMLタグでデータを囲むとLLMがプロンプトの各部分を正確に解析できる。タグ名は囲む情報に意味が通るものにする。長文データはプロンプトの先頭に配置すると効果的。</div>
+        <div class="dyn-list" id="context-list"></div>
+        <button class="btn btn-sm" onclick="addContext()" style="margin-top:8px">＋ データブロック追加</button>
+      </div>
+    </div>
+
+    <!-- 5. Examples -->
+    <div class="section" data-section="examples">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>💡 Few-shot例 <span class="badge badge-recommended">推奨</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body">
+        <div class="tip">3〜5個の多様で関連性のある例を含めるとパフォーマンスが大幅に向上する。例はエッジケースもカバーし、意図しないパターンをLLMが拾わないよう十分に変化させる。</div>
+        <div class="dyn-list" id="examples-list"></div>
+        <button class="btn btn-sm" onclick="addExample()" style="margin-top:8px">＋ 例を追加</button>
+      </div>
+    </div>
+
+    <!-- 6. Output Format -->
+    <div class="section" data-section="output">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>📤 出力設定 <span class="badge badge-recommended">推奨</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body">
+        <div class="tip">出力フォーマットを明示すると、後処理での抽出が容易になる。XMLタグで出力を囲ませると特に便利。</div>
+        <div class="field">
+          <label>出力フォーマットの説明</label>
+          <textarea id="output-format" rows="3" placeholder="例: JSON形式で、各チームのキーはチーム略称（小文字）、値は{tag, body, record}オブジェクト" oninput="updatePreview()"></textarea>
+        </div>
+        <div class="field">
+          <label>出力を囲むXMLタグ名（任意）</label>
+          <input type="text" id="output-tag" placeholder="例: output, result, answer" oninput="updatePreview()">
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Advanced -->
+    <div class="section" data-section="advanced">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>⚙️ 詳細設定 <span class="badge badge-optional">任意</span></h2>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body">
+        <div class="toggle-row">
+          <span>🧠 Chain of Thought（段階的思考）</span>
+          <label class="toggle"><input type="checkbox" id="opt-cot" onchange="updatePreview()"><span class="slider"></span></label>
+        </div>
+        <div id="cot-detail" style="display:none; margin: 8px 0 12px 0;">
+          <label>思考の指示</label>
+          <textarea id="cot-instructions" rows="2" placeholder="例: まず提供データを整理し、次に各チームの特徴を分析し、最後にレポートを書く" oninput="updatePreview()"></textarea>
+        </div>
+        <div class="toggle-row">
+          <span>✅ 自己検証ステップ</span>
+          <label class="toggle"><input type="checkbox" id="opt-verify" onchange="updatePreview()"><span class="slider"></span></label>
+        </div>
+        <div id="verify-detail" style="display:none; margin: 8px 0 12px 0;">
+          <label>検証項目</label>
+          <textarea id="verify-items" rows="3" placeholder="例:&#10;- 全項目のキーが揃っているか&#10;- 文字数が制限内か&#10;- 提供データにない事実を書いていないか" oninput="updatePreview()"></textarea>
+        </div>
+        <div class="toggle-row">
+          <span>📋 長文データ先頭配置</span>
+          <label class="toggle"><input type="checkbox" id="opt-data-first" checked onchange="updatePreview()"><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>追加の制約・ルール</label>
+          <textarea id="extra-rules" rows="3" placeholder="その他のルールや制約を自由記述..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== Preview ===== -->
+  <div class="preview">
+    <div class="preview-header">
+      <h2>生成されたプロンプト</h2>
+      <div class="preview-actions">
+        <button class="btn btn-sm" onclick="copyPrompt('system')">System をコピー</button>
+        <button class="btn btn-sm" onclick="copyPrompt('user')">User をコピー</button>
+        <button class="btn btn-sm btn-primary" onclick="copyPrompt('all')">全体をコピー</button>
+      </div>
+    </div>
+
+    <div id="system-prompt-section" style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">System Prompt</div>
+      <div class="prompt-output" id="system-prompt-output"><span style="color:var(--text2)">ロールを設定すると、ここにSystem Promptが表示されます</span></div>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">User Prompt</div>
+      <div class="prompt-output" id="user-prompt-output"><span style="color:var(--text2)">左のフォームに入力すると、ここにプロンプトが生成されます</span></div>
+    </div>
+
+    <!-- Quality -->
+    <div class="quality">
+      <h3>品質チェック</h3>
+      <div id="quality-items"></div>
+      <div class="quality-score">
+        <span style="font-size:12px;color:var(--text2)">スコア</span>
+        <div class="score-bar"><div class="score-fill" id="score-fill" style="width:0;background:var(--red)"></div></div>
+        <span class="score-label" id="score-label">0%</span>
+      </div>
+    </div>
+
+    <!-- Gemini -->
+    <div class="gemini-panel">
+      <h3>🤖 Gemini APIで改善</h3>
+      <div class="row" style="align-items:flex-end;">
+        <div class="field" style="flex:2">
+          <label>API Key</label>
+          <input type="password" id="gemini-key" placeholder="AIzaSy...">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <button class="btn btn-primary" id="gemini-btn" onclick="callGemini()">改善を提案</button>
+        </div>
+      </div>
+      <div class="gemini-result" id="gemini-result"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// --- Section toggle ---
+function toggleSection(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+  // CoT / verify detail panels
+  if (header.parentElement.dataset.section === 'advanced') {
+    document.getElementById('cot-detail').style.display = document.getElementById('opt-cot').checked ? 'block' : 'none';
+    document.getElementById('verify-detail').style.display = document.getElementById('opt-verify').checked ? 'block' : 'none';
+  }
+}
+
+// CoT / verify toggle listeners
+document.getElementById('opt-cot').addEventListener('change', function() {
+  document.getElementById('cot-detail').style.display = this.checked ? 'block' : 'none';
+});
+document.getElementById('opt-verify').addEventListener('change', function() {
+  document.getElementById('verify-detail').style.display = this.checked ? 'block' : 'none';
+});
+
+// --- Dynamic list helpers ---
+function renumber(list) {
+  list.querySelectorAll('.dyn-item').forEach((item, i) => {
+    const num = item.querySelector('.dyn-num');
+    if (num) num.textContent = i + 1;
+  });
+}
+function removeItem(btn) {
+  const item = btn.closest('.dyn-item');
+  const list = item.parentElement;
+  item.remove();
+  renumber(list);
+  updatePreview();
+}
+
+function addInstruction() {
+  const list = document.getElementById('instructions-list');
+  const n = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.innerHTML = `<div class="dyn-num">${n}</div><div class="dyn-fields"><input type="text" placeholder="ステップ${n}の指示..." oninput="updatePreview()"></div><button class="btn-remove" onclick="removeItem(this)" title="削除">×</button>`;
+  list.appendChild(div);
+}
+
+function addContext() {
+  const list = document.getElementById('context-list');
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.innerHTML = `<div class="dyn-fields"><div class="row"><div class="field"><label>タグ名</label><input type="text" class="ctx-tag" placeholder="例: data, standings" oninput="updatePreview()"></div><div class="field"><label>説明（任意）</label><input type="text" class="ctx-desc" placeholder="このデータの説明" oninput="updatePreview()"></div></div><div class="field"><label>コンテンツ</label><textarea class="ctx-content" rows="3" placeholder="データ内容またはプレースホルダー {{DATA}}" oninput="updatePreview()"></textarea></div></div><button class="btn-remove" onclick="removeItem(this)" title="削除">×</button>`;
+  list.appendChild(div);
+  updatePreview();
+}
+
+function addExample() {
+  const list = document.getElementById('examples-list');
+  const n = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.innerHTML = `<div class="dyn-num">${n}</div><div class="dyn-fields"><div class="example-pair"><div class="field"><label>入力</label><textarea rows="3" class="ex-input" placeholder="入力例..." oninput="updatePreview()"></textarea></div><div class="field"><label>期待する出力</label><textarea rows="3" class="ex-output" placeholder="出力例..." oninput="updatePreview()"></textarea></div></div></div><button class="btn-remove" onclick="removeItem(this)" title="削除">×</button>`;
+  list.appendChild(div);
+  renumber(list);
+  updatePreview();
+}
+
+// --- Build prompt ---
+function buildPrompt() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const checked = id => document.getElementById(id)?.checked;
+
+  // System prompt
+  let sys = '';
+  const roleName = val('role-name');
+  const roleExpertise = val('role-expertise');
+  const roleTone = val('role-tone');
+  const roleDetails = val('role-details');
+
+  if (roleName || roleExpertise || roleDetails) {
+    sys += '<role>\n';
+    if (roleName) sys += `あなたは${roleName}です。`;
+    if (roleExpertise) sys += `${roleExpertise}。`;
+    sys += '\n';
+    if (roleTone) {
+      const tones = {
+        professional: 'プロフェッショナルな口調で、簡潔かつ正確に。',
+        casual: 'カジュアルで親しみやすい口調で。',
+        academic: 'アカデミックな文体で、根拠を示しながら。',
+        journalistic: 'ジャーナリスティックな文体で、事実を中心に。',
+        technical: 'テクニカルで専門的な表現を使い、正確に。',
+        friendly: 'フレンドリーで温かみのある口調で。'
+      };
+      sys += tones[roleTone] + '\n';
+    }
+    if (roleDetails) sys += roleDetails + '\n';
+    sys += '</role>';
+  }
+
+  // User prompt
+  let user = '';
+
+  // Context blocks (if data-first is checked, these go first)
+  let contextBlock = '';
+  const ctxItems = document.querySelectorAll('#context-list .dyn-item');
+  ctxItems.forEach(item => {
+    const tag = item.querySelector('.ctx-tag')?.value.trim() || 'data';
+    const desc = item.querySelector('.ctx-desc')?.value.trim();
+    const content = item.querySelector('.ctx-content')?.value.trim();
+    if (content) {
+      if (desc) contextBlock += `<!-- ${desc} -->\n`;
+      contextBlock += `<${tag}>\n${content}\n</${tag}>\n\n`;
+    }
+  });
+
+  const dataFirst = checked('opt-data-first');
+
+  // Data first
+  if (dataFirst && contextBlock) {
+    user += contextBlock;
+  }
+
+  // Task description
+  const taskDesc = val('task-desc');
+  const audience = val('task-audience');
+  const purpose = val('task-purpose');
+  const criteria = val('task-criteria');
+
+  if (taskDesc || audience || purpose || criteria) {
+    user += '<task>\n';
+    if (taskDesc) user += taskDesc + '\n';
+    if (audience) user += `対象読者: ${audience}\n`;
+    if (purpose) user += `使用目的: ${purpose}\n`;
+    if (criteria) user += `成功基準: ${criteria}\n`;
+    user += '</task>\n\n';
+  }
+
+  // Instructions
+  const instrItems = document.querySelectorAll('#instructions-list .dyn-item');
+  const instructions = [];
+  instrItems.forEach(item => {
+    const v = item.querySelector('input')?.value.trim();
+    if (v) instructions.push(v);
+  });
+  if (instructions.length > 0) {
+    user += '<instructions>\n';
+    instructions.forEach((inst, i) => {
+      user += `${i + 1}. ${inst}\n`;
+    });
+    user += '</instructions>\n\n';
+  }
+
+  // Extra rules
+  const extraRules = val('extra-rules');
+  if (extraRules) {
+    user += '<rules>\n' + extraRules + '\n</rules>\n\n';
+  }
+
+  // Data after (if not data-first)
+  if (!dataFirst && contextBlock) {
+    user += contextBlock;
+  }
+
+  // Examples
+  const exItems = document.querySelectorAll('#examples-list .dyn-item');
+  const examples = [];
+  exItems.forEach(item => {
+    const inp = item.querySelector('.ex-input')?.value.trim();
+    const out = item.querySelector('.ex-output')?.value.trim();
+    if (inp || out) examples.push({ input: inp, output: out });
+  });
+  if (examples.length > 0) {
+    user += '<examples>\n';
+    examples.forEach((ex, i) => {
+      user += `<example id="${i + 1}">\n`;
+      if (ex.input) user += `入力: ${ex.input}\n`;
+      if (ex.output) user += `出力: ${ex.output}\n`;
+      user += '</example>\n';
+    });
+    user += '</examples>\n\n';
+  }
+
+  // Output format
+  const outputFmt = val('output-format');
+  const outputTag = val('output-tag');
+  if (outputFmt || outputTag) {
+    user += '<output_format>\n';
+    if (outputFmt) user += outputFmt + '\n';
+    if (outputTag) user += `出力は <${outputTag}> タグで囲んでください。\n`;
+    user += '</output_format>\n\n';
+  }
+
+  // CoT
+  if (checked('opt-cot')) {
+    const cotInst = val('cot-instructions');
+    user += '<thinking_instructions>\n';
+    if (cotInst) {
+      user += `回答の前に <thinking> タグ内で段階的に考えてください:\n${cotInst}\n`;
+    } else {
+      user += '回答の前に <thinking> タグ内で段階的に考えてください。\n';
+    }
+    user += '</thinking_instructions>\n\n';
+  }
+
+  // Self-verification
+  if (checked('opt-verify')) {
+    const verifyItems = val('verify-items');
+    user += '<verification>\n';
+    user += '出力前に以下を確認してください:\n';
+    if (verifyItems) {
+      user += verifyItems + '\n';
+    } else {
+      user += '- 指示の全ステップが実行されているか\n- 事実に基づかない情報を含んでいないか\n';
+    }
+    user += '</verification>\n';
+  }
+
+  return { system: sys.trim(), user: user.trim() };
+}
+
+// --- Update preview ---
+function updatePreview() {
+  const { system, user } = buildPrompt();
+
+  const sysEl = document.getElementById('system-prompt-output');
+  const userEl = document.getElementById('user-prompt-output');
+  const sysSec = document.getElementById('system-prompt-section');
+
+  if (system) {
+    sysSec.style.display = 'block';
+    sysEl.textContent = system;
+  } else {
+    sysSec.style.display = 'none';
+  }
+
+  if (user) {
+    userEl.textContent = user;
+  } else {
+    userEl.innerHTML = '<span style="color:var(--text2)">左のフォームに入力すると、ここにプロンプトが生成されます</span>';
+  }
+
+  updateQuality();
+}
+
+// --- Quality check ---
+function updateQuality() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const checked = id => document.getElementById(id)?.checked;
+
+  const checks = [
+    {
+      name: 'タスク説明',
+      pass: val('task-desc').length > 10,
+      warn: val('task-desc').length > 0,
+    },
+    {
+      name: 'ロール設定',
+      pass: val('role-name').length > 0,
+      warn: false,
+    },
+    {
+      name: '指示ステップ',
+      pass: document.querySelectorAll('#instructions-list .dyn-item input').length > 0 &&
+            [...document.querySelectorAll('#instructions-list .dyn-item input')].some(i => i.value.trim()),
+      warn: false,
+    },
+    {
+      name: 'Few-shot例',
+      pass: document.querySelectorAll('#examples-list .dyn-item').length >= 3,
+      warn: document.querySelectorAll('#examples-list .dyn-item').length >= 1,
+    },
+    {
+      name: '出力フォーマット指定',
+      pass: val('output-format').length > 0 || val('output-tag').length > 0,
+      warn: false,
+    },
+    {
+      name: '自己検証ステップ',
+      pass: checked('opt-verify'),
+      warn: false,
+    },
+  ];
+
+  const container = document.getElementById('quality-items');
+  container.innerHTML = '';
+  let score = 0;
+  const total = checks.length;
+
+  checks.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'quality-item';
+    let cls, icon;
+    if (c.pass) { cls = 'qi-pass'; icon = '✓'; score++; }
+    else if (c.warn) { cls = 'qi-warn'; icon = '△'; score += 0.5; }
+    else { cls = 'qi-fail'; icon = '—'; }
+    div.innerHTML = `<div class="qi-icon ${cls}">${icon}</div><span>${c.name}</span>`;
+    container.appendChild(div);
+  });
+
+  const pct = Math.round((score / total) * 100);
+  const fill = document.getElementById('score-fill');
+  const label = document.getElementById('score-label');
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+  label.textContent = pct + '%';
+}
+
+// --- Copy ---
+function copyPrompt(mode) {
+  const { system, user } = buildPrompt();
+  let text = '';
+  if (mode === 'system') text = system || '(System Promptなし)';
+  else if (mode === 'user') text = user || '(User Promptなし)';
+  else {
+    if (system) text += '=== SYSTEM PROMPT ===\n' + system + '\n\n';
+    text += '=== USER PROMPT ===\n' + (user || '(空)');
+  }
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// --- Presets ---
+const PRESETS = {
+  analysis: {
+    taskDesc: '提供されたデータを分析し、主要なトレンド、異常値、アクション可能なインサイトを特定してください。',
+    audience: '経営層',
+    purpose: '四半期レビュー',
+    criteria: 'トレンドが数値で裏付けられ、具体的なアクション項目が含まれること',
+    roleName: 'シニアデータアナリスト',
+    roleExpertise: 'ビジネスインテリジェンスと統計分析の専門家',
+    roleTone: 'professional',
+    instructions: ['提供データの概要を確認する', '主要なトレンドと変化を数値で特定する', '異常値や注意すべきパターンを指摘する', '具体的なアクション項目を3〜5つ提案する'],
+    outputFormat: '構造化されたレポート形式。各セクションに見出しを付け、数値データを含める。',
+  },
+  writing: {
+    taskDesc: '指定されたテーマについて、対象読者に適した文章を作成してください。',
+    audience: '',
+    purpose: '',
+    criteria: '読者の関心を引き、最後まで読ませる文章であること',
+    roleName: 'プロフェッショナルライター',
+    roleExpertise: '多様なジャンルでの執筆経験',
+    roleTone: 'journalistic',
+    instructions: ['テーマの核心を把握する', 'リード文で読者の注意を引く', '具体例やデータで主張を裏付ける', '明確な結論で締める'],
+    outputFormat: '',
+  },
+  code: {
+    taskDesc: '指定された要件に基づいてコードを生成してください。',
+    audience: '開発者',
+    purpose: 'プロダクション利用',
+    criteria: '動作するコードであること。エラーハンドリングとコメントを含むこと',
+    roleName: 'シニアソフトウェアエンジニア',
+    roleExpertise: 'クリーンコードとベストプラクティスの専門家',
+    roleTone: 'technical',
+    instructions: ['要件を分析する', '適切なアルゴリズムとデータ構造を選択する', 'コードを実装する（コメント付き）', 'エッジケースとエラーハンドリングを追加する'],
+    outputFormat: 'コードブロック内に記述。各関数にdocstringを付与。',
+  },
+  data: {
+    taskDesc: '提供されたデータを指定のフォーマットに変換・処理してください。',
+    audience: 'データエンジニア',
+    purpose: 'パイプライン処理',
+    criteria: '入力データが正確に変換され、データ損失がないこと',
+    roleName: 'データエンジニア',
+    roleExpertise: 'ETLパイプラインとデータ品質管理の専門家',
+    roleTone: 'technical',
+    instructions: ['入力データの構造を確認する', 'データの型と値を検証する', '指定フォーマットに変換する', '変換結果を検証する'],
+    outputFormat: '',
+  },
+  summary: {
+    taskDesc: '提供された文書を要約してください。重要なポイントを漏らさず、簡潔にまとめること。',
+    audience: '',
+    purpose: '',
+    criteria: '元の文書の核心的な情報が保持され、不要な詳細が省かれていること',
+    roleName: '',
+    roleExpertise: '',
+    roleTone: '',
+    instructions: ['文書全体を通読する', '主要な論点とサポートする証拠を特定する', '重要度順に整理する', '簡潔な要約を作成する'],
+    outputFormat: '要約は元の文書の1/5以下の長さにすること。',
+  },
+  translation: {
+    taskDesc: '提供されたテキストを翻訳してください。原文のニュアンスと文体を可能な限り保持すること。',
+    audience: '',
+    purpose: '',
+    criteria: '意味の正確さと自然な表現の両立',
+    roleName: 'プロフェッショナル翻訳者',
+    roleExpertise: '多言語の文化的ニュアンスに精通',
+    roleTone: '',
+    instructions: ['原文の意図と文脈を理解する', 'ターゲット言語で自然な表現に翻訳する', '専門用語は適切に処理する', '翻訳結果を原文と照合して確認する'],
+    outputFormat: '',
+  },
+};
+
+function loadPreset(key) {
+  if (!key) return;
+  const p = PRESETS[key];
+  if (!p) return;
+
+  document.getElementById('task-desc').value = p.taskDesc || '';
+  document.getElementById('task-audience').value = p.audience || '';
+  document.getElementById('task-purpose').value = p.purpose || '';
+  document.getElementById('task-criteria').value = p.criteria || '';
+  document.getElementById('role-name').value = p.roleName || '';
+  document.getElementById('role-expertise').value = p.roleExpertise || '';
+  document.getElementById('role-tone').value = p.roleTone || '';
+  document.getElementById('role-details').value = '';
+
+  // Instructions
+  const list = document.getElementById('instructions-list');
+  list.innerHTML = '';
+  (p.instructions || []).forEach((inst, i) => {
+    const div = document.createElement('div');
+    div.className = 'dyn-item';
+    div.innerHTML = `<div class="dyn-num">${i+1}</div><div class="dyn-fields"><input type="text" value="${inst}" oninput="updatePreview()"></div><button class="btn-remove" onclick="removeItem(this)" title="削除">×</button>`;
+    list.appendChild(div);
+  });
+
+  document.getElementById('output-format').value = p.outputFormat || '';
+
+  // Open all sections
+  document.querySelectorAll('.section-header').forEach(h => {
+    if (!h.classList.contains('open')) toggleSection(h);
+  });
+
+  updatePreview();
+}
+
+function resetAll() {
+  document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
+  document.getElementById('opt-data-first').checked = true;
+  document.getElementById('instructions-list').innerHTML = `<div class="dyn-item"><div class="dyn-num">1</div><div class="dyn-fields"><input type="text" placeholder="ステップ1の指示..." oninput="updatePreview()"></div><button class="btn-remove" onclick="removeItem(this)" title="削除">×</button></div>`;
+  document.getElementById('context-list').innerHTML = '';
+  document.getElementById('examples-list').innerHTML = '';
+  document.getElementById('cot-detail').style.display = 'none';
+  document.getElementById('verify-detail').style.display = 'none';
+  document.getElementById('gemini-result').classList.remove('show');
+  updatePreview();
+}
+
+// --- Gemini API ---
+async function callGemini() {
+  const key = document.getElementById('gemini-key').value.trim();
+  if (!key) { showToast('API Keyを入力してください'); return; }
+
+  const { system, user } = buildPrompt();
+  if (!user && !system) { showToast('プロンプトを先に作成してください'); return; }
+
+  const btn = document.getElementById('gemini-btn');
+  const result = document.getElementById('gemini-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 分析中...';
+  result.classList.add('show');
+  result.textContent = '分析中...';
+
+  const fullPrompt = (system ? '[System Prompt]\n' + system + '\n\n' : '') + '[User Prompt]\n' + user;
+
+  const metaPrompt = `あなたはプロンプトエンジニアリングの専門家です。以下のLLMプロンプトを分析し、改善提案をしてください。
+
+<prompt_to_analyze>
+${fullPrompt}
+</prompt_to_analyze>
+
+以下の観点で分析してください:
+1. 明確性: 指示は曖昧さなく具体的か
+2. 構造: XMLタグの使い方は適切か
+3. 例: few-shot例は十分か（3-5個が理想）
+4. ロール: ロール設定は効果的か
+5. 出力制御: 出力フォーマットは明確か
+
+フォーマット:
+- 各観点について A/B/C で評価
+- 具体的な改善案を示す（改善後の文面も含める）
+- 全体の所見を2-3文で`;
+
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: metaPrompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+      }),
+    });
+    const data = await resp.json();
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      result.textContent = data.candidates[0].content.parts[0].text;
+    } else {
+      result.textContent = 'エラー: ' + JSON.stringify(data.error || data, null, 2);
+    }
+  } catch (e) {
+    result.textContent = 'エラー: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '改善を提案';
+}
+
+// --- Init ---
+updatePreview();
+</script>
+</body>
+</html>

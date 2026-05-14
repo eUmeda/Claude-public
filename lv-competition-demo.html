@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>LV競争方程式：固定点分類と多様体</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .equation-box .main-eq {
+            font-size: 1.15em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .outcome-box {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .outcome-1 {
+            background: #1e3a5f;
+            color: #4fc3f7;
+        }
+        .outcome-2 {
+            background: #3a1e5f;
+            color: #ce93d8;
+        }
+        .outcome-coexist {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .outcome-bistable {
+            background: #5f3a1e;
+            color: #ff9800;
+        }
+        .fp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .fp-table th, .fp-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #0f3460;
+        }
+        .fp-table th {
+            background: #0f3460;
+            color: #81d4fa;
+        }
+        .fp-table td {
+            background: #0a1628;
+        }
+        .strogatz-box {
+            background: #0a2040;
+            border-left: 4px solid #4fc3f7;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .strogatz-label {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LV競争方程式：固定点と多様体</h1>
+
+        <div class="section">
+            <h2>モデル方程式</h2>
+            <div class="equation-box">
+                <div class="main-eq">
+                    dx/dt = x(r₁ − x − α₁₂y)
+                </div>
+                <div style="margin-top: 8px;">
+                    dy/dt = y(r₂ − α₂₁x − y)
+                </div>
+            </div>
+            <p>x, y: 2種の個体密度、r: 成長率、α: 種間競争係数</p>
+            <p>同じ資源を奪い合う2種の競争をモデル化</p>
+        </div>
+
+        <div class="section">
+            <h2>相図</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas" width="380" height="340"></canvas>
+                    <div class="canvas-label">x-y 相平面</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>安定ノード</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span>サドル点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #888;"></div>
+                    <span>不安定ノード</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4fc3f7; width: 20px; height: 3px; border-radius: 0;"></div>
+                    <span>x-ヌルクライン</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ce93d8; width: 20px; height: 3px; border-radius: 0;"></div>
+                    <span>y-ヌルクライン</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>種間競争 α₁₂ (y→xへの影響)</span>
+                        <span class="slider-value" id="alpha12Display">0.50</span>
+                    </div>
+                    <input type="range" id="alpha12Slider" min="0.1" max="2.5" step="0.05" value="0.5">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>種間競争 α₂₁ (x→yへの影響)</span>
+                        <span class="slider-value" id="alpha21Display">0.50</span>
+                    </div>
+                    <input type="range" id="alpha21Slider" min="0.1" max="2.5" step="0.05" value="0.5">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="addTrajectoryBtn">軌道追加</button>
+                <button class="btn btn-secondary" id="clearBtn">クリア</button>
+                <button class="btn btn-secondary" id="showManifoldsBtn">多様体表示</button>
+            </div>
+
+            <div id="outcomeBox" class="outcome-box outcome-coexist">
+                共存安定（両種が共存）
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>固定点の分類</h2>
+            <table class="fp-table">
+                <tr>
+                    <th>固定点</th>
+                    <th>座標</th>
+                    <th>タイプ</th>
+                    <th>安定性</th>
+                </tr>
+                <tr>
+                    <td>原点</td>
+                    <td>(0, 0)</td>
+                    <td id="fp0Type">不安定ノード</td>
+                    <td id="fp0Stability">不安定</td>
+                </tr>
+                <tr>
+                    <td>X軸上</td>
+                    <td id="fpXCoord">(r₁, 0)</td>
+                    <td id="fpXType">サドル</td>
+                    <td id="fpXStability">不安定</td>
+                </tr>
+                <tr>
+                    <td>Y軸上</td>
+                    <td id="fpYCoord">(0, r₂)</td>
+                    <td id="fpYType">サドル</td>
+                    <td id="fpYStability">不安定</td>
+                </tr>
+                <tr>
+                    <td>内部</td>
+                    <td id="fpIntCoord">(x*, y*)</td>
+                    <td id="fpIntType">---</td>
+                    <td id="fpIntStability">---</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>4つの競争結果</h2>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="preset1">種1勝利</button>
+                <button class="btn btn-secondary" id="preset2">種2勝利</button>
+                <button class="btn btn-secondary" id="preset3">共存</button>
+                <button class="btn btn-secondary" id="preset4">双安定</button>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">条件</div>
+                    <div class="info-value" id="conditionDisplay">α₁₂ < 1, α₂₁ < 1</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">結果</div>
+                    <div class="info-value" id="resultDisplay">共存</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="strogatz-box">
+            <div class="strogatz-label">Strogatz との接続</div>
+            <p style="margin-top: 8px;"><span class="highlight">5章</span>: 固定点の分類（ノード、サドル、スパイラル）</p>
+            <p><span class="highlight">6章</span>: ヌルクライン、安定多様体・不安定多様体</p>
+            <p><span class="highlight">6.4節</span>: 競争方程式の完全解析</p>
+        </div>
+
+        <div class="section">
+            <h2>多様体の役割</h2>
+            <p>双安定の場合、<span class="highlight">サドル点の安定多様体</span>が「分水嶺」となる：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>多様体の片側 → 種1が勝利</li>
+                <li>多様体の反対側 → 種2が勝利</li>
+            </ul>
+            <p style="margin-top: 10px;">初期条件が「どちら側か」で最終結果が決まる！</p>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
+
+        // Parameters
+        const r1 = 3, r2 = 2;  // Growth rates (fixed)
+        let alpha12 = 0.5;  // Effect of y on x
+        let alpha21 = 0.5;  // Effect of x on y
+
+        // State
+        let trajectories = [];
+        let showManifolds = false;
+        let animationId = null;
+
+        // UI elements
+        const alpha12Slider = document.getElementById('alpha12Slider');
+        const alpha21Slider = document.getElementById('alpha21Slider');
+        const alpha12Display = document.getElementById('alpha12Display');
+        const alpha21Display = document.getElementById('alpha21Display');
+        const outcomeBox = document.getElementById('outcomeBox');
+
+        // Phase space bounds
+        const xMin = 0, xMax = 4;
+        const yMin = 0, yMax = 3;
+
+        // Coordinate transforms
+        function toCanvasX(x) {
+            return 40 + (x - xMin) / (xMax - xMin) * (phaseCanvas.width - 60);
+        }
+        function toCanvasY(y) {
+            return 20 + (yMax - y) / (yMax - yMin) * (phaseCanvas.height - 50);
+        }
+        function fromCanvasX(cx) {
+            return xMin + (cx - 40) / (phaseCanvas.width - 60) * (xMax - xMin);
+        }
+        function fromCanvasY(cy) {
+            return yMax - (cy - 20) / (phaseCanvas.height - 50) * (yMax - yMin);
+        }
+
+        // Dynamics
+        function dxdt(x, y) {
+            return x * (r1 - x - alpha12 * y);
+        }
+        function dydt(x, y) {
+            return y * (r2 - alpha21 * x - y);
+        }
+
+        // RK4 integration
+        function rk4Step(x, y, dt) {
+            const k1_x = dxdt(x, y);
+            const k1_y = dydt(x, y);
+
+            const k2_x = dxdt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+            const k2_y = dydt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+
+            const k3_x = dxdt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+            const k3_y = dydt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+
+            const k4_x = dxdt(x + dt*k3_x, y + dt*k3_y);
+            const k4_y = dydt(x + dt*k3_x, y + dt*k3_y);
+
+            return {
+                x: x + dt/6 * (k1_x + 2*k2_x + 2*k3_x + k4_x),
+                y: y + dt/6 * (k1_y + 2*k2_y + 2*k3_y + k4_y)
+            };
+        }
+
+        // Get fixed points
+        function getFixedPoints() {
+            const fps = [];
+
+            // Origin
+            fps.push({ x: 0, y: 0, type: 'unstable_node', label: '原点' });
+
+            // X-axis: (r1, 0)
+            fps.push({ x: r1, y: 0, type: 'saddle', label: 'X軸' });
+
+            // Y-axis: (0, r2)
+            fps.push({ x: 0, y: r2, type: 'saddle', label: 'Y軸' });
+
+            // Interior: solve system
+            // x = r1 - alpha12 * y
+            // y = r2 - alpha21 * x
+            // x = r1 - alpha12 * (r2 - alpha21 * x)
+            // x * (1 - alpha12 * alpha21) = r1 - alpha12 * r2
+            const denom = 1 - alpha12 * alpha21;
+            if (Math.abs(denom) > 0.001) {
+                const xStar = (r1 - alpha12 * r2) / denom;
+                const yStar = (r2 - alpha21 * r1) / denom;
+                if (xStar > 0 && yStar > 0) {
+                    // Determine stability
+                    // Jacobian at interior point
+                    const J11 = -xStar;
+                    const J12 = -alpha12 * xStar;
+                    const J21 = -alpha21 * yStar;
+                    const J22 = -yStar;
+                    const trace = J11 + J22;
+                    const det = J11 * J22 - J12 * J21;
+
+                    let type;
+                    if (det < 0) {
+                        type = 'saddle';
+                    } else if (trace < 0) {
+                        type = 'stable_node';
+                    } else {
+                        type = 'unstable_node';
+                    }
+                    fps.push({ x: xStar, y: yStar, type: type, label: '内部' });
+                }
+            }
+
+            // Update axis fixed point types based on competition
+            // At (r1, 0): eigenvalues are -r1 and r2 - alpha21*r1
+            const ev_X = r2 - alpha21 * r1;
+            fps[1].type = ev_X < 0 ? 'stable_node' : 'saddle';
+
+            // At (0, r2): eigenvalues are r1 - alpha12*r2 and -r2
+            const ev_Y = r1 - alpha12 * r2;
+            fps[2].type = ev_Y < 0 ? 'stable_node' : 'saddle';
+
+            return fps;
+        }
+
+        // Determine outcome
+        function getOutcome() {
+            // Based on nullcline intersection
+            // Species 1 wins if alpha21 > r2/r1 and alpha12 < r1/r2
+            // Species 2 wins if alpha12 > r1/r2 and alpha21 < r2/r1
+            // Coexistence if alpha12 < r1/r2 and alpha21 < r2/r1
+            // Bistable if alpha12 > r1/r2 and alpha21 > r2/r1
+
+            const crit12 = r1 / r2;  // 1.5
+            const crit21 = r2 / r1;  // 0.667
+
+            if (alpha12 < crit12 && alpha21 < crit21) {
+                return { type: 'coexist', text: '共存安定（両種が共存）', class: 'outcome-coexist' };
+            } else if (alpha12 > crit12 && alpha21 > crit21) {
+                return { type: 'bistable', text: '双安定（初期条件依存）', class: 'outcome-bistable' };
+            } else if (alpha21 > crit21) {
+                return { type: 'species1', text: '種1勝利（種2絶滅）', class: 'outcome-1' };
+            } else {
+                return { type: 'species2', text: '種2勝利（種1絶滅）', class: 'outcome-2' };
+            }
+        }
+
+        // Draw stable manifold of saddle (approximate)
+        function drawManifolds() {
+            const fps = getFixedPoints();
+            const saddle = fps.find(fp => fp.type === 'saddle' && fp.x > 0 && fp.y > 0);
+
+            if (!saddle) return;
+
+            // Find eigenvectors of Jacobian at saddle
+            const J11 = -saddle.x;
+            const J12 = -alpha12 * saddle.x;
+            const J21 = -alpha21 * saddle.y;
+            const J22 = -saddle.y;
+
+            const trace = J11 + J22;
+            const det = J11 * J22 - J12 * J21;
+            const disc = trace * trace - 4 * det;
+
+            if (disc <= 0) return;
+
+            const lambda1 = (trace + Math.sqrt(disc)) / 2;
+            const lambda2 = (trace - Math.sqrt(disc)) / 2;
+
+            // Stable manifold (negative eigenvalue)
+            const lambdaS = lambda1 < 0 ? lambda1 : lambda2;
+            const lambdaU = lambda1 > 0 ? lambda1 : lambda2;
+
+            // Eigenvector for stable: (J11 - lambda)v1 + J12*v2 = 0
+            // v2/v1 = -(J11 - lambdaS)/J12
+            const ratioS = -(J11 - lambdaS) / J12;
+            const ratioU = -(J11 - lambdaU) / J12;
+
+            // Draw stable manifold (green)
+            phaseCtx.strokeStyle = 'rgba(76, 175, 80, 0.8)';
+            phaseCtx.lineWidth = 3;
+
+            // Integrate backwards from saddle
+            for (let dir of [-1, 1]) {
+                phaseCtx.beginPath();
+                let x = saddle.x + dir * 0.01;
+                let y = saddle.y + dir * 0.01 * ratioS;
+                phaseCtx.moveTo(toCanvasX(x), toCanvasY(y));
+
+                for (let i = 0; i < 500; i++) {
+                    const next = rk4Step(x, y, -0.02);  // Backwards
+                    x = next.x;
+                    y = next.y;
+                    if (x < 0 || x > xMax || y < 0 || y > yMax) break;
+                    phaseCtx.lineTo(toCanvasX(x), toCanvasY(y));
+                }
+                phaseCtx.stroke();
+            }
+
+            // Draw unstable manifold (red)
+            phaseCtx.strokeStyle = 'rgba(244, 67, 54, 0.8)';
+
+            for (let dir of [-1, 1]) {
+                phaseCtx.beginPath();
+                let x = saddle.x + dir * 0.01;
+                let y = saddle.y + dir * 0.01 * ratioU;
+                phaseCtx.moveTo(toCanvasX(x), toCanvasY(y));
+
+                for (let i = 0; i < 500; i++) {
+                    const next = rk4Step(x, y, 0.02);  // Forwards
+                    x = next.x;
+                    y = next.y;
+                    if (x < 0 || x > xMax || y < 0 || y > yMax) break;
+                    phaseCtx.lineTo(toCanvasX(x), toCanvasY(y));
+                }
+                phaseCtx.stroke();
+            }
+        }
+
+        // Draw phase portrait
+        function drawPhasePortrait() {
+            phaseCtx.fillStyle = '#0a1628';
+            phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+            // Draw nullclines
+            // x-nullcline: x = 0 or y = (r1 - x) / alpha12
+            phaseCtx.strokeStyle = 'rgba(79, 195, 247, 0.7)';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(toCanvasX(0), toCanvasY((r1) / alpha12));
+            phaseCtx.lineTo(toCanvasX(r1), toCanvasY(0));
+            phaseCtx.stroke();
+
+            // y-nullcline: y = 0 or x = (r2 - y) / alpha21
+            phaseCtx.strokeStyle = 'rgba(206, 147, 216, 0.7)';
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(toCanvasX(0), toCanvasY(r2));
+            phaseCtx.lineTo(toCanvasX(r2 / alpha21), toCanvasY(0));
+            phaseCtx.stroke();
+
+            // Draw manifolds if enabled
+            if (showManifolds) {
+                drawManifolds();
+            }
+
+            // Draw vector field
+            phaseCtx.strokeStyle = '#2a4a70';
+            phaseCtx.lineWidth = 1;
+            const step = 30;
+            for (let cx = 50; cx < phaseCanvas.width - 20; cx += step) {
+                for (let cy = 30; cy < phaseCanvas.height - 30; cy += step) {
+                    const x = fromCanvasX(cx);
+                    const y = fromCanvasY(cy);
+                    if (x < 0 || y < 0) continue;
+
+                    const dx = dxdt(x, y);
+                    const dy = dydt(x, y);
+                    const mag = Math.sqrt(dx*dx + dy*dy);
+                    if (mag > 0.001) {
+                        const scale = 10 / Math.max(mag, 0.2);
+                        const vx = dx * scale;
+                        const vy = -dy * scale;
+                        phaseCtx.beginPath();
+                        phaseCtx.moveTo(cx, cy);
+                        phaseCtx.lineTo(cx + vx, cy + vy);
+                        phaseCtx.stroke();
+                    }
+                }
+            }
+
+            // Draw trajectories
+            trajectories.forEach((traj, idx) => {
+                if (traj.length < 2) return;
+                phaseCtx.strokeStyle = `hsla(${30 + idx * 40}, 80%, 60%, 0.9)`;
+                phaseCtx.lineWidth = 2;
+                phaseCtx.beginPath();
+                traj.forEach((pt, i) => {
+                    const cx = toCanvasX(pt.x);
+                    const cy = toCanvasY(pt.y);
+                    if (i === 0) phaseCtx.moveTo(cx, cy);
+                    else phaseCtx.lineTo(cx, cy);
+                });
+                phaseCtx.stroke();
+
+                // Current point
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    phaseCtx.beginPath();
+                    phaseCtx.arc(toCanvasX(last.x), toCanvasY(last.y), 5, 0, 2 * Math.PI);
+                    phaseCtx.fillStyle = `hsl(${30 + idx * 40}, 80%, 60%)`;
+                    phaseCtx.fill();
+                }
+            });
+
+            // Draw fixed points
+            const fps = getFixedPoints();
+            fps.forEach(fp => {
+                if (fp.x < xMin || fp.x > xMax || fp.y < yMin || fp.y > yMax) return;
+
+                phaseCtx.beginPath();
+                phaseCtx.arc(toCanvasX(fp.x), toCanvasY(fp.y), 8, 0, 2 * Math.PI);
+
+                switch (fp.type) {
+                    case 'stable_node':
+                        phaseCtx.fillStyle = '#4caf50';
+                        break;
+                    case 'saddle':
+                        phaseCtx.fillStyle = '#f44336';
+                        break;
+                    case 'unstable_node':
+                        phaseCtx.fillStyle = '#888';
+                        break;
+                    default:
+                        phaseCtx.fillStyle = '#fff';
+                }
+                phaseCtx.fill();
+                phaseCtx.strokeStyle = '#fff';
+                phaseCtx.lineWidth = 2;
+                phaseCtx.stroke();
+            });
+
+            // Axes labels
+            phaseCtx.fillStyle = '#81d4fa';
+            phaseCtx.font = '12px sans-serif';
+            phaseCtx.textAlign = 'center';
+            phaseCtx.fillText('x (種1)', phaseCanvas.width / 2, phaseCanvas.height - 5);
+            phaseCtx.fillText('0', toCanvasX(0) - 10, phaseCanvas.height - 25);
+            phaseCtx.fillText('r₁=' + r1, toCanvasX(r1), phaseCanvas.height - 25);
+
+            phaseCtx.save();
+            phaseCtx.translate(12, phaseCanvas.height / 2);
+            phaseCtx.rotate(-Math.PI / 2);
+            phaseCtx.fillText('y (種2)', 0, 0);
+            phaseCtx.restore();
+            phaseCtx.fillText('r₂=' + r2, 25, toCanvasY(r2));
+        }
+
+        // Update displays
+        function updateDisplays() {
+            alpha12Display.textContent = alpha12.toFixed(2);
+            alpha21Display.textContent = alpha21.toFixed(2);
+
+            const outcome = getOutcome();
+            outcomeBox.className = 'outcome-box ' + outcome.class;
+            outcomeBox.textContent = outcome.text;
+
+            document.getElementById('conditionDisplay').textContent =
+                `α₁₂=${alpha12.toFixed(1)}, α₂₁=${alpha21.toFixed(1)}`;
+            document.getElementById('resultDisplay').textContent =
+                outcome.type === 'coexist' ? '共存' :
+                outcome.type === 'bistable' ? '双安定' :
+                outcome.type === 'species1' ? '種1勝利' : '種2勝利';
+
+            // Update fixed point table
+            const fps = getFixedPoints();
+
+            document.getElementById('fpXCoord').textContent = `(${r1}, 0)`;
+            document.getElementById('fpYCoord').textContent = `(0, ${r2})`;
+
+            const fpX = fps[1];
+            document.getElementById('fpXType').textContent =
+                fpX.type === 'stable_node' ? '安定ノード' : 'サドル';
+            document.getElementById('fpXStability').textContent =
+                fpX.type === 'stable_node' ? '安定' : '不安定';
+
+            const fpY = fps[2];
+            document.getElementById('fpYType').textContent =
+                fpY.type === 'stable_node' ? '安定ノード' : 'サドル';
+            document.getElementById('fpYStability').textContent =
+                fpY.type === 'stable_node' ? '安定' : '不安定';
+
+            const fpInt = fps.find(fp => fp.label === '内部');
+            if (fpInt) {
+                document.getElementById('fpIntCoord').textContent =
+                    `(${fpInt.x.toFixed(2)}, ${fpInt.y.toFixed(2)})`;
+                document.getElementById('fpIntType').textContent =
+                    fpInt.type === 'stable_node' ? '安定ノード' :
+                    fpInt.type === 'saddle' ? 'サドル' : '不安定ノード';
+                document.getElementById('fpIntStability').textContent =
+                    fpInt.type === 'stable_node' ? '安定' : '不安定';
+            } else {
+                document.getElementById('fpIntCoord').textContent = '存在しない';
+                document.getElementById('fpIntType').textContent = '---';
+                document.getElementById('fpIntStability').textContent = '---';
+            }
+        }
+
+        // Animation
+        function animate() {
+            const dt = 0.03;
+            trajectories.forEach(traj => {
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    for (let i = 0; i < 3; i++) {
+                        const next = rk4Step(last.x, last.y, dt);
+                        last.x = Math.max(0.001, next.x);
+                        last.y = Math.max(0.001, next.y);
+                    }
+                    traj.push({ x: last.x, y: last.y });
+                    if (traj.length > 600) traj.shift();
+                }
+            });
+
+            drawPhasePortrait();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Click to add trajectory
+        phaseCanvas.addEventListener('click', (e) => {
+            const rect = phaseCanvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const x = Math.max(0.01, fromCanvasX(cx));
+            const y = Math.max(0.01, fromCanvasY(cy));
+            trajectories.push([{ x, y }]);
+        });
+
+        // Event listeners
+        alpha12Slider.addEventListener('input', (e) => {
+            alpha12 = parseFloat(e.target.value);
+            trajectories = [];
+            updateDisplays();
+        });
+
+        alpha21Slider.addEventListener('input', (e) => {
+            alpha21 = parseFloat(e.target.value);
+            trajectories = [];
+            updateDisplays();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            alpha12 = 0.5;
+            alpha21 = 0.5;
+            alpha12Slider.value = alpha12;
+            alpha21Slider.value = alpha21;
+            trajectories = [];
+            showManifolds = false;
+            updateDisplays();
+        });
+
+        document.getElementById('addTrajectoryBtn').addEventListener('click', () => {
+            const x = 0.2 + Math.random() * 2.5;
+            const y = 0.2 + Math.random() * 1.5;
+            trajectories.push([{ x, y }]);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            trajectories = [];
+        });
+
+        document.getElementById('showManifoldsBtn').addEventListener('click', () => {
+            showManifolds = !showManifolds;
+        });
+
+        // Presets
+        document.getElementById('preset1').addEventListener('click', () => {
+            alpha12 = 0.8;
+            alpha21 = 1.5;
+            alpha12Slider.value = alpha12;
+            alpha21Slider.value = alpha21;
+            trajectories = [];
+            updateDisplays();
+        });
+
+        document.getElementById('preset2').addEventListener('click', () => {
+            alpha12 = 2.0;
+            alpha21 = 0.4;
+            alpha12Slider.value = alpha12;
+            alpha21Slider.value = alpha21;
+            trajectories = [];
+            updateDisplays();
+        });
+
+        document.getElementById('preset3').addEventListener('click', () => {
+            alpha12 = 0.5;
+            alpha21 = 0.5;
+            alpha12Slider.value = alpha12;
+            alpha21Slider.value = alpha21;
+            trajectories = [];
+            updateDisplays();
+        });
+
+        document.getElementById('preset4').addEventListener('click', () => {
+            alpha12 = 2.0;
+            alpha21 = 1.5;
+            alpha12Slider.value = alpha12;
+            alpha21Slider.value = alpha21;
+            trajectories = [];
+            showManifolds = true;
+            updateDisplays();
+        });
+
+        // Initialize
+        updateDisplays();
+        drawPhasePortrait();
+        animate();
+    </script>
+</body>
+</html>

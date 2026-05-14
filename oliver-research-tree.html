@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oliver "Basketball on Paper" 読解マップ</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e13;
+  --panel: #0d1219;
+  --card: #111820;
+  --border: #1a2332;
+  --text: #d8e2ed;
+  --muted: #7b8fa3;
+  --dim: #4a5b6e;
+  --accent: #7dd3fc;
+  --cat-follow: #34d399;
+  --cat-extend: #60a5fa;
+  --cat-counter: #f87171;
+  --cat-comp: #c084fc;
+  --cat-prac: #fbbf24;
+  --cat-sec: #94a3b8;
+  --cl-possession: #22d3ee;
+  --cl-teamwork: #a78bfa;
+  --cl-defense: #fb923c;
+  --cl-traps: #f472b6;
+  --cl-prediction: #4ade80;
+  --sans: 'IBM Plex Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(180deg, rgba(10,14,19,.97), rgba(10,14,19,.92));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.site-header .logo { font-size: 15px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+.site-header .logo span { color: var(--accent); }
+.site-header .subtitle { color: var(--muted); font-size: 12px; border-left: 1px solid var(--border); padding-left: 16px; white-space: nowrap; }
+.site-header nav { margin-left: auto; display: flex; gap: 4px; }
+.site-header nav a { padding: 6px 12px; border-radius: 6px; font-size: 12px; color: var(--muted); transition: all .15s; }
+.site-header nav a:hover { background: var(--card); color: var(--text); text-decoration: none; }
+.hero { padding: 64px 24px 48px; max-width: 920px; margin: 0 auto; text-align: center; }
+.hero h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 700; line-height: 1.3; letter-spacing: -.5px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lead { margin-top: 16px; color: var(--muted); font-size: 15px; max-width: 680px; margin-inline: auto; }
+.hero .meta-row { margin-top: 24px; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+.hero .meta-chip { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.hero .meta-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.section { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+.section-title { font-size: clamp(20px, 3vw, 28px); font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
+.section-intro { color: var(--muted); font-size: 14px; max-width: 720px; margin-bottom: 32px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.legend-chip { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); font-size: 11px; cursor: pointer; transition: all .15s; user-select: none; }
+.legend-chip .swatch { width: 10px; height: 10px; border-radius: 3px; }
+.graph-wrap { position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 520px; }
+.graph-wrap svg { display: block; width: 100%; }
+.graph-tooltip { position: absolute; pointer-events: none; background: rgba(13,18,25,.95); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 12px; max-width: 340px; opacity: 0; transition: opacity .12s; z-index: 10; }
+.graph-tooltip.visible { opacity: 1; }
+.graph-tooltip .tt-title { font-weight: 600; margin-bottom: 4px; }
+.graph-tooltip .tt-cat { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; margin-bottom: 6px; }
+.graph-tooltip .tt-desc { color: var(--muted); line-height: 1.5; }
+.chapters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.ch-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; transition: all .15s; border-left: 3px solid transparent; }
+.ch-card:hover { border-color: var(--dim); background: #141c26; }
+.ch-card .ch-num { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+.ch-card .ch-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.ch-card .ch-prop { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.ch-card .ch-refs { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+.ch-card .ref-tag { font-size: 10px; padding: 1px 7px; border-radius: 8px; font-family: var(--mono); background: rgba(255,255,255,.06); }
+.catalog-wrap { overflow-x: auto; }
+.catalog-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.catalog-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .8px; border-bottom: 1px solid var(--border); position: sticky; top: 56px; background: var(--bg); }
+.catalog-table td { padding: 10px 12px; border-bottom: 1px solid rgba(26,35,50,.5); vertical-align: top; }
+.catalog-table tr:hover td { background: rgba(255,255,255,.02); }
+.catalog-table .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+.catalog-table .r-id { font-family: var(--mono); font-weight: 600; font-size: 12px; white-space: nowrap; }
+.catalog-table .r-year { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.cluster-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.cl-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-top: 3px solid transparent; }
+.cl-card .cl-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.cl-card .cl-chapters { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.cl-card .cl-desc { font-size: 13px; line-height: 1.6; }
+.note-box { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--cat-comp); border-radius: 10px; padding: 16px 20px; margin-top: 32px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+.note-box strong { color: var(--text); font-weight: 600; }
+.site-footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; color: var(--dim); font-size: 12px; }
+@media (max-width: 768px) {
+  .site-header { flex-wrap: wrap; }
+  .site-header nav { width: 100%; justify-content: center; }
+  .chapters-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">🏀 <span>Oliver</span> Research Tree</div>
+  <div class="subtitle">Basketball on Paper (2004) → 後続研究マップ</div>
+  <nav>
+    <a href="#graph">グラフ</a>
+    <a href="#clusters">クラスタ</a>
+    <a href="#chapters">章一覧</a>
+    <a href="#catalog">R-Catalog</a>
+    <span style="border-left:1px solid var(--border);margin-left:.5rem;padding-left:.8rem">
+      <a href="basketball-research-map.html">← 研究マップ</a>
+      <a href="oliver-research-flow.html" style="margin-left:.6rem">系譜フロー</a>
+      <a href="NBAlandscape.html" style="margin-left:.6rem">NBA勢力図</a>
+    </span>
+  </nav>
+</header>
+
+<div class="hero">
+  <h1>Dean Oliver『<em>Basketball on Paper</em>』<br>読解マップ</h1>
+  <p class="lead">24章の命題を5クラスタに整理し、27の後続研究（R1–R27）との対応を6カテゴリで可視化。ポゼッション効率の実務的古典がどう学術・実務へ展開されたかを追う。</p>
+  <div class="meta-row">
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-follow)"></div>後続</div>
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-extend)"></div>拡張</div>
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-counter)"></div>反例</div>
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-comp)"></div>補完</div>
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-prac)"></div>実務</div>
+    <div class="meta-chip"><div class="dot" style="background:var(--cat-sec)"></div>二次</div>
+  </div>
+</div>
+
+<section class="section" id="graph">
+  <div class="section-label" style="color:var(--accent)">01 / Network</div>
+  <h2 class="section-title">章→後続研究ネットワーク</h2>
+  <p class="section-intro">中央の📖がOliver本。5つの章クラスタ（大ノード）を介して、R-catalog文献（外周）へ接続。ノードをドラッグして構造を探索できる。ホバーで詳細。エッジの色は関係タイプを示す。</p>
+  <div class="legend" id="legend"></div>
+  <div class="graph-wrap" id="graphWrap">
+    <div class="graph-tooltip" id="tooltip"></div>
+  </div>
+  <div class="note-box">
+    <strong>検証ノート：</strong> R8–R14（バイオメカニクス/視覚研究）はCh14（個人ORtg）に「補完」として接続されているが、これらの論文はOliverを引用しておらず、Four FactorsやeFG%への言及もない。「効率の微視的機序」という解釈はアナリスト側の事後的構成であり、著者の意図ではない点に注意。
+  </div>
+</section>
+
+<section class="section" id="clusters">
+  <div class="section-label" style="color:var(--cl-possession)">02 / Clusters</div>
+  <h2 class="section-title">5つの章クラスタ</h2>
+  <p class="section-intro">24章をMermaidフローチャート準拠で5つの主題クラスタに分類。Ch4は「ポゼッション枠組み」と「解釈の罠」に重複所属。</p>
+  <div class="cluster-cards" id="clusterCards"></div>
+</section>
+
+<section class="section" id="chapters">
+  <div class="section-label" style="color:var(--cl-teamwork)">03 / Chapters</div>
+  <h2 class="section-title">全24章：命題と後続研究</h2>
+  <p class="section-intro">各カードの左ボーダー色が所属クラスタ。右端のタグが接続先R-catalogエントリ（タグ色＝カテゴリ）。</p>
+  <div class="chapters-grid" id="chaptersGrid"></div>
+</section>
+
+<section class="section" id="catalog">
+  <div class="section-label" style="color:var(--cat-extend)">04 / R-Catalog</div>
+  <h2 class="section-title">後続研究カタログ（R1–R27）</h2>
+  <p class="section-intro">ChatGPT Deep Researchが同定した27文献。22/27はSemantic Scholar等で書誌確認済み。R2(Baghal)・R3(Cecchin)・R17(Hvattum)はジャーナル名の最終確認が残る。R6(Wu & Bornn)は2017 preprintだが正式出版は2018 American Statistician。</p>
+  <div class="catalog-wrap">
+    <table class="catalog-table" id="catalogTable">
+      <thead><tr><th>ID</th><th>カテゴリ</th><th>文献</th><th>著者</th><th>年</th><th>査読</th><th>要旨</th></tr></thead>
+      <tbody id="catalogBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Dean Oliver『Basketball on Paper』（2004）読解マップ —
+  R-catalog: ChatGPT Deep Research生成 → Claude検証（22/27 confirmed）<br>
+  <a href="basketball-research-map.html">← バスケットボール学術研究の全体地図に戻る</a>
+</footer>
+
+<script>
+const CAT_COLORS = {'後続':'#34d399','拡張':'#60a5fa','反例':'#f87171','補完':'#c084fc','実務':'#fbbf24','二次':'#94a3b8'};
+const CLUSTER_COLORS = {'possession':'#22d3ee','teamwork':'#a78bfa','defense':'#fb923c','traps':'#f472b6','prediction':'#4ade80'};
+
+const clusters = [
+  {id:'possession',name:'ポゼッション枠組み',chapters:[2,3,4,23,24],desc:'「試合はポゼッション数×効率で決まる」という本書の中核命題。Four Factors（eFG%, TOV%, OREB%, FTA Rate）とORtg/DRtgの定義・計算法を含む。JQAS 2007（R1）が査読化、Baghal（R2）がSEMで、Cecchin（R3）が因果推論で検証・拡張。'},
+  {id:'teamwork',name:'チームワーク／貢献配分',chapters:[5,7,10,13,14,15,21,22],desc:'「チーム力＝個の足し算」ではない相互作用の定量化。貢献配分、個人ORtg、"最強指標の聖杯"探求、歴史的選手評価。Penner（R7）がk-meansアーキタイプ、Hvattum（R17）がplus-minus包括レビュー、Sill（R18）がRAPMで接続。'},
+  {id:'defense',name:'守備・個人評価の困難',chapters:[16,17,20],desc:'ボックススコアの限界と個人守備の定量化。「何が読めて何が読めないか」のメタ的考察。Wu & Bornn（R6）がトラッキングデータで、Terner & Franks（R5）がレビューで後続。'},
+  {id:'traps',name:'解釈の罠／外乱',chapters:[4,8,12],desc:'連勝の過大解釈（hot hand）、認知バイアス、審判バイアスなど「統計を読む人間側の問題」。GVT 1985（R19）→Miller & Sanjurjo 2018（R20）のhot hand論争が直結。Price & Wolfers（R21）が審判バイアスを実証。Ch4はpossessionクラスタとも重複。'},
+  {id:'prediction',name:'予測・分布',chapters:[1,6,9,11,18,19],desc:'パリティ（均衡）、ベルカーブ分布、Pythagorean勝率、コーチ評価、スコアラー問題。「指標で未来を読む」ことへの野心と限界。Skinner（R22）のショット選択理論、Zhang（R16）のシミュレーション研究が接続。'}
+];
+
+const refs = [
+  {id:'R1',cat:'後続',title:'A Starting Point for Analyzing Basketball Statistics',author:'Kubatko et al.',year:2007,peer:'JQAS',desc:'ポゼッション推定式の一般化、ORtg/DRtg・Four Factors等の基本語彙を査読論文化',chapters:[2,3,11,14,16,23,24]},
+  {id:'R2',cat:'拡張',title:'Are the "Four Factors" Indicators of One Factor?',author:'Baghal',year:2012,peer:'JQAS',desc:'Four FactorsにSEMを適用、潜在変数として再構成',chapters:[23]},
+  {id:'R3',cat:'拡張',title:"Oliver's four-factor model: Validation through causality",author:'Cecchin',year:2022,peer:'IJSSC',desc:'Four Factorsモデルを因果推論で検証',chapters:[23]},
+  {id:'R4',cat:'拡張',title:'Estimating team possessions in high-level European basketball',author:'Charamis et al.',year:2023,peer:'IJSSC',desc:'Euroleagueでポゼッション推定を他リーグ検証',chapters:[2]},
+  {id:'R5',cat:'後続',title:'Modeling Player and Team Performance in Basketball',author:'Terner & Franks',year:2021,peer:'Annual Review',desc:'チーム戦略と個人評価の包括レビュー',chapters:[1,3,5,9,10,11,12,17,18,21,24]},
+  {id:'R6',cat:'拡張',title:'Modeling offensive player movement in professional basketball',author:'Wu & Bornn',year:2018,peer:'Am. Stat.',desc:'SportVUトラッキングデータからオフェンス移動をモデリング',chapters:[16,17]},
+  {id:'R7',cat:'拡張',title:'Player archetypes within basketball: optimizing roster composition',author:'Penner',year:2025,peer:'Front. Sports',desc:'多リーグ・ボックススコアをk-meansで9アーキタイプに',chapters:[5,10,16,18,21,22]},
+  {id:'R8',cat:'補完',title:'A review on the basketball jump shot',author:'Okazaki et al.',year:2015,peer:'Sports Biomech.',desc:'ジャンプシュートのバイオメカニクス研究レビュー ※Oliver引用なし',chapters:[14]},
+  {id:'R9',cat:'補完',title:'The Jump Shot Performance in Youth Basketball',author:'França et al.',year:2021,peer:'IJERPH',desc:'ユースのシュート成績に影響する状況要因の系統的レビュー',chapters:[14]},
+  {id:'R10',cat:'補完',title:'Biomechanical analysis of the jump shot in basketball',author:'Struzik et al.',year:2014,peer:'Acta Bioeng.',desc:'ジャンプシュートとCMJの下肢力学的差異を比較',chapters:[14]},
+  {id:'R11',cat:'実務',title:'Biomechanics of the Basketball Jump Shot—Six Key Teaching Points',author:'Knudson',year:1993,peer:'JOPERD',desc:'バイオメカ研究から指導上の6ポイントを提示',chapters:[14]},
+  {id:'R12',cat:'補完',title:'Origins and current issues in Quiet Eye research',author:'Vickers',year:2016,peer:'CISS (OA)',desc:'Quiet Eye研究の起源と争点の整理',chapters:[14]},
+  {id:'R13',cat:'補完',title:'The Role of Quiet Eye Timing and Location in the Basketball 3P Shot',author:'Vickers et al.',year:2019,peer:'Front. Psychol.',desc:'3Pシュートでの注視タイミング・位置・ディフェンス影響',chapters:[14]},
+  {id:'R14',cat:'補完',title:'Research of visual attention in basketball shooting: systematic review + meta-analysis',author:'Sirnik et al.',year:2022,peer:'IJSSC',desc:'視覚的注意とシュート成績のメタ分析',chapters:[14]},
+  {id:'R15',cat:'拡張',title:'A Review of Basketball Shooting Analysis Based on AI',author:'Yan et al.',year:2023,peer:'Appl. Sci.',desc:'AIによるシュート分析を4領域に系統化',chapters:[14]},
+  {id:'R16',cat:'拡張',title:'Modelling and Simulation in Game Performances in the NBA',author:'Zhang',year:2019,peer:'PhD (UPM)',desc:'ゲーム統計でのパフォーマンスモデル化',chapters:[9,24]},
+  {id:'R17',cat:'後続',title:'A comprehensive review of plus-minus ratings',author:'Hvattum',year:2019,peer:'IJCSS (OA)',desc:'plus-minus系モデルの包括レビュー',chapters:[7,13,15,17,20]},
+  {id:'R18',cat:'拡張',title:'Improved NBA Adjusted +/- Using Regularization',author:'Sill',year:2010,peer:'MIT Sloan',desc:'APM/RAPMの正則化推定と外部検証',chapters:[7,13,15,17,20]},
+  {id:'R19',cat:'反例',title:'The hot hand in basketball',author:'Gilovich, Vallone & Tversky',year:1985,peer:'Cognitive Psychol.',desc:'hot hand信念を76ersデータで検討、正の相関証拠なし',chapters:[4,8]},
+  {id:'R20',cat:'反例',title:'Surprised by the Hot Hand Fallacy?',author:'Miller & Sanjurjo',year:2018,peer:'Econometrica',desc:'系列バイアスを示しGVTの古典的結論の反転を論証',chapters:[4,8]},
+  {id:'R21',cat:'拡張',title:'Racial Discrimination Among NBA Referees',author:'Price & Wolfers',year:2010,peer:'QJE',desc:'逆人種クルーによる反則増加を報告',chapters:[12]},
+  {id:'R22',cat:'補完',title:'The Problem of Shot Selection in Basketball',author:'Skinner',year:2012,peer:'PLOS ONE',desc:'最適シュート閾値を理論化、NBAデータと比較',chapters:[14,19]},
+  {id:'R23',cat:'実務',title:'NBA Stats Help (FAQ/Glossary)',author:'NBA.com',year:null,peer:'実務一次',desc:'Four FactorsをeFG%, TO Ratio, OREB%, FTA Rateとして定義',chapters:[6,19,22,23]},
+  {id:'R24',cat:'実務',title:'Basketball-Reference.com "Four Factors" 解説',author:'BBRef',year:null,peer:'実務一次',desc:'Four Factorsと重み（40/25/20/15）を明示',chapters:[6,19,23]},
+  {id:'R25',cat:'二次',title:'章目次（Barnes & Noble）',author:'B&N',year:null,peer:'書誌一次',desc:'章題・開始ページを提供',chapters:[]},
+  {id:'R26',cat:'二次',title:'Basketball on Paper: How It Works / Finishing…',author:"Coach's Climb",year:2020,peer:'二次',desc:'Ch1-2・終盤の要点を引用付きで要約',chapters:[1,23]},
+  {id:'R27',cat:'二次',title:'Watching a Game: Offensive Score Sheets (Medium)',author:'Medium',year:2022,peer:'二次',desc:'Ch2をスコアシート→ポゼッション→ORtg/DRtgで要約',chapters:[2]}
+];
+
+const chapters = [
+  {num:1,title:'How to Read This Book',page:1,prop:'観察と統計を"コーチングの補助輪"として使うための読み方・問いの設定',cluster:'prediction',refs:['R5','R26']},
+  {num:2,title:'Watching a Game: Offensive Score Sheets',page:8,prop:'スコアシート→ポゼッション概念→効率（PPP/ORtg/DRtg）への接続',cluster:'possession',refs:['R1','R4','R27']},
+  {num:3,title:'The Best Offenses and Defenses…',page:29,prop:'"得点総数"でなく"攻守効率"で比較・歴史比較する',cluster:'possession',refs:['R1','R5']},
+  {num:4,title:'We Won Three in a Row!',page:69,prop:'連勝・勢いの解釈（小標本・偶然）を統計的に扱う',cluster:'traps',refs:['R19','R20']},
+  {num:5,title:'Teamwork',page:77,prop:'"相互作用としてのチーム力"の概念化',cluster:'teamwork',refs:['R7','R5']},
+  {num:6,title:'Rebounding Myths and Roles',page:86,prop:'リバウンドを役割・状況・価値で再解釈',cluster:'prediction',refs:['R23','R24']},
+  {num:7,title:"Derrick Coleman's Insignificance",page:93,prop:'「目立つ数字」と「勝利寄与」のズレ',cluster:'teamwork',refs:['R17','R18']},
+  {num:8,title:"Amos Tversky's Basketball Legacy",page:101,prop:'認知バイアスから見た統計解釈の落とし穴',cluster:'traps',refs:['R19','R20']},
+  {num:9,title:'The Power of Parity',page:108,prop:'リーグの均衡を成績分布・予測可能性で捉える',cluster:'prediction',refs:['R16','R5']},
+  {num:10,title:'Teamwork 2: A Game of Ultimatums',page:114,prop:'チーム内協力のゲーム理論的分析',cluster:'teamwork',refs:['R7','R5']},
+  {num:11,title:"Basketball's Bell Curve",page:117,prop:'能力分布、予測、回帰を"分布"で扱う',cluster:'prediction',refs:['R1','R5']},
+  {num:12,title:'Bad Referees…',page:134,prop:'審判など外生要因の影響（ノイズ/バイアス）',cluster:'traps',refs:['R21','R5']},
+  {num:13,title:'Teamwork 3: Distributing Credit…',page:144,prop:'貢献配分を統計指標で実装する',cluster:'teamwork',refs:['R17','R18']},
+  {num:14,title:'Individual Floor % and Offensive Ratings',page:154,prop:'個人ORtg・フロア%の計算法と解釈',cluster:'teamwork',refs:['R1','R22','R8','R9','R10','R11','R12','R13','R14','R15']},
+  {num:15,title:'The Holy Grail of Player Ratings',page:181,prop:'"最強個人指標"探求の難しさ',cluster:'teamwork',refs:['R17','R18']},
+  {num:16,title:'Insight on a Boxscore',page:192,prop:'ボックススコアから何が読め、何が読めないか',cluster:'defense',refs:['R1','R7']},
+  {num:17,title:'Individual Defensive Ratings',page:198,prop:'個人ディフェンスの定量化の困難',cluster:'defense',refs:['R17','R18']},
+  {num:18,title:'Billy Donovan…',page:221,prop:'"説明変数に入れにくい要因"としてのコーチ評価',cluster:'prediction',refs:['R5','R7']},
+  {num:19,title:'The Problem with Scorers',page:232,prop:'得点者の価値を効率・役割・選択で再評価',cluster:'prediction',refs:['R22','R23','R24']},
+  {num:20,title:'Individual Win-Loss Records',page:242,prop:'個人の勝敗寄与定義と誤帰属の危険',cluster:'defense',refs:['R17','R18']},
+  {num:21,title:'Player Evaluation Files: The Great Ones',page:261,prop:'歴史的名選手のケース評価（指標適用の実演）',cluster:'teamwork',refs:['R7','R5']},
+  {num:22,title:'Freaks, Specialists, and Women',page:290,prop:'例外的な役割選手・WNBA等の評価事例',cluster:'teamwork',refs:['R7','R23']},
+  {num:23,title:'Basic Tools to Evaluate a Team',page:318,prop:'Four Factors等のチーム評価基本ツールと実務診断フロー',cluster:'possession',refs:['R1','R2','R3','R26']},
+  {num:24,title:'Weather Forecasts',page:337,prop:'指標による将来予測（勝率・成績見通し）',cluster:'possession',refs:['R5','R16']}
+];
+
+// ── Render legend ──
+const legendEl = document.getElementById('legend');
+Object.entries(CAT_COLORS).forEach(([cat, color]) => {
+  const chip = document.createElement('div');
+  chip.className = 'legend-chip';
+  chip.innerHTML = '<div class="swatch" style="background:'+color+'"></div>'+cat;
+  chip.style.color = color;
+  legendEl.appendChild(chip);
+});
+
+// ── Render cluster cards ──
+const clusterEl = document.getElementById('clusterCards');
+clusters.forEach(cl => {
+  const color = CLUSTER_COLORS[cl.id];
+  const card = document.createElement('div');
+  card.className = 'cl-card';
+  card.style.borderTopColor = color;
+  card.innerHTML = '<div class="cl-label" style="color:'+color+'">'+cl.name+'</div><div class="cl-chapters">Ch. '+cl.chapters.join(', ')+'</div><div class="cl-desc">'+cl.desc+'</div>';
+  clusterEl.appendChild(card);
+});
+
+// ── Render chapters grid ──
+const chapGrid = document.getElementById('chaptersGrid');
+chapters.forEach(ch => {
+  const color = CLUSTER_COLORS[ch.cluster];
+  const card = document.createElement('div');
+  card.className = 'ch-card';
+  card.style.borderLeftColor = color;
+  const refTags = ch.refs.map(r => {
+    const ref = refs.find(x => x.id === r);
+    const c = ref ? CAT_COLORS[ref.cat] : '#666';
+    return '<span class="ref-tag" style="color:'+c+';border:1px solid '+c+'33">'+r+'</span>';
+  }).join('');
+  card.innerHTML = '<div class="ch-num" style="color:'+color+'">Chapter '+ch.num+' — p.'+ch.page+'</div><div class="ch-title">'+ch.title+'</div><div class="ch-prop">'+ch.prop+'</div><div class="ch-refs">'+refTags+'</div>';
+  chapGrid.appendChild(card);
+});
+
+// ── Render catalog table ──
+const tbody = document.getElementById('catalogBody');
+refs.forEach(r => {
+  const color = CAT_COLORS[r.cat];
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td class="r-id" style="color:'+color+'">'+r.id+'</td><td><span class="cat-badge" style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44">'+r.cat+'</span></td><td style="max-width:280px">'+r.title+'</td><td style="white-space:nowrap;color:var(--muted)">'+r.author+'</td><td class="r-year">'+(r.year||'—')+'</td><td style="color:var(--muted);font-size:11px">'+r.peer+'</td><td style="color:var(--muted);font-size:12px;max-width:260px">'+r.desc+'</td>';
+  tbody.appendChild(tr);
+});
+
+// ══════════════════════════════════════════════════
+// D3 FORCE GRAPH
+// ══════════════════════════════════════════════════
+(function() {
+  const wrap = document.getElementById('graphWrap');
+  const tooltip = document.getElementById('tooltip');
+  const W = wrap.clientWidth;
+  const H = Math.max(560, Math.min(W * 0.55, 720));
+
+  const svg = d3.select(wrap).append('svg')
+    .attr('viewBox', '0 0 '+W+' '+H)
+    .attr('width', W).attr('height', H);
+
+  const nodes = [];
+  const links = [];
+
+  nodes.push({id:'OLIVER',type:'book',label:'Basketball on Paper (2004)',r:32,color:'#e2e8f0'});
+  clusters.forEach(cl => {
+    nodes.push({id:'CL_'+cl.id,type:'cluster',label:cl.name,r:22,color:CLUSTER_COLORS[cl.id]});
+    links.push({source:'OLIVER',target:'CL_'+cl.id,color:CLUSTER_COLORS[cl.id],w:3});
+  });
+  refs.filter(r => r.chapters.length > 0).forEach(r => {
+    nodes.push({id:r.id,type:'ref',label:r.id+': '+r.author,title:r.title,desc:r.desc,cat:r.cat,r:r.chapters.length>3?14:(r.chapters.length>1?11:8),color:CAT_COLORS[r.cat]});
+    const done = new Set();
+    r.chapters.forEach(chNum => {
+      const ch = chapters.find(c => c.num === chNum);
+      if (ch && !done.has(ch.cluster)) {
+        done.add(ch.cluster);
+        links.push({source:'CL_'+ch.cluster,target:r.id,color:CAT_COLORS[r.cat],w:1.5});
+      }
+    });
+  });
+
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(d => (d.source.type==='book'||d.target.type==='book')?110:130).strength(0.5))
+    .force('charge', d3.forceManyBody().strength(d => d.type==='book'?-450:(d.type==='cluster'?-250:-70)))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide(d => d.r+6))
+    .force('x', d3.forceX(W/2).strength(0.04))
+    .force('y', d3.forceY(H/2).strength(0.04));
+
+  const defs = svg.append('defs');
+  const glow = defs.append('filter').attr('id','glow');
+  glow.append('feGaussianBlur').attr('stdDeviation','3').attr('result','blur');
+  const merge = glow.append('feMerge');
+  merge.append('feMergeNode').attr('in','blur');
+  merge.append('feMergeNode').attr('in','SourceGraphic');
+
+  const link = svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', d => d.color).attr('stroke-opacity', 0.25).attr('stroke-width', d => d.w);
+
+  const node = svg.append('g').selectAll('g').data(nodes).join('g')
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end', (e,d) => { if(!e.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; })
+    );
+
+  node.append('circle')
+    .attr('r', d => d.r)
+    .attr('fill', d => d.color+(d.type==='book'?'18':'15'))
+    .attr('stroke', d => d.color)
+    .attr('stroke-width', d => d.type==='book'?2.5:(d.type==='cluster'?2:1.2))
+    .attr('stroke-opacity', 0.7)
+    .attr('filter', d => d.type==='book'?'url(#glow)':null);
+
+  node.append('text')
+    .text(d => { if(d.type==='book') return '\u{1F4D6}'; if(d.type==='cluster') return d.label.slice(0,6); return d.id; })
+    .attr('text-anchor','middle')
+    .attr('dy', d => d.type==='book'?5:(d.type==='cluster'?4:3))
+    .attr('fill', d => d.color)
+    .attr('font-size', d => d.type==='book'?22:(d.type==='cluster'?10:9))
+    .attr('font-weight', d => d.type==='ref'?500:700)
+    .attr('font-family', d => d.type==='ref'?'var(--mono)':'var(--sans)')
+    .attr('opacity', 0.9).style('pointer-events','none');
+
+  node.on('mouseenter', function(event, d) {
+    const connected = new Set();
+    links.forEach(l => {
+      const sid = typeof l.source==='object'?l.source.id:l.source;
+      const tid = typeof l.target==='object'?l.target.id:l.target;
+      if(sid===d.id) connected.add(tid);
+      if(tid===d.id) connected.add(sid);
+    });
+    connected.add(d.id);
+    node.selectAll('circle').attr('fill-opacity', n => connected.has(n.id)?0.25:0.03).attr('stroke-opacity', n => connected.has(n.id)?1:0.15);
+    node.selectAll('text').attr('opacity', n => connected.has(n.id)?1:0.15);
+    link.attr('stroke-opacity', l => {
+      const sid = typeof l.source==='object'?l.source.id:l.source;
+      const tid = typeof l.target==='object'?l.target.id:l.target;
+      return (sid===d.id||tid===d.id)?0.7:0.03;
+    }).attr('stroke-width', l => {
+      const sid = typeof l.source==='object'?l.source.id:l.source;
+      const tid = typeof l.target==='object'?l.target.id:l.target;
+      return (sid===d.id||tid===d.id)?l.w*2:l.w*0.3;
+    });
+    let html = '';
+    if(d.type==='book') { html='<div class="tt-title">Dean Oliver\u300EBasketball on Paper\u300F(2004)</div><div class="tt-desc">\u30DD\u30BC\u30C3\u30B7\u30E7\u30F3\u3068\u52B9\u7387\u3067\u8A66\u5408\u3092\u518D\u8A18\u8FF0\u3059\u308B\u5B9F\u52D9\u7684\u53E4\u5178\u300224\u7AE0\u21925\u30AF\u30E9\u30B9\u30BF\u219227\u5F8C\u7D9A\u7814\u7A76\u3002</div>'; }
+    else if(d.type==='cluster') {
+      const cl = clusters.find(c => 'CL_'+c.id===d.id);
+      html='<div class="tt-title" style="color:'+d.color+'">'+cl.name+'</div><div class="tt-desc">Ch. '+cl.chapters.join(', ')+'</div>';
+    } else {
+      html='<div class="tt-title" style="color:'+d.color+'">'+d.id+': '+d.title+'</div><span class="tt-cat" style="background:'+d.color+'22;color:'+d.color+'">'+d.cat+'</span><div class="tt-desc">'+d.desc+'</div>';
+    }
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+  })
+  .on('mousemove', function(event) {
+    const rect = wrap.getBoundingClientRect();
+    tooltip.style.left = (event.clientX-rect.left+16)+'px';
+    tooltip.style.top = (event.clientY-rect.top-10)+'px';
+  })
+  .on('mouseleave', function() {
+    node.selectAll('circle').attr('fill-opacity', d => d.type==='book'?0.1:0.08).attr('stroke-opacity', 0.7);
+    node.selectAll('text').attr('opacity', 0.9);
+    link.attr('stroke-opacity', 0.25).attr('stroke-width', d => d.w);
+    tooltip.classList.remove('visible');
+  });
+
+  simulation.on('tick', () => {
+    nodes.forEach(d => { d.x=Math.max(d.r+8,Math.min(W-d.r-8,d.x)); d.y=Math.max(d.r+8,Math.min(H-d.r-8,d.y)); });
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('transform', d => 'translate('+d.x+','+d.y+')');
+  });
+
+  window.addEventListener('resize', () => {
+    const nW = wrap.clientWidth;
+    const nH = Math.max(560, Math.min(nW*0.55, 720));
+    svg.attr('viewBox','0 0 '+nW+' '+nH).attr('width',nW).attr('height',nH);
+    simulation.force('center', d3.forceCenter(nW/2, nH/2));
+    simulation.alpha(0.3).restart();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oliver研究系譜フロー</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e13;
+  --panel: #0d1219;
+  --card: #111820;
+  --border: #1a2332;
+  --text: #d8e2ed;
+  --muted: #7b8fa3;
+  --dim: #4a5b6e;
+  --accent: #7dd3fc;
+  --follow: #34d399;
+  --extend: #60a5fa;
+  --counter: #f87171;
+  --comp: #c084fc;
+  --prac: #fbbf24;
+  --sec: #94a3b8;
+  --sans: 'IBM Plex Sans JP','Hiragino Kaku Gothic ProN',sans-serif;
+  --mono: 'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;background:rgba(10,14,19,.96);backdrop-filter:blur(10px)}
+.header .logo{font-size:15px;font-weight:700;white-space:nowrap}
+.header .logo span{color:var(--accent)}
+.header .sub{color:var(--muted);font-size:12px;border-left:1px solid var(--border);padding-left:16px}
+
+.wrap{max-width:1300px;margin:0 auto;padding:32px 24px}
+.title-area{text-align:center;margin-bottom:40px}
+.title-area h1{font-size:clamp(22px,3.5vw,32px);font-weight:700;line-height:1.3}
+.title-area h1 em{font-style:normal;color:var(--accent)}
+.title-area .lead{color:var(--muted);font-size:14px;margin-top:10px;max-width:680px;margin-inline:auto}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:28px}
+.legend .lc{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);padding:3px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border)}
+.legend .lc .sw{width:8px;height:8px;border-radius:2px}
+
+.flow-area{position:relative;overflow-x:auto;overflow-y:visible;padding-bottom:24px}
+
+/* SVG */
+svg.flow{display:block;margin:0 auto}
+svg.flow text{font-family:var(--sans)}
+svg.flow .year-label{fill:var(--dim);font-size:11px;font-weight:600;font-family:var(--mono)}
+svg.flow .year-line{stroke:var(--border);stroke-width:1;stroke-dasharray:4,4}
+svg.flow .node-box{rx:8;ry:8;stroke-width:1.5;cursor:pointer;transition:filter .15s}
+svg.flow .node-box:hover{filter:brightness(1.3)}
+svg.flow .node-text{fill:var(--text);font-size:11px;font-weight:500;pointer-events:none}
+svg.flow .node-sub{fill:var(--muted);font-size:9px;pointer-events:none}
+svg.flow .node-id{font-family:var(--mono);font-size:9px;font-weight:600;pointer-events:none}
+svg.flow .edge{fill:none;stroke-width:1.5;opacity:.5}
+svg.flow .edge-strong{stroke-width:2.5;opacity:.7}
+svg.flow .stream-label{fill:var(--muted);font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+svg.flow .oliver-box{rx:10;ry:10;stroke-width:2.5}
+
+.note{max-width:900px;margin:32px auto 0;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--comp);border-radius:10px;padding:14px 18px;font-size:12px;color:var(--muted);line-height:1.7}
+.note strong{color:var(--text)}
+
+.footer{border-top:1px solid var(--border);padding:20px 24px;text-align:center;color:var(--dim);font-size:12px;margin-top:40px}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">🏀 <span>Oliver</span> Research Flow</div>
+  <div class="sub">時系列で見る研究の展開方向</div>
+  <nav style="margin-left:auto;display:flex;gap:.8rem;font-size:12px">
+    <a href="basketball-research-map.html">← 研究マップ</a>
+    <a href="oliver-research-tree.html">読解マップ</a>
+    <a href="NBAlandscape.html">NBA勢力図</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="title-area">
+    <h1><em>Basketball on Paper</em> からの研究系譜</h1>
+    <p class="lead">縦軸が時間（1985→2025）、横に6つの研究ストリームを配置。矢印が「この研究がどこから生まれたか」を示す。色はカテゴリ（後続/拡張/反例/補完/実務）。</p>
+  </div>
+
+  <div class="legend">
+    <div class="lc"><div class="sw" style="background:#34d399"></div>後続</div>
+    <div class="lc"><div class="sw" style="background:#60a5fa"></div>拡張</div>
+    <div class="lc"><div class="sw" style="background:#f87171"></div>反例</div>
+    <div class="lc"><div class="sw" style="background:#c084fc"></div>補完</div>
+    <div class="lc"><div class="sw" style="background:#fbbf24"></div>実務</div>
+    <div class="lc"><div class="sw" style="background:#94a3b8"></div>二次</div>
+    <div class="lc"><div class="sw" style="background:var(--accent)"></div>Oliver本</div>
+  </div>
+
+  <div class="flow-area" id="flowArea"></div>
+
+  <div class="note">
+    <strong>読み方：</strong>
+    Oliver本（2004）を起点に、まずJQAS 2007（R1）が学術的ハブとして「ポゼッション語彙」を査読化。
+    そこから3方向に分岐する — (A) Four Factorsの統計的深化（SEM→因果→他リーグ）、(B) 個人評価のplus-minus系進化（RAPM→包括レビュー）、(C) ホットハンド論争の独立進行（GVT 1985→Miller & Sanjurjo 2018）。
+    バイオメカニクス/視覚研究（右列）はOliverへの引用接続がなく、「補完」は事後的な位置づけ。
+    2019年前後に文献が集中するのは、トラッキングデータ普及とスポーツアナリティクス学会成熟の反映。
+  </div>
+</div>
+
+<footer class="footer">
+  <a href="oliver-research-tree.html">← ネットワーク図に戻る</a> ｜ 
+  <a href="basketball-research-map.html">全体地図</a>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════
+// LAYOUT CONSTANTS
+// ══════════════════════════════════════════════════
+const COL_COLORS = {
+  follow:'#34d399', extend:'#60a5fa', counter:'#f87171',
+  comp:'#c084fc', prac:'#fbbf24', sec:'#94a3b8'
+};
+
+// 6 streams (columns), left to right
+const STREAMS = [
+  {id:'hothand',  label:'ホットハンド論争', x:0},
+  {id:'fourfac',  label:'Four Factors深化', x:1},
+  {id:'core',     label:'基盤（査読化）',   x:2},
+  {id:'plusminus',label:'個人評価／±系',    x:3},
+  {id:'tracking', label:'トラッキング／ML', x:4},
+  {id:'biomech',  label:'バイオメカ／視覚', x:5}
+];
+
+// Year range
+const Y_START = 1984;
+const Y_END   = 2026;
+
+// Nodes: {id, year, stream_idx, label, sub, cat, w?}
+const NODES = [
+  // Pre-Oliver
+  {id:'R19', year:1985, si:0, label:'GVT 1985', sub:'Hot hand — 証拠なし', cat:'counter'},
+  {id:'R11', year:1993, si:5, label:'Knudson 1993', sub:'シュート指導6ポイント', cat:'prac'},
+
+  // Oliver
+  {id:'OLIVER', year:2004, si:2, label:'Basketball on Paper', sub:'Dean Oliver — ポゼッション効率体系', cat:'oliver', w:200},
+
+  // First wave 2007-2010
+  {id:'R1',  year:2007, si:2, label:'JQAS 2007', sub:'Kubatko — 基本語彙の査読化', cat:'follow', w:180},
+  {id:'R18', year:2010, si:3, label:'Sill 2010', sub:'RAPM正則化（MIT Sloan）', cat:'extend'},
+  {id:'R21', year:2010.3, si:0, label:'Price & Wolfers 2010', sub:'審判人種バイアス（QJE）', cat:'extend'},
+
+  // Second wave 2012
+  {id:'R2',  year:2012, si:1, label:'Baghal 2012', sub:'Four Factors → SEM潜在変数', cat:'extend'},
+  {id:'R22', year:2012.3, si:3, label:'Skinner 2012', sub:'最適シュート選択理論', cat:'comp'},
+
+  // 2014-2016
+  {id:'R10', year:2014, si:5, label:'Struzik 2014', sub:'JS vs CMJ下肢力学', cat:'comp'},
+  {id:'R8',  year:2015, si:5, label:'Okazaki 2015', sub:'ジャンプシュート総説', cat:'comp'},
+  {id:'R12', year:2016, si:5, label:'Vickers 2016', sub:'Quiet Eye起源と争点', cat:'comp'},
+
+  // 2017-2019 cluster
+  {id:'R6',  year:2017.5, si:4, label:'Wu & Bornn 2018', sub:'SportVUオフェンス移動モデル', cat:'extend'},
+  {id:'R20', year:2018, si:0, label:'Miller & Sanjurjo 2018', sub:'Hot hand反転（Econometrica）', cat:'counter'},
+  {id:'R17', year:2019, si:3, label:'Hvattum 2019', sub:'±系包括レビュー', cat:'follow'},
+  {id:'R13', year:2019.3, si:5, label:'Vickers 2019', sub:'3P注視タイミング実験', cat:'comp'},
+  {id:'R16', year:2019.6, si:4, label:'Zhang 2019', sub:'NBAシミュレーション（PhD）', cat:'extend'},
+
+  // 2020-2021
+  {id:'R26', year:2020, si:2, label:"Coach's Climb 2020", sub:'Ch1-2要約（二次）', cat:'sec'},
+  {id:'R5',  year:2021, si:2, label:'Terner & Franks 2021', sub:'Annual Review包括レビュー', cat:'follow', w:180},
+  {id:'R9',  year:2021.3, si:5, label:'França 2021', sub:'ユースJSレビュー', cat:'comp'},
+
+  // 2022-2023
+  {id:'R3',  year:2022, si:1, label:'Cecchin 2022', sub:'Four Factors因果妥当化', cat:'extend'},
+  {id:'R14', year:2022.3, si:5, label:'Sirnik 2022', sub:'視覚的注意メタ分析', cat:'comp'},
+  {id:'R27', year:2022.6, si:2, label:'Medium 2022', sub:'Ch2要約（二次）', cat:'sec'},
+  {id:'R4',  year:2023, si:1, label:'Charamis 2023', sub:'Euroleagueポゼッション検証', cat:'extend'},
+  {id:'R15', year:2023.3, si:5, label:'Yan 2023', sub:'AIシュート分析レビュー', cat:'extend'},
+
+  // 2025
+  {id:'R7',  year:2025, si:4, label:'Penner 2025', sub:'9アーキタイプ（k-means）', cat:'extend'}
+];
+
+// Edges: {from, to, cat}
+const EDGES = [
+  // Oliver -> R1 (core)
+  {from:'OLIVER', to:'R1', cat:'follow', strong:true},
+  // R1 -> Four Factors stream
+  {from:'R1', to:'R2', cat:'extend'},
+  {from:'R2', to:'R3', cat:'extend'},
+  {from:'R3', to:'R4', cat:'extend'},
+  // R1 -> plus-minus stream
+  {from:'OLIVER', to:'R18', cat:'extend'},
+  {from:'R18', to:'R22', cat:'comp'},
+  {from:'R18', to:'R17', cat:'follow'},
+  // R1 -> review
+  {from:'R1', to:'R5', cat:'follow', strong:true},
+  // Oliver -> secondary
+  {from:'OLIVER', to:'R26', cat:'sec'},
+  {from:'OLIVER', to:'R27', cat:'sec'},
+  // Hot hand (independent lineage)
+  {from:'R19', to:'R20', cat:'counter', strong:true},
+  // Oliver references hot hand
+  {from:'R19', to:'OLIVER', cat:'counter'},
+  // Referee bias from Oliver Ch12
+  {from:'OLIVER', to:'R21', cat:'extend'},
+  // Tracking/ML stream
+  {from:'R1', to:'R6', cat:'extend'},
+  {from:'R6', to:'R16', cat:'extend'},
+  {from:'R16', to:'R7', cat:'extend'},
+  // Biomech stream (internal, no Oliver link)
+  {from:'R11', to:'R8', cat:'comp'},
+  {from:'R8', to:'R10', cat:'comp'},
+  {from:'R12', to:'R13', cat:'comp'},
+  {from:'R13', to:'R14', cat:'comp'},
+  {from:'R8', to:'R9', cat:'comp'},
+  {from:'R8', to:'R15', cat:'extend'},
+  // Four Factors -> practice
+  {from:'R1', to:'R4', cat:'extend'},
+];
+
+// ══════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════
+const MARGIN = {top:50, right:30, bottom:30, left:70};
+const COL_W = 180;
+const COL_GAP = 20;
+const SVG_W = MARGIN.left + STREAMS.length * (COL_W + COL_GAP) - COL_GAP + MARGIN.right;
+const yearToY = y => MARGIN.top + ((y - Y_START) / (Y_END - Y_START)) * 900;
+const NODE_H = 42;
+const SVG_H = yearToY(Y_END) + MARGIN.bottom;
+
+const colX = i => MARGIN.left + i * (COL_W + COL_GAP);
+
+const area = document.getElementById('flowArea');
+const ns = 'http://www.w3.org/2000/svg';
+
+const svg = document.createElementNS(ns, 'svg');
+svg.setAttribute('class', 'flow');
+svg.setAttribute('width', SVG_W);
+svg.setAttribute('height', SVG_H);
+svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
+area.appendChild(svg);
+
+// Defs: arrow markers
+const defs = document.createElementNS(ns, 'defs');
+Object.entries(COL_COLORS).forEach(([key, color]) => {
+  const marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'arrow-'+key);
+  marker.setAttribute('viewBox', '0 0 10 10');
+  marker.setAttribute('refX', '10');
+  marker.setAttribute('refY', '5');
+  marker.setAttribute('markerWidth', '6');
+  marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('orient', 'auto');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+  path.setAttribute('fill', color);
+  path.setAttribute('opacity', '0.7');
+  marker.appendChild(path);
+  defs.appendChild(marker);
+});
+// Oliver arrow
+const mOliver = document.createElementNS(ns, 'marker');
+mOliver.setAttribute('id', 'arrow-oliver');
+mOliver.setAttribute('viewBox', '0 0 10 10');
+mOliver.setAttribute('refX', '10'); mOliver.setAttribute('refY', '5');
+mOliver.setAttribute('markerWidth', '6'); mOliver.setAttribute('markerHeight', '6');
+mOliver.setAttribute('orient', 'auto');
+const pOliver = document.createElementNS(ns, 'path');
+pOliver.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+pOliver.setAttribute('fill', '#7dd3fc');
+pOliver.setAttribute('opacity', '0.7');
+mOliver.appendChild(pOliver);
+defs.appendChild(mOliver);
+svg.appendChild(defs);
+
+// Year grid lines + labels
+const yearMarks = [1985, 1990, 1995, 2000, 2004, 2007, 2010, 2012, 2015, 2018, 2020, 2022, 2025];
+yearMarks.forEach(y => {
+  const yy = yearToY(y);
+  const line = document.createElementNS(ns, 'line');
+  line.setAttribute('class', 'year-line');
+  line.setAttribute('x1', MARGIN.left - 10);
+  line.setAttribute('x2', SVG_W - MARGIN.right);
+  line.setAttribute('y1', yy);
+  line.setAttribute('y2', yy);
+  svg.appendChild(line);
+
+  const txt = document.createElementNS(ns, 'text');
+  txt.setAttribute('class', 'year-label');
+  txt.setAttribute('x', MARGIN.left - 16);
+  txt.setAttribute('y', yy + 4);
+  txt.setAttribute('text-anchor', 'end');
+  txt.textContent = y;
+  svg.appendChild(txt);
+});
+
+// Stream labels at top
+STREAMS.forEach((s, i) => {
+  const txt = document.createElementNS(ns, 'text');
+  txt.setAttribute('class', 'stream-label');
+  txt.setAttribute('x', colX(i) + COL_W / 2);
+  txt.setAttribute('y', MARGIN.top - 16);
+  txt.setAttribute('text-anchor', 'middle');
+  txt.textContent = s.label;
+  svg.appendChild(txt);
+});
+
+// Build node position map
+const nodePos = {};
+NODES.forEach(n => {
+  const x = colX(n.si);
+  const y = yearToY(n.year);
+  const w = n.w || 160;
+  nodePos[n.id] = {x: x + (COL_W - w) / 2, y: y - NODE_H / 2, w, cx: x + COL_W / 2, cy: y};
+});
+
+// Draw edges first (behind nodes)
+const edgeGroup = document.createElementNS(ns, 'g');
+svg.appendChild(edgeGroup);
+
+EDGES.forEach(e => {
+  const from = nodePos[e.from];
+  const to = nodePos[e.to];
+  if (!from || !to) return;
+
+  const catKey = e.cat === 'oliver' ? 'oliver' : e.cat;
+  const color = e.cat === 'oliver' ? '#7dd3fc' : (COL_COLORS[catKey] || '#666');
+
+  const path = document.createElementNS(ns, 'path');
+
+  // Determine connection points
+  let x1 = from.cx, y1 = from.cy + NODE_H / 2;
+  let x2 = to.cx, y2 = to.cy - NODE_H / 2;
+
+  // If going upward (e.g., R19 -> OLIVER)
+  if (y1 > y2) {
+    y1 = from.cy - NODE_H / 2;
+    y2 = to.cy + NODE_H / 2;
+  }
+
+  // Curved path
+  const dy = (y2 - y1);
+  const dx = (x2 - x1);
+  let d;
+  if (Math.abs(dx) < 10) {
+    // Vertical: slight S-curve
+    d = `M ${x1} ${y1} C ${x1} ${y1 + dy * 0.4}, ${x2} ${y2 - dy * 0.4}, ${x2} ${y2}`;
+  } else {
+    // Cross-column: wider bezier
+    d = `M ${x1} ${y1} C ${x1} ${y1 + dy * 0.5}, ${x2} ${y2 - dy * 0.5}, ${x2} ${y2}`;
+  }
+
+  path.setAttribute('d', d);
+  path.setAttribute('class', 'edge' + (e.strong ? ' edge-strong' : ''));
+  path.setAttribute('stroke', color);
+  path.setAttribute('marker-end', `url(#arrow-${catKey})`);
+  edgeGroup.appendChild(path);
+});
+
+// Draw nodes
+const nodeGroup = document.createElementNS(ns, 'g');
+svg.appendChild(nodeGroup);
+
+NODES.forEach(n => {
+  const pos = nodePos[n.id];
+  const g = document.createElementNS(ns, 'g');
+
+  const isOliver = n.cat === 'oliver';
+  const color = isOliver ? '#7dd3fc' : (COL_COLORS[n.cat] || '#666');
+
+  // Box
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('class', isOliver ? 'oliver-box' : 'node-box');
+  rect.setAttribute('x', pos.x);
+  rect.setAttribute('y', pos.y);
+  rect.setAttribute('width', pos.w);
+  rect.setAttribute('height', NODE_H);
+  rect.setAttribute('fill', isOliver ? '#7dd3fc11' : color + '12');
+  rect.setAttribute('stroke', color);
+  rect.setAttribute('stroke-opacity', isOliver ? 0.8 : 0.5);
+  g.appendChild(rect);
+
+  // ID badge (left)
+  if (!isOliver) {
+    const badge = document.createElementNS(ns, 'text');
+    badge.setAttribute('class', 'node-id');
+    badge.setAttribute('x', pos.x + 8);
+    badge.setAttribute('y', pos.y + 14);
+    badge.setAttribute('fill', color);
+    badge.textContent = n.id;
+    g.appendChild(badge);
+  }
+
+  // Label
+  const label = document.createElementNS(ns, 'text');
+  label.setAttribute('class', 'node-text');
+  label.setAttribute('x', pos.x + pos.w / 2);
+  label.setAttribute('y', pos.y + (isOliver ? 16 : 15));
+  label.setAttribute('text-anchor', 'middle');
+  if (isOliver) {
+    label.setAttribute('fill', '#7dd3fc');
+    label.setAttribute('font-size', '13px');
+    label.setAttribute('font-weight', '700');
+  }
+  label.textContent = n.label;
+  g.appendChild(label);
+
+  // Sub-label
+  const sub = document.createElementNS(ns, 'text');
+  sub.setAttribute('class', 'node-sub');
+  sub.setAttribute('x', pos.x + pos.w / 2);
+  sub.setAttribute('y', pos.y + (isOliver ? 32 : 31));
+  sub.setAttribute('text-anchor', 'middle');
+  if (isOliver) { sub.setAttribute('fill', '#7dd3fc88'); sub.setAttribute('font-size', '10px'); }
+  sub.textContent = n.sub;
+  g.appendChild(sub);
+
+  nodeGroup.appendChild(g);
+});
+
+// Stream separators (subtle vertical guides)
+STREAMS.forEach((s, i) => {
+  if (i === 0) return;
+  const x = colX(i) - COL_GAP / 2;
+  const line = document.createElementNS(ns, 'line');
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+  line.setAttribute('y1', MARGIN.top - 8);
+  line.setAttribute('y2', SVG_H - MARGIN.bottom);
+  line.setAttribute('stroke', 'rgba(26,35,50,.4)');
+  line.setAttribute('stroke-width', '1');
+  svg.insertBefore(line, edgeGroup);
+});
+</script>
+</body>
+</html>

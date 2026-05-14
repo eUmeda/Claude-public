@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>古典Lotka-Volterra：中心点と保存系</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .equation-box .main-eq {
+            font-size: 1.15em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .key-point {
+            background: #1e3a5f;
+            border-left: 4px solid #ff9800;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .key-point-title {
+            color: #ff9800;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .strogatz-box {
+            background: #0a2040;
+            border-left: 4px solid #4fc3f7;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .strogatz-label {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .conserved-display {
+            background: #2e1a4a;
+            border: 2px solid #9c27b0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .conserved-title {
+            color: #ce93d8;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .conserved-value {
+            font-size: 1.5em;
+            font-family: monospace;
+            color: #9c27b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>古典Lotka-Volterra：中心点と保存量</h1>
+
+        <div class="section">
+            <h2>モデル方程式（1925-1926）</h2>
+            <div class="equation-box">
+                <div class="main-eq">
+                    dx/dt = αx − βxy
+                </div>
+                <div style="margin-top: 8px;">
+                    dy/dt = δxy − γy
+                </div>
+            </div>
+            <p>x: 被食者（ウサギ）、y: 捕食者（キツネ）</p>
+            <p>α: 被食者成長率、β: 捕食率、δ: 捕食者成長率、γ: 捕食者死亡率</p>
+        </div>
+
+        <div class="section">
+            <h2>相図</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas" width="380" height="340"></canvas>
+                    <div class="canvas-label">x-y 相平面</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9c27b0;"></div>
+                    <span>中心点（非孤立）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #888;"></div>
+                    <span>サドル（原点）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>閉軌道</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>初期被食者 x₀</span>
+                        <span class="slider-value" id="x0Display">1.50</span>
+                    </div>
+                    <input type="range" id="x0Slider" min="0.5" max="4" step="0.1" value="1.5">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>初期捕食者 y₀</span>
+                        <span class="slider-value" id="y0Display">1.00</span>
+                    </div>
+                    <input type="range" id="y0Slider" min="0.2" max="3" step="0.1" value="1.0">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="multiOrbitBtn">複数軌道</button>
+                <button class="btn btn-secondary" id="clearBtn">クリア</button>
+            </div>
+
+            <div class="conserved-display">
+                <div class="conserved-title">保存量 H(x, y)</div>
+                <div class="conserved-value" id="HDisplay">H = 1.234</div>
+                <p style="margin-top: 10px; font-size: 0.85em;">H = δx + βy − γ ln x − α ln y</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>時系列</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="timeSeriesCanvas" width="380" height="150"></canvas>
+                    <div class="canvas-label">個体数の時間変化</div>
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4fc3f7;"></div>
+                    <span>被食者 x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>捕食者 y</span>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">現在 x</div>
+                    <div class="info-value" id="currentXDisplay">1.50</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">現在 y</div>
+                    <div class="info-value" id="currentYDisplay">1.00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">周期 T</div>
+                    <div class="info-value" id="periodDisplay">≈ 6.3</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="key-point">
+            <div class="key-point-title">なぜリミットサイクルではないのか？</div>
+            <p style="margin-top: 8px;">古典LVの閉軌道は<span class="highlight">中心点を囲む閉曲線の連続体</span>であり、</p>
+            <p><span class="highlight">リミットサイクル（孤立した閉軌道）ではない！</span></p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>初期条件が違えば、異なる閉軌道に乗る</li>
+                <li>近傍の軌道に「引きつけられる」ことはない</li>
+                <li>これは<span class="highlight">保存系</span>（ハミルトン系）の特徴</li>
+            </ul>
+        </div>
+
+        <div class="key-point">
+            <div class="key-point-title">構造不安定性</div>
+            <p style="margin-top: 8px;">この系は<span class="highlight">構造不安定</span>である：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>わずかな摂動（例：減衰項）で中心点がスパイラルに変わる</li>
+                <li>閉軌道が消滅する → Rosenzweig-MacArthur モデルへ</li>
+                <li>現実の生態系では純粋な中心点は稀</li>
+            </ul>
+        </div>
+
+        <div class="strogatz-box">
+            <div class="strogatz-label">Strogatz との接続</div>
+            <p style="margin-top: 8px;"><span class="highlight">6.4節</span>: 古典LVの解析、閉軌道の存在証明</p>
+            <p><span class="highlight">6.5節</span>: 保存系とハミルトン系</p>
+            <p><span class="highlight">7.2節</span>: Bendixson判定法（閉軌道の非存在条件）</p>
+            <p><span class="highlight">5章</span>: 中心点 vs 安定/不安定スパイラル</p>
+        </div>
+
+        <div class="section">
+            <h2>Bendixson判定法</h2>
+            <div class="equation-box">
+                ∂f/∂x + ∂g/∂y = (α − βy) + (δx − γ)
+            </div>
+            <p>この値は<span class="highlight">符号が一定ではない</span>ため、Bendixsonの判定法は適用できない。</p>
+            <p>→ 閉軌道の存在を「否定できない」（実際に存在する）</p>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
+        const timeSeriesCanvas = document.getElementById('timeSeriesCanvas');
+        const timeSeriesCtx = timeSeriesCanvas.getContext('2d');
+
+        // Parameters (fixed)
+        const alpha = 1.0;  // Prey growth rate
+        const beta = 0.5;   // Predation rate
+        const delta = 0.5;  // Predator growth rate
+        const gamma = 1.0;  // Predator death rate
+
+        // Fixed point: (gamma/delta, alpha/beta) = (2, 2)
+        const xStar = gamma / delta;
+        const yStar = alpha / beta;
+
+        // State
+        let x0 = 1.5, y0 = 1.0;
+        let trajectories = [];
+        let timeSeriesData = [];
+        let animationId = null;
+
+        // UI elements
+        const x0Slider = document.getElementById('x0Slider');
+        const y0Slider = document.getElementById('y0Slider');
+        const x0Display = document.getElementById('x0Display');
+        const y0Display = document.getElementById('y0Display');
+
+        // Phase space bounds
+        const xMin = 0, xMax = 5;
+        const yMin = 0, yMax = 4;
+
+        // Coordinate transforms
+        function toCanvasX(x) {
+            return 40 + (x - xMin) / (xMax - xMin) * (phaseCanvas.width - 60);
+        }
+        function toCanvasY(y) {
+            return 20 + (yMax - y) / (yMax - yMin) * (phaseCanvas.height - 50);
+        }
+        function fromCanvasX(cx) {
+            return xMin + (cx - 40) / (phaseCanvas.width - 60) * (xMax - xMin);
+        }
+        function fromCanvasY(cy) {
+            return yMax - (cy - 20) / (phaseCanvas.height - 50) * (yMax - yMin);
+        }
+
+        // Dynamics
+        function dxdt(x, y) {
+            return alpha * x - beta * x * y;
+        }
+        function dydt(x, y) {
+            return delta * x * y - gamma * y;
+        }
+
+        // Conserved quantity
+        function H(x, y) {
+            if (x <= 0 || y <= 0) return Infinity;
+            return delta * x + beta * y - gamma * Math.log(x) - alpha * Math.log(y);
+        }
+
+        // RK4 integration
+        function rk4Step(x, y, dt) {
+            const k1_x = dxdt(x, y);
+            const k1_y = dydt(x, y);
+
+            const k2_x = dxdt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+            const k2_y = dydt(x + 0.5*dt*k1_x, y + 0.5*dt*k1_y);
+
+            const k3_x = dxdt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+            const k3_y = dydt(x + 0.5*dt*k2_x, y + 0.5*dt*k2_y);
+
+            const k4_x = dxdt(x + dt*k3_x, y + dt*k3_y);
+            const k4_y = dydt(x + dt*k3_x, y + dt*k3_y);
+
+            return {
+                x: x + dt/6 * (k1_x + 2*k2_x + 2*k3_x + k4_x),
+                y: y + dt/6 * (k1_y + 2*k2_y + 2*k3_y + k4_y)
+            };
+        }
+
+        // Draw phase portrait
+        function drawPhasePortrait() {
+            phaseCtx.fillStyle = '#0a1628';
+            phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+            // Draw contours of H (level sets)
+            phaseCtx.strokeStyle = 'rgba(156, 39, 176, 0.3)';
+            phaseCtx.lineWidth = 1;
+            const HMin = H(xStar, yStar);
+            for (let level = HMin + 0.2; level < HMin + 3; level += 0.3) {
+                phaseCtx.beginPath();
+                let started = false;
+                for (let angle = 0; angle < 2 * Math.PI; angle += 0.02) {
+                    // Find point on level set (approximate)
+                    for (let r = 0.1; r < 4; r += 0.05) {
+                        const x = xStar + r * Math.cos(angle);
+                        const y = yStar + r * Math.sin(angle);
+                        if (x > 0.1 && y > 0.1 && Math.abs(H(x, y) - level) < 0.1) {
+                            const cx = toCanvasX(x);
+                            const cy = toCanvasY(y);
+                            if (!started) {
+                                phaseCtx.moveTo(cx, cy);
+                                started = true;
+                            } else {
+                                phaseCtx.lineTo(cx, cy);
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (started) phaseCtx.stroke();
+            }
+
+            // Draw nullclines
+            // x-nullcline: x = 0 or y = alpha/beta
+            phaseCtx.strokeStyle = 'rgba(79, 195, 247, 0.7)';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.setLineDash([5, 5]);
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(toCanvasX(0), toCanvasY(yStar));
+            phaseCtx.lineTo(toCanvasX(xMax), toCanvasY(yStar));
+            phaseCtx.stroke();
+
+            // y-nullcline: y = 0 or x = gamma/delta
+            phaseCtx.strokeStyle = 'rgba(255, 152, 0, 0.7)';
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(toCanvasX(xStar), toCanvasY(0));
+            phaseCtx.lineTo(toCanvasX(xStar), toCanvasY(yMax));
+            phaseCtx.stroke();
+            phaseCtx.setLineDash([]);
+
+            // Draw vector field
+            phaseCtx.strokeStyle = '#2a4a70';
+            phaseCtx.lineWidth = 1;
+            const step = 35;
+            for (let cx = 50; cx < phaseCanvas.width - 20; cx += step) {
+                for (let cy = 30; cy < phaseCanvas.height - 30; cy += step) {
+                    const x = fromCanvasX(cx);
+                    const y = fromCanvasY(cy);
+                    if (x <= 0 || y <= 0) continue;
+
+                    const dx = dxdt(x, y);
+                    const dy = dydt(x, y);
+                    const mag = Math.sqrt(dx*dx + dy*dy);
+                    if (mag > 0.001) {
+                        const scale = 12 / Math.max(mag, 0.3);
+                        const vx = dx * scale;
+                        const vy = -dy * scale;
+                        phaseCtx.beginPath();
+                        phaseCtx.moveTo(cx, cy);
+                        phaseCtx.lineTo(cx + vx, cy + vy);
+                        phaseCtx.stroke();
+                    }
+                }
+            }
+
+            // Draw trajectories
+            trajectories.forEach((traj, idx) => {
+                if (traj.length < 2) return;
+                phaseCtx.strokeStyle = `hsla(${30 + idx * 50}, 80%, 60%, 0.9)`;
+                phaseCtx.lineWidth = 2;
+                phaseCtx.beginPath();
+                traj.forEach((pt, i) => {
+                    const cx = toCanvasX(pt.x);
+                    const cy = toCanvasY(pt.y);
+                    if (i === 0) phaseCtx.moveTo(cx, cy);
+                    else phaseCtx.lineTo(cx, cy);
+                });
+                phaseCtx.stroke();
+
+                // Current point
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    phaseCtx.beginPath();
+                    phaseCtx.arc(toCanvasX(last.x), toCanvasY(last.y), 6, 0, 2 * Math.PI);
+                    phaseCtx.fillStyle = `hsl(${30 + idx * 50}, 80%, 60%)`;
+                    phaseCtx.fill();
+                }
+            });
+
+            // Draw fixed points
+            // Origin (saddle)
+            phaseCtx.beginPath();
+            phaseCtx.arc(toCanvasX(0), toCanvasY(0), 6, 0, 2 * Math.PI);
+            phaseCtx.fillStyle = '#888';
+            phaseCtx.fill();
+
+            // Center point
+            phaseCtx.beginPath();
+            phaseCtx.arc(toCanvasX(xStar), toCanvasY(yStar), 10, 0, 2 * Math.PI);
+            phaseCtx.fillStyle = '#9c27b0';
+            phaseCtx.fill();
+            phaseCtx.strokeStyle = '#fff';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.stroke();
+
+            // Labels
+            phaseCtx.fillStyle = '#81d4fa';
+            phaseCtx.font = '12px sans-serif';
+            phaseCtx.textAlign = 'center';
+            phaseCtx.fillText('x (被食者)', phaseCanvas.width / 2, phaseCanvas.height - 5);
+            phaseCtx.fillText('x*=' + xStar.toFixed(1), toCanvasX(xStar), phaseCanvas.height - 25);
+
+            phaseCtx.save();
+            phaseCtx.translate(12, phaseCanvas.height / 2);
+            phaseCtx.rotate(-Math.PI / 2);
+            phaseCtx.fillText('y (捕食者)', 0, 0);
+            phaseCtx.restore();
+            phaseCtx.fillText('y*=' + yStar.toFixed(1), 30, toCanvasY(yStar));
+
+            // Center label
+            phaseCtx.fillStyle = '#ce93d8';
+            phaseCtx.fillText('中心点', toCanvasX(xStar) + 30, toCanvasY(yStar) - 10);
+        }
+
+        // Draw time series
+        function drawTimeSeries() {
+            timeSeriesCtx.fillStyle = '#0a1628';
+            timeSeriesCtx.fillRect(0, 0, timeSeriesCanvas.width, timeSeriesCanvas.height);
+
+            if (timeSeriesData.length < 2) return;
+
+            const margin = { left: 30, right: 10, top: 10, bottom: 20 };
+            const width = timeSeriesCanvas.width - margin.left - margin.right;
+            const height = timeSeriesCanvas.height - margin.top - margin.bottom;
+
+            // Find max values
+            let maxVal = 1;
+            timeSeriesData.forEach(pt => {
+                maxVal = Math.max(maxVal, pt.x, pt.y);
+            });
+
+            // Draw x (prey)
+            timeSeriesCtx.strokeStyle = '#4fc3f7';
+            timeSeriesCtx.lineWidth = 2;
+            timeSeriesCtx.beginPath();
+            timeSeriesData.forEach((pt, i) => {
+                const cx = margin.left + i / timeSeriesData.length * width;
+                const cy = margin.top + height - pt.x / maxVal * height * 0.9;
+                if (i === 0) timeSeriesCtx.moveTo(cx, cy);
+                else timeSeriesCtx.lineTo(cx, cy);
+            });
+            timeSeriesCtx.stroke();
+
+            // Draw y (predator)
+            timeSeriesCtx.strokeStyle = '#ff9800';
+            timeSeriesCtx.beginPath();
+            timeSeriesData.forEach((pt, i) => {
+                const cx = margin.left + i / timeSeriesData.length * width;
+                const cy = margin.top + height - pt.y / maxVal * height * 0.9;
+                if (i === 0) timeSeriesCtx.moveTo(cx, cy);
+                else timeSeriesCtx.lineTo(cx, cy);
+            });
+            timeSeriesCtx.stroke();
+
+            // Equilibrium lines
+            timeSeriesCtx.strokeStyle = 'rgba(156, 39, 176, 0.5)';
+            timeSeriesCtx.setLineDash([3, 3]);
+            timeSeriesCtx.beginPath();
+            const yStarY = margin.top + height - yStar / maxVal * height * 0.9;
+            timeSeriesCtx.moveTo(margin.left, yStarY);
+            timeSeriesCtx.lineTo(margin.left + width, yStarY);
+            timeSeriesCtx.stroke();
+
+            const xStarY = margin.top + height - xStar / maxVal * height * 0.9;
+            timeSeriesCtx.moveTo(margin.left, xStarY);
+            timeSeriesCtx.lineTo(margin.left + width, xStarY);
+            timeSeriesCtx.stroke();
+            timeSeriesCtx.setLineDash([]);
+
+            // Axis
+            timeSeriesCtx.strokeStyle = '#4a6a90';
+            timeSeriesCtx.lineWidth = 1;
+            timeSeriesCtx.beginPath();
+            timeSeriesCtx.moveTo(margin.left, margin.top + height);
+            timeSeriesCtx.lineTo(margin.left + width, margin.top + height);
+            timeSeriesCtx.stroke();
+
+            timeSeriesCtx.fillStyle = '#81d4fa';
+            timeSeriesCtx.font = '10px sans-serif';
+            timeSeriesCtx.textAlign = 'center';
+            timeSeriesCtx.fillText('時間 t', margin.left + width / 2, timeSeriesCanvas.height - 3);
+        }
+
+        // Update displays
+        function updateDisplays() {
+            x0Display.textContent = x0.toFixed(2);
+            y0Display.textContent = y0.toFixed(2);
+
+            if (trajectories.length > 0 && trajectories[0].length > 0) {
+                const last = trajectories[0][trajectories[0].length - 1];
+                document.getElementById('currentXDisplay').textContent = last.x.toFixed(2);
+                document.getElementById('currentYDisplay').textContent = last.y.toFixed(2);
+                document.getElementById('HDisplay').textContent = 'H = ' + H(last.x, last.y).toFixed(3);
+            }
+
+            // Approximate period
+            const period = 2 * Math.PI / Math.sqrt(alpha * gamma);
+            document.getElementById('periodDisplay').textContent = '≈ ' + period.toFixed(1);
+        }
+
+        // Animation
+        function animate() {
+            const dt = 0.03;
+            trajectories.forEach((traj, idx) => {
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    for (let i = 0; i < 3; i++) {
+                        const next = rk4Step(last.x, last.y, dt);
+                        last.x = Math.max(0.01, next.x);
+                        last.y = Math.max(0.01, next.y);
+                    }
+                    traj.push({ x: last.x, y: last.y });
+                    if (traj.length > 1000) traj.shift();
+
+                    // Update time series with first trajectory
+                    if (idx === 0) {
+                        timeSeriesData.push({ x: last.x, y: last.y });
+                        if (timeSeriesData.length > 400) timeSeriesData.shift();
+                    }
+                }
+            });
+
+            drawPhasePortrait();
+            drawTimeSeries();
+            updateDisplays();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Click to add trajectory
+        phaseCanvas.addEventListener('click', (e) => {
+            const rect = phaseCanvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const x = Math.max(0.1, fromCanvasX(cx));
+            const y = Math.max(0.1, fromCanvasY(cy));
+            trajectories.push([{ x, y }]);
+            if (trajectories.length === 1) {
+                timeSeriesData = [{ x, y }];
+            }
+        });
+
+        // Event listeners
+        x0Slider.addEventListener('input', (e) => {
+            x0 = parseFloat(e.target.value);
+            trajectories = [[{ x: x0, y: y0 }]];
+            timeSeriesData = [{ x: x0, y: y0 }];
+            updateDisplays();
+        });
+
+        y0Slider.addEventListener('input', (e) => {
+            y0 = parseFloat(e.target.value);
+            trajectories = [[{ x: x0, y: y0 }]];
+            timeSeriesData = [{ x: x0, y: y0 }];
+            updateDisplays();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            x0 = 1.5;
+            y0 = 1.0;
+            x0Slider.value = x0;
+            y0Slider.value = y0;
+            trajectories = [[{ x: x0, y: y0 }]];
+            timeSeriesData = [{ x: x0, y: y0 }];
+            updateDisplays();
+        });
+
+        document.getElementById('multiOrbitBtn').addEventListener('click', () => {
+            trajectories = [];
+            const HMin = H(xStar, yStar);
+            for (let level = HMin + 0.3; level < HMin + 2; level += 0.4) {
+                // Find starting point on level set
+                for (let x = xStar + 0.2; x < 4; x += 0.1) {
+                    const y = yStar;
+                    if (Math.abs(H(x, y) - level) < 0.2) {
+                        trajectories.push([{ x, y }]);
+                        break;
+                    }
+                }
+            }
+            if (trajectories.length > 0) {
+                timeSeriesData = [{ x: trajectories[0][0].x, y: trajectories[0][0].y }];
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            trajectories = [];
+            timeSeriesData = [];
+        });
+
+        // Initialize
+        trajectories = [[{ x: x0, y: y0 }]];
+        timeSeriesData = [{ x: x0, y: y0 }];
+        updateDisplays();
+        drawPhasePortrait();
+        drawTimeSeries();
+        animate();
+    </script>
+</body>
+</html>

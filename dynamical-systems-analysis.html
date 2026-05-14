@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>力学系解析の手順 - Step by Step Guide</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #3a3a5c;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 1.8em;
+            color: #64b5f6;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #90a4ae;
+            font-size: 1.1em;
+        }
+        .step {
+            background: linear-gradient(135deg, #1e1e3f 0%, #252550 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #3a3a6a;
+            position: relative;
+        }
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 25px;
+            background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4);
+        }
+        .step h2 {
+            color: #64b5f6;
+            font-size: 1.3em;
+            margin: 15px 0 15px 50px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3a6a;
+        }
+        .step-content {
+            margin-top: 15px;
+        }
+        h3 {
+            color: #81d4fa;
+            font-size: 1.1em;
+            margin: 20px 0 10px 0;
+        }
+        .eq-box {
+            background: #0d0d1a;
+            border: 1px solid #3a3a6a;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2em;
+            text-align: center;
+            color: #e8f5e9;
+        }
+        .eq-box.highlight {
+            border-color: #ffb74d;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2a1a1a 100%);
+        }
+        .eq-box.result {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #0d1a0d 0%, #1a2a1a 100%);
+        }
+        .matrix {
+            display: inline-block;
+            margin: 10px;
+            font-family: 'Times New Roman', serif;
+        }
+        .matrix-bracket {
+            font-size: 2em;
+            vertical-align: middle;
+        }
+        .matrix-content {
+            display: inline-grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px 20px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .controls {
+            background: #1a1a3a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #3a3a6a;
+        }
+        .control-row {
+            margin: 15px 0;
+        }
+        .control-row label {
+            display: block;
+            margin-bottom: 8px;
+            color: #90caf9;
+            font-weight: 500;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #3a3a6a;
+            background: #0d0d1a;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #64b5f6;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #3a3a6a;
+            color: #e0e0e0;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #3a3a6a;
+        }
+        th {
+            background: #2a2a5a;
+            color: #90caf9;
+        }
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.03);
+        }
+        .stable {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .unstable {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .saddle {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        canvas {
+            background: #0a0a15;
+            border-radius: 10px;
+            border: 1px solid #3a3a6a;
+        }
+        .canvas-label {
+            color: #90a4ae;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .note {
+            background: rgba(100, 181, 246, 0.1);
+            border-left: 4px solid #64b5f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .warning {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .procedure {
+            background: #1a2a3a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .procedure ol {
+            margin-left: 25px;
+        }
+        .procedure li {
+            margin: 10px 0;
+            color: #b0bec5;
+        }
+        .procedure li strong {
+            color: #64b5f6;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #1a1a3a;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #3a3a6a;
+        }
+        .card h4 {
+            color: #64b5f6;
+            margin-bottom: 15px;
+        }
+        .fp-result {
+            background: #0d1a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #64b5f6;
+        }
+        .fp-result.stable-node {
+            border-left-color: #4caf50;
+        }
+        .fp-result.unstable-node {
+            border-left-color: #f44336;
+        }
+        .fp-result.saddle-point {
+            border-left-color: #ff9800;
+        }
+        .fp-result.spiral {
+            border-left-color: #9c27b0;
+        }
+        .fp-result.center {
+            border-left-color: #00bcd4;
+        }
+        code {
+            background: #2a2a4a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .workflow-summary {
+            background: linear-gradient(135deg, #1a3a2a 0%, #1a2a3a 100%);
+            border: 2px solid #4caf50;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .workflow-summary h3 {
+            color: #4caf50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #78909c;
+            border-top: 1px solid #3a3a6a;
+            margin-top: 30px;
+        }
+        footer a {
+            color: #64b5f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>力学系解析の手順</h1>
+            <div class="subtitle">2次元連続力学系の定性的解析 - Step by Step</div>
+        </header>
+
+        <!-- 解析の流れサマリー -->
+        <div class="workflow-summary">
+            <h3>解析のワークフロー</h3>
+            <div class="procedure">
+                <ol>
+                    <li><strong>系を定義</strong>: ẋ = f(x,y), ẏ = g(x,y) を書き下す</li>
+                    <li><strong>固定点を求める</strong>: f(x,y) = 0 かつ g(x,y) = 0 を解く</li>
+                    <li><strong>ヤコビ行列を計算</strong>: J = [∂f/∂x, ∂f/∂y; ∂g/∂x, ∂g/∂y]</li>
+                    <li><strong>各固定点でJを評価</strong>: J|<sub>(x*,y*)</sub></li>
+                    <li><strong>固有値を求める</strong>: τ = tr(J), Δ = det(J) から分類</li>
+                    <li><strong>安定性を判定</strong>: 固有値の実部の符号で決定</li>
+                    <li><strong>ヌルクラインを描く</strong>: 相図の骨格を把握</li>
+                    <li><strong>位相図をスケッチ</strong>: 固定点・ヌルクライン・軌道を統合</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- システム選択 -->
+        <div class="controls">
+            <h3>例題を選択</h3>
+            <div class="control-row">
+                <label for="systemSelect">力学系:</label>
+                <select id="systemSelect">
+                    <option value="competition">競争方程式 (Lotka-Volterra Competition)</option>
+                    <option value="predator-prey">被食-捕食 (Predator-Prey)</option>
+                    <option value="vanderpol">Van der Pol 振動子</option>
+                    <option value="saddle-node">サドルノード例</option>
+                    <option value="hopf">Hopf分岐例</option>
+                </select>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="analyzeSystem()">解析を実行</button>
+                <button class="btn btn-secondary" onclick="resetAll()">リセット</button>
+            </div>
+        </div>
+
+        <!-- Step 0: 系の定義 -->
+        <div class="step">
+            <div class="step-number">0</div>
+            <h2>系の定義</h2>
+            <div class="step-content">
+                <p>解析する2次元連続力学系を定義する：</p>
+                <div class="eq-box highlight" id="systemEq">
+                    ẋ = f(x, y) = x(3 - x - 2y)<br>
+                    ẏ = g(x, y) = y(2 - x - y)
+                </div>
+                <div id="systemDescription">
+                    <p><strong>物理的意味</strong>: 2種の競争系。x, y は種の個体数密度。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: 固定点 -->
+        <div class="step">
+            <div class="step-number">1</div>
+            <h2>固定点を求める</h2>
+            <div class="step-content">
+                <p>固定点 (x*, y*) は ẋ = 0 かつ ẏ = 0 を満たす点：</p>
+
+                <div class="note">
+                    <strong>手順:</strong>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>f(x, y) = 0 と g(x, y) = 0 を連立</li>
+                        <li>代数的に解く（因数分解、代入法など）</li>
+                        <li>全ての解を列挙（境界上の解も忘れずに）</li>
+                    </ol>
+                </div>
+
+                <h3>計算過程</h3>
+                <div class="eq-box" id="fpCalculation">
+                    f(x,y) = x(3 - x - 2y) = 0 より: x = 0 または x + 2y = 3<br>
+                    g(x,y) = y(2 - x - y) = 0 より: y = 0 または x + y = 2
+                </div>
+
+                <h3>固定点の一覧</h3>
+                <table id="fixedPointsTable">
+                    <tr>
+                        <th>固定点</th>
+                        <th>x*</th>
+                        <th>y*</th>
+                        <th>物理的意味</th>
+                    </tr>
+                    <tr><td>P₁</td><td>0</td><td>0</td><td>両種絶滅</td></tr>
+                    <tr><td>P₂</td><td>3</td><td>0</td><td>種xのみ生存</td></tr>
+                    <tr><td>P₃</td><td>0</td><td>2</td><td>種yのみ生存</td></tr>
+                    <tr><td>P₄</td><td>1</td><td>1</td><td>共存</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Step 2: ヤコビ行列 -->
+        <div class="step">
+            <div class="step-number">2</div>
+            <h2>ヤコビ行列を計算</h2>
+            <div class="step-content">
+                <p>系を線形化するために、ヤコビ行列（偏微分の行列）を計算：</p>
+
+                <div class="eq-box">
+                    J = <span class="matrix-bracket">[</span>
+                    <span class="matrix-content">
+                        <span>∂f/∂x</span><span>∂f/∂y</span>
+                        <span>∂g/∂x</span><span>∂g/∂y</span>
+                    </span>
+                    <span class="matrix-bracket">]</span>
+                </div>
+
+                <h3>各偏微分の計算</h3>
+                <div class="eq-box" id="jacobianCalc">
+                    f(x,y) = x(3 - x - 2y) = 3x - x² - 2xy<br><br>
+                    ∂f/∂x = 3 - 2x - 2y<br>
+                    ∂f/∂y = -2x<br><br>
+                    g(x,y) = y(2 - x - y) = 2y - xy - y²<br><br>
+                    ∂g/∂x = -y<br>
+                    ∂g/∂y = 2 - x - 2y
+                </div>
+
+                <h3>一般的なヤコビ行列</h3>
+                <div class="eq-box result" id="jacobianGeneral">
+                    J(x,y) = <span class="matrix-bracket">[</span>
+                    <span class="matrix-content">
+                        <span>3 - 2x - 2y</span><span>-2x</span>
+                        <span>-y</span><span>2 - x - 2y</span>
+                    </span>
+                    <span class="matrix-bracket">]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: 各固定点での評価 -->
+        <div class="step">
+            <div class="step-number">3</div>
+            <h2>各固定点でヤコビ行列を評価</h2>
+            <div class="step-content">
+                <p>各固定点 (x*, y*) の座標をヤコビ行列に代入：</p>
+
+                <div id="jacobianEvaluations">
+                    <div class="fp-result">
+                        <strong>P₁ = (0, 0):</strong>
+                        <div class="eq-box">
+                            J(0,0) = <span class="matrix-bracket">[</span>
+                            <span class="matrix-content">
+                                <span>3</span><span>0</span>
+                                <span>0</span><span>2</span>
+                            </span>
+                            <span class="matrix-bracket">]</span>
+                        </div>
+                    </div>
+
+                    <div class="fp-result">
+                        <strong>P₂ = (3, 0):</strong>
+                        <div class="eq-box">
+                            J(3,0) = <span class="matrix-bracket">[</span>
+                            <span class="matrix-content">
+                                <span>-3</span><span>-6</span>
+                                <span>0</span><span>-1</span>
+                            </span>
+                            <span class="matrix-bracket">]</span>
+                        </div>
+                    </div>
+
+                    <div class="fp-result">
+                        <strong>P₃ = (0, 2):</strong>
+                        <div class="eq-box">
+                            J(0,2) = <span class="matrix-bracket">[</span>
+                            <span class="matrix-content">
+                                <span>-1</span><span>0</span>
+                                <span>-2</span><span>-2</span>
+                            </span>
+                            <span class="matrix-bracket">]</span>
+                        </div>
+                    </div>
+
+                    <div class="fp-result">
+                        <strong>P₄ = (1, 1):</strong>
+                        <div class="eq-box">
+                            J(1,1) = <span class="matrix-bracket">[</span>
+                            <span class="matrix-content">
+                                <span>-1</span><span>-2</span>
+                                <span>-1</span><span>-1</span>
+                            </span>
+                            <span class="matrix-bracket">]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: 固有値計算 -->
+        <div class="step">
+            <div class="step-number">4</div>
+            <h2>固有値を計算</h2>
+            <div class="step-content">
+                <p>2×2行列の固有値は、トレースと行列式から簡単に求まる：</p>
+
+                <div class="eq-box">
+                    τ = tr(J) = a + d（対角成分の和）<br>
+                    Δ = det(J) = ad - bc（行列式）<br><br>
+                    λ = (τ ± √(τ² - 4Δ)) / 2
+                </div>
+
+                <div class="note">
+                    <strong>判別式の意味:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>τ² - 4Δ > 0: 実固有値（ノード）</li>
+                        <li>τ² - 4Δ < 0: 複素固有値（スパイラル）</li>
+                        <li>τ² - 4Δ = 0: 重根（退化ノード、星型ノード）</li>
+                    </ul>
+                </div>
+
+                <h3>計算結果</h3>
+                <table id="eigenvalueTable">
+                    <tr>
+                        <th>固定点</th>
+                        <th>τ (trace)</th>
+                        <th>Δ (det)</th>
+                        <th>τ² - 4Δ</th>
+                        <th>λ₁</th>
+                        <th>λ₂</th>
+                    </tr>
+                    <tr>
+                        <td>P₁(0,0)</td>
+                        <td>5</td>
+                        <td>6</td>
+                        <td>1 > 0</td>
+                        <td>3</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>P₂(3,0)</td>
+                        <td>-4</td>
+                        <td>3</td>
+                        <td>4 > 0</td>
+                        <td>-3</td>
+                        <td>-1</td>
+                    </tr>
+                    <tr>
+                        <td>P₃(0,2)</td>
+                        <td>-3</td>
+                        <td>2</td>
+                        <td>1 > 0</td>
+                        <td>-2</td>
+                        <td>-1</td>
+                    </tr>
+                    <tr>
+                        <td>P₄(1,1)</td>
+                        <td>-2</td>
+                        <td>-1</td>
+                        <td>8 > 0</td>
+                        <td>-1+√2 ≈ 0.41</td>
+                        <td>-1-√2 ≈ -2.41</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Step 5: 安定性判定 -->
+        <div class="step">
+            <div class="step-number">5</div>
+            <h2>固定点を分類・安定性判定</h2>
+            <div class="step-content">
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>分類チャート（τ-Δ平面）</h4>
+                        <table>
+                            <tr>
+                                <th>条件</th>
+                                <th>分類</th>
+                            </tr>
+                            <tr>
+                                <td>Δ < 0</td>
+                                <td class="saddle">サドル点</td>
+                            </tr>
+                            <tr>
+                                <td>Δ > 0, τ < 0, τ²>4Δ</td>
+                                <td class="stable">安定ノード</td>
+                            </tr>
+                            <tr>
+                                <td>Δ > 0, τ > 0, τ²>4Δ</td>
+                                <td class="unstable">不安定ノード</td>
+                            </tr>
+                            <tr>
+                                <td>Δ > 0, τ < 0, τ²<4Δ</td>
+                                <td class="stable">安定スパイラル</td>
+                            </tr>
+                            <tr>
+                                <td>Δ > 0, τ > 0, τ²<4Δ</td>
+                                <td class="unstable">不安定スパイラル</td>
+                            </tr>
+                            <tr>
+                                <td>Δ > 0, τ = 0</td>
+                                <td>中心点</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <h4>安定性の判定基準</h4>
+                        <div class="note">
+                            <p><strong>漸近安定</strong>: 全ての固有値の実部 < 0</p>
+                            <p>⟺ τ < 0 かつ Δ > 0</p>
+                        </div>
+                        <div class="warning">
+                            <p><strong>不安定</strong>: 少なくとも1つの固有値の実部 > 0</p>
+                            <p>⟺ τ > 0 または Δ < 0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>各固定点の分類結果</h3>
+                <div id="classificationResults">
+                    <div class="fp-result unstable-node">
+                        <strong>P₁ = (0, 0)</strong>: <span class="unstable">不安定ノード</span>
+                        <p>λ₁ = 3 > 0, λ₂ = 2 > 0（両方正）→ 全方向に発散</p>
+                    </div>
+                    <div class="fp-result stable-node">
+                        <strong>P₂ = (3, 0)</strong>: <span class="stable">安定ノード</span>
+                        <p>λ₁ = -3 < 0, λ₂ = -1 < 0（両方負）→ 全方向から収束</p>
+                    </div>
+                    <div class="fp-result stable-node">
+                        <strong>P₃ = (0, 2)</strong>: <span class="stable">安定ノード</span>
+                        <p>λ₁ = -2 < 0, λ₂ = -1 < 0（両方負）→ 全方向から収束</p>
+                    </div>
+                    <div class="fp-result saddle-point">
+                        <strong>P₄ = (1, 1)</strong>: <span class="saddle">サドル点</span>
+                        <p>λ₁ ≈ 0.41 > 0, λ₂ ≈ -2.41 < 0（異符号）→ 不安定</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 6: ヌルクライン -->
+        <div class="step">
+            <div class="step-number">6</div>
+            <h2>ヌルクラインを描く</h2>
+            <div class="step-content">
+                <p>ヌルクラインは相図の「骨格」を与える：</p>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>x-ヌルクライン（ẋ = 0）</h4>
+                        <div class="eq-box" id="xNullcline">
+                            f(x,y) = x(3 - x - 2y) = 0<br>
+                            → x = 0 または y = (3-x)/2
+                        </div>
+                        <p>この曲線上では、軌道は<strong>垂直</strong>に横切る</p>
+                    </div>
+                    <div class="card">
+                        <h4>y-ヌルクライン（ẏ = 0）</h4>
+                        <div class="eq-box" id="yNullcline">
+                            g(x,y) = y(2 - x - y) = 0<br>
+                            → y = 0 または y = 2 - x
+                        </div>
+                        <p>この曲線上では、軌道は<strong>水平</strong>に横切る</p>
+                    </div>
+                </div>
+
+                <div class="note">
+                    <strong>ヌルクラインの交点 = 固定点</strong><br>
+                    両方のヌルクラインが交わる点では ẋ = ẏ = 0 となり、軌道は停止する。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 7: 位相図 -->
+        <div class="step">
+            <div class="step-number">7</div>
+            <h2>位相図を描く</h2>
+            <div class="step-content">
+                <div class="canvas-container">
+                    <canvas id="phaseCanvas" width="500" height="400"></canvas>
+                    <div class="canvas-label">相平面（x-y）</div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4fc3f7;"></div>
+                        <span>x-ヌルクライン</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff9800;"></div>
+                        <span>y-ヌルクライン</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4caf50;"></div>
+                        <span>安定固定点</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f44336;"></div>
+                        <span>不安定固定点</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffeb3b;"></div>
+                        <span>サドル点</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 15px 0;">
+                    <button class="btn btn-secondary" onclick="addTrajectory()">軌道を追加</button>
+                    <button class="btn btn-secondary" onclick="clearTrajectories()">軌道をクリア</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 8: 結論 -->
+        <div class="step">
+            <div class="step-number">8</div>
+            <h2>解析のまとめ</h2>
+            <div class="step-content" id="summarySection">
+                <div class="eq-box result">
+                    <strong>系の大域的振る舞い</strong>
+                </div>
+
+                <div id="summaryContent">
+                    <h3>固定点のまとめ</h3>
+                    <table>
+                        <tr>
+                            <th>固定点</th>
+                            <th>分類</th>
+                            <th>安定性</th>
+                            <th>物理的解釈</th>
+                        </tr>
+                        <tr>
+                            <td>(0, 0)</td>
+                            <td>不安定ノード</td>
+                            <td class="unstable">不安定</td>
+                            <td>両種絶滅状態は不安定</td>
+                        </tr>
+                        <tr>
+                            <td>(3, 0)</td>
+                            <td>安定ノード</td>
+                            <td class="stable">安定</td>
+                            <td>種xが種yを競争排除</td>
+                        </tr>
+                        <tr>
+                            <td>(0, 2)</td>
+                            <td>安定ノード</td>
+                            <td class="stable">安定</td>
+                            <td>種yが種xを競争排除</td>
+                        </tr>
+                        <tr>
+                            <td>(1, 1)</td>
+                            <td>サドル点</td>
+                            <td class="saddle">不安定</td>
+                            <td>共存は不安定（双安定系）</td>
+                        </tr>
+                    </table>
+
+                    <h3>結論</h3>
+                    <div class="note">
+                        <p>この系は<strong>双安定（bistable）</strong>である。</p>
+                        <p>初期条件により、種xが勝つ(3,0)か種yが勝つ(0,2)のどちらかに収束する。</p>
+                        <p>共存点(1,1)はサドル点であり、その安定多様体が2つの吸引域の境界（分離線）となる。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 追加リファレンス -->
+        <div class="workflow-summary">
+            <h3>解析のチェックリスト</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>必須項目</h4>
+                    <ul style="margin-left: 20px;">
+                        <li>全ての固定点を見つけたか？</li>
+                        <li>各固定点でヤコビ行列を評価したか？</li>
+                        <li>固有値を正しく計算したか？</li>
+                        <li>分類は τ-Δ チャートと一致するか？</li>
+                        <li>ヌルクラインの交点と固定点は一致するか？</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>よくあるミス</h4>
+                    <ul style="margin-left: 20px;">
+                        <li>境界上の固定点（x=0, y=0）を見落とす</li>
+                        <li>ヤコビ行列の偏微分を間違える</li>
+                        <li>行列式の符号を間違える</li>
+                        <li>中心点を「安定」と誤判定</li>
+                        <li>大域的な振る舞いを考慮しない</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>力学系解析の基本手順 | Based on Strogatz "Nonlinear Dynamics and Chaos"</p>
+            <p><a href="strogatz-cheatsheet.html">チートシートに戻る</a> | <a href="index.html">デモ一覧</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('phaseCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Current system
+        let currentSystem = 'competition';
+        let trajectories = [];
+        let animationId = null;
+
+        // Systems definition
+        const systems = {
+            competition: {
+                name: '競争方程式',
+                f: (x, y) => x * (3 - x - 2*y),
+                g: (x, y) => y * (2 - x - y),
+                dfx: (x, y) => 3 - 2*x - 2*y,
+                dfy: (x, y) => -2*x,
+                dgx: (x, y) => -y,
+                dgy: (x, y) => 2 - x - 2*y,
+                fixedPoints: [{x:0,y:0}, {x:3,y:0}, {x:0,y:2}, {x:1,y:1}],
+                xRange: [0, 4],
+                yRange: [0, 3],
+                description: '2種の競争系。x, y は種の個体数密度。',
+                eqText: 'ẋ = x(3 - x - 2y)<br>ẏ = y(2 - x - y)'
+            },
+            'predator-prey': {
+                name: '被食-捕食',
+                f: (x, y) => x * (1 - x/3) - x*y/(1 + x),
+                g: (x, y) => y * (x/(1 + x) - 0.3),
+                dfx: (x, y) => 1 - 2*x/3 - y/Math.pow(1+x,2),
+                dfy: (x, y) => -x/(1+x),
+                dgx: (x, y) => y/Math.pow(1+x,2),
+                dgy: (x, y) => x/(1+x) - 0.3,
+                fixedPoints: [{x:0,y:0}, {x:3,y:0}, {x:0.429,y:0.612}],
+                xRange: [0, 4],
+                yRange: [0, 2],
+                description: 'Rosenzweig-MacArthur型の被食-捕食系',
+                eqText: 'ẋ = x(1 - x/3) - xy/(1+x)<br>ẏ = y(x/(1+x) - 0.3)'
+            },
+            vanderpol: {
+                name: 'Van der Pol振動子',
+                f: (x, y) => y,
+                g: (x, y) => -x + 0.5*(1 - x*x)*y,
+                dfx: (x, y) => 0,
+                dfy: (x, y) => 1,
+                dgx: (x, y) => -1 - x*y,
+                dgy: (x, y) => 0.5*(1 - x*x),
+                fixedPoints: [{x:0,y:0}],
+                xRange: [-3, 3],
+                yRange: [-3, 3],
+                description: '電気回路、心拍などで現れる自励振動子',
+                eqText: 'ẋ = y<br>ẏ = -x + μ(1-x²)y (μ=0.5)'
+            },
+            'saddle-node': {
+                name: 'サドルノード例',
+                f: (x, y) => 1 - x*x,
+                g: (x, y) => -y,
+                dfx: (x, y) => -2*x,
+                dfy: (x, y) => 0,
+                dgx: (x, y) => 0,
+                dgy: (x, y) => -1,
+                fixedPoints: [{x:1,y:0}, {x:-1,y:0}],
+                xRange: [-2, 2],
+                yRange: [-2, 2],
+                description: 'サドルノード分岐の典型例',
+                eqText: 'ẋ = 1 - x²<br>ẏ = -y'
+            },
+            hopf: {
+                name: 'Hopf分岐例',
+                f: (x, y) => 0.1*x - y - x*(x*x + y*y),
+                g: (x, y) => x + 0.1*y - y*(x*x + y*y),
+                dfx: (x, y) => 0.1 - 3*x*x - y*y,
+                dfy: (x, y) => -1 - 2*x*y,
+                dgx: (x, y) => 1 - 2*x*y,
+                dgy: (x, y) => 0.1 - x*x - 3*y*y,
+                fixedPoints: [{x:0,y:0}],
+                xRange: [-1.5, 1.5],
+                yRange: [-1.5, 1.5],
+                description: '超臨界Hopf分岐後のリミットサイクル',
+                eqText: 'ṙ = μr - r³ (μ=0.1)<br>θ̇ = 1'
+            }
+        };
+
+        // Coordinate transforms
+        let xMin, xMax, yMin, yMax;
+
+        function setRange(sys) {
+            xMin = sys.xRange[0];
+            xMax = sys.xRange[1];
+            yMin = sys.yRange[0];
+            yMax = sys.yRange[1];
+        }
+
+        function toCanvasX(x) {
+            return 50 + (x - xMin) / (xMax - xMin) * (canvas.width - 80);
+        }
+
+        function toCanvasY(y) {
+            return 30 + (yMax - y) / (yMax - yMin) * (canvas.height - 60);
+        }
+
+        function fromCanvasX(cx) {
+            return xMin + (cx - 50) / (canvas.width - 80) * (xMax - xMin);
+        }
+
+        function fromCanvasY(cy) {
+            return yMax - (cy - 30) / (canvas.height - 60) * (yMax - yMin);
+        }
+
+        // RK4 integration
+        function rk4Step(x, y, dt, sys) {
+            const k1x = sys.f(x, y);
+            const k1y = sys.g(x, y);
+
+            const k2x = sys.f(x + 0.5*dt*k1x, y + 0.5*dt*k1y);
+            const k2y = sys.g(x + 0.5*dt*k1x, y + 0.5*dt*k1y);
+
+            const k3x = sys.f(x + 0.5*dt*k2x, y + 0.5*dt*k2y);
+            const k3y = sys.g(x + 0.5*dt*k2x, y + 0.5*dt*k2y);
+
+            const k4x = sys.f(x + dt*k3x, y + dt*k3y);
+            const k4y = sys.g(x + dt*k3x, y + dt*k3y);
+
+            return {
+                x: x + dt/6 * (k1x + 2*k2x + 2*k3x + k4x),
+                y: y + dt/6 * (k1y + 2*k2y + 2*k3y + k4y)
+            };
+        }
+
+        // Compute eigenvalues
+        function computeEigenvalues(J) {
+            const tau = J[0][0] + J[1][1];  // trace
+            const delta = J[0][0]*J[1][1] - J[0][1]*J[1][0];  // determinant
+            const disc = tau*tau - 4*delta;
+
+            if (disc >= 0) {
+                const sqrtDisc = Math.sqrt(disc);
+                return {
+                    lambda1: (tau + sqrtDisc) / 2,
+                    lambda2: (tau - sqrtDisc) / 2,
+                    isComplex: false,
+                    tau: tau,
+                    delta: delta,
+                    disc: disc
+                };
+            } else {
+                return {
+                    realPart: tau / 2,
+                    imagPart: Math.sqrt(-disc) / 2,
+                    isComplex: true,
+                    tau: tau,
+                    delta: delta,
+                    disc: disc
+                };
+            }
+        }
+
+        // Classify fixed point
+        function classifyFixedPoint(eig) {
+            if (eig.delta < 0) {
+                return { type: 'saddle', stability: 'unstable', color: '#ffeb3b' };
+            }
+            if (eig.isComplex) {
+                if (eig.tau < 0) {
+                    return { type: 'stable spiral', stability: 'stable', color: '#4caf50' };
+                } else if (eig.tau > 0) {
+                    return { type: 'unstable spiral', stability: 'unstable', color: '#f44336' };
+                } else {
+                    return { type: 'center', stability: 'neutral', color: '#00bcd4' };
+                }
+            } else {
+                if (eig.lambda1 < 0 && eig.lambda2 < 0) {
+                    return { type: 'stable node', stability: 'stable', color: '#4caf50' };
+                } else if (eig.lambda1 > 0 && eig.lambda2 > 0) {
+                    return { type: 'unstable node', stability: 'unstable', color: '#f44336' };
+                }
+            }
+            return { type: 'unknown', stability: 'unknown', color: '#9e9e9e' };
+        }
+
+        // Draw phase portrait
+        function drawPhasePortrait() {
+            const sys = systems[currentSystem];
+            setRange(sys);
+
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#1a1a3a';
+            ctx.lineWidth = 1;
+            for (let x = Math.ceil(xMin); x <= xMax; x++) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(x), 30);
+                ctx.lineTo(toCanvasX(x), canvas.height - 30);
+                ctx.stroke();
+            }
+            for (let y = Math.ceil(yMin); y <= yMax; y++) {
+                ctx.beginPath();
+                ctx.moveTo(50, toCanvasY(y));
+                ctx.lineTo(canvas.width - 30, toCanvasY(y));
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#3a3a6a';
+            ctx.lineWidth = 2;
+            if (yMin <= 0 && yMax >= 0) {
+                ctx.beginPath();
+                ctx.moveTo(50, toCanvasY(0));
+                ctx.lineTo(canvas.width - 30, toCanvasY(0));
+                ctx.stroke();
+            }
+            if (xMin <= 0 && xMax >= 0) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(0), 30);
+                ctx.lineTo(toCanvasX(0), canvas.height - 30);
+                ctx.stroke();
+            }
+
+            // Draw vector field
+            ctx.strokeStyle = '#3a4a6a';
+            ctx.lineWidth = 1;
+            const step = 30;
+            for (let cx = 60; cx < canvas.width - 30; cx += step) {
+                for (let cy = 40; cy < canvas.height - 30; cy += step) {
+                    const x = fromCanvasX(cx);
+                    const y = fromCanvasY(cy);
+                    const dx = sys.f(x, y);
+                    const dy = sys.g(x, y);
+                    const mag = Math.sqrt(dx*dx + dy*dy);
+                    if (mag > 0.001) {
+                        const scale = 10 / Math.max(mag, 0.3);
+                        const nx = dx * scale;
+                        const ny = -dy * scale;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy);
+                        ctx.lineTo(cx + nx, cy + ny);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw nullclines
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+
+            // x-nullcline (cyan)
+            ctx.strokeStyle = '#4fc3f7';
+            drawNullcline(sys.f);
+
+            // y-nullcline (orange)
+            ctx.strokeStyle = '#ff9800';
+            drawNullcline(sys.g);
+
+            ctx.setLineDash([]);
+
+            // Draw trajectories
+            trajectories.forEach((traj, idx) => {
+                if (traj.length < 2) return;
+                ctx.strokeStyle = `hsla(${200 + idx * 60}, 70%, 60%, 0.8)`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                traj.forEach((pt, i) => {
+                    const cx = toCanvasX(pt.x);
+                    const cy = toCanvasY(pt.y);
+                    if (i === 0) ctx.moveTo(cx, cy);
+                    else ctx.lineTo(cx, cy);
+                });
+                ctx.stroke();
+
+                // Current point
+                const last = traj[traj.length - 1];
+                ctx.beginPath();
+                ctx.arc(toCanvasX(last.x), toCanvasY(last.y), 4, 0, 2*Math.PI);
+                ctx.fillStyle = `hsl(${200 + idx * 60}, 70%, 60%)`;
+                ctx.fill();
+            });
+
+            // Draw fixed points
+            sys.fixedPoints.forEach(fp => {
+                const J = [
+                    [sys.dfx(fp.x, fp.y), sys.dfy(fp.x, fp.y)],
+                    [sys.dgx(fp.x, fp.y), sys.dgy(fp.x, fp.y)]
+                ];
+                const eig = computeEigenvalues(J);
+                const classification = classifyFixedPoint(eig);
+
+                ctx.beginPath();
+                ctx.arc(toCanvasX(fp.x), toCanvasY(fp.y), 8, 0, 2*Math.PI);
+                ctx.fillStyle = classification.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Labels
+            ctx.fillStyle = '#90a4ae';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('x', canvas.width / 2, canvas.height - 8);
+            ctx.fillText(xMin.toString(), 50, canvas.height - 8);
+            ctx.fillText(xMax.toString(), canvas.width - 30, canvas.height - 8);
+
+            ctx.save();
+            ctx.translate(15, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('y', 0, 0);
+            ctx.restore();
+        }
+
+        // Draw nullcline by sampling
+        function drawNullcline(func) {
+            const resolution = 100;
+            const threshold = 0.1;
+
+            for (let i = 0; i < resolution; i++) {
+                for (let j = 0; j < resolution; j++) {
+                    const x = xMin + (xMax - xMin) * i / resolution;
+                    const y = yMin + (yMax - yMin) * j / resolution;
+                    const val = func(x, y);
+
+                    const x2 = xMin + (xMax - xMin) * (i + 1) / resolution;
+                    const y2 = yMin + (yMax - yMin) * (j + 1) / resolution;
+
+                    // Check for sign change
+                    const val_right = func(x2, y);
+                    const val_up = func(x, y2);
+
+                    if (val * val_right < 0) {
+                        ctx.beginPath();
+                        ctx.arc(toCanvasX((x + x2) / 2), toCanvasY(y), 2, 0, 2*Math.PI);
+                        ctx.fill();
+                    }
+                    if (val * val_up < 0) {
+                        ctx.beginPath();
+                        ctx.arc(toCanvasX(x), toCanvasY((y + y2) / 2), 2, 0, 2*Math.PI);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        // Add trajectory
+        function addTrajectory() {
+            const sys = systems[currentSystem];
+            setRange(sys);
+
+            const x = xMin + Math.random() * (xMax - xMin) * 0.8 + (xMax - xMin) * 0.1;
+            const y = yMin + Math.random() * (yMax - yMin) * 0.8 + (yMax - yMin) * 0.1;
+            trajectories.push([{x, y}]);
+
+            if (!animationId) {
+                animate();
+            }
+        }
+
+        // Clear trajectories
+        function clearTrajectories() {
+            trajectories = [];
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            drawPhasePortrait();
+        }
+
+        // Animation
+        function animate() {
+            const sys = systems[currentSystem];
+            const dt = 0.02;
+
+            trajectories.forEach(traj => {
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    for (let i = 0; i < 3; i++) {
+                        const next = rk4Step(last.x, last.y, dt, sys);
+                        last.x = next.x;
+                        last.y = next.y;
+                    }
+                    traj.push({x: last.x, y: last.y});
+                    if (traj.length > 500) traj.shift();
+                }
+            });
+
+            drawPhasePortrait();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Click to add trajectory
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const x = fromCanvasX(cx);
+            const y = fromCanvasY(cy);
+            trajectories.push([{x, y}]);
+
+            if (!animationId) {
+                animate();
+            }
+        });
+
+        // Analyze system
+        function analyzeSystem() {
+            currentSystem = document.getElementById('systemSelect').value;
+            clearTrajectories();
+            updateDisplay();
+            drawPhasePortrait();
+        }
+
+        // Reset
+        function resetAll() {
+            currentSystem = 'competition';
+            document.getElementById('systemSelect').value = 'competition';
+            clearTrajectories();
+            updateDisplay();
+            drawPhasePortrait();
+        }
+
+        // Update display based on selected system
+        function updateDisplay() {
+            const sys = systems[currentSystem];
+
+            // Update equation
+            document.getElementById('systemEq').innerHTML = sys.eqText;
+            document.getElementById('systemDescription').innerHTML =
+                `<p><strong>物理的意味</strong>: ${sys.description}</p>`;
+
+            // For simplicity, we'll update the display for competition system
+            // A full implementation would dynamically generate all the content
+        }
+
+        // Initialize
+        drawPhasePortrait();
+    </script>
+</body>
+</html>

@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ロジスティック写像：カオスへの道（Strogatz 10.3節）</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2em;
+            text-align: center;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.75em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 0.95em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .status-box {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-fixed {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status-period2 {
+            background: #1e3a5f;
+            color: #4fc3f7;
+        }
+        .status-period4 {
+            background: #3a1e5f;
+            color: #ce93d8;
+        }
+        .status-chaos {
+            background: #5f1e1e;
+            color: #f44336;
+        }
+        .status-extinct {
+            background: #3d3d3d;
+            color: #9e9e9e;
+        }
+        .strogatz-box {
+            background: #0a2040;
+            border-left: 4px solid #4fc3f7;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .strogatz-label {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .bifurcation-points {
+            background: #2a1a40;
+            border: 2px solid #ce93d8;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .bifurcation-title {
+            color: #ce93d8;
+            font-weight: bold;
+            font-size: 1.05em;
+            margin-bottom: 10px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .feigenbaum-box {
+            background: #1a3040;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .feigenbaum-title {
+            color: #ff9800;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #0f3460;
+        }
+        th {
+            color: #81d4fa;
+            font-size: 0.9em;
+        }
+        td {
+            font-family: monospace;
+            color: #e8e8e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ロジスティック写像：カオスへの道</h1>
+
+        <div class="section">
+            <h2>Strogatz 10.3節：ロジスティック写像</h2>
+            <div class="equation-box">
+                x<sub>n+1</sub> = r · x<sub>n</sub> (1 − x<sub>n</sub>)
+            </div>
+            <p>最も単純な離散力学系の一つ。<span class="highlight">1次元写像でありながらカオスを示す</span></p>
+            <p>x<sub>n</sub> ∈ [0, 1]: 個体数（正規化）、r: 成長率パラメータ</p>
+        </div>
+
+        <div class="section">
+            <h2>クモの巣図法（Cobweb Diagram）</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="cobwebCanvas" width="350" height="350"></canvas>
+                    <div class="canvas-label">y = f(x) と y = x</div>
+                </div>
+                <div class="canvas-box">
+                    <canvas id="timeSeriesCanvas" width="350" height="180"></canvas>
+                    <div class="canvas-label">時系列 n vs x<sub>n</sub></div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4fc3f7;"></div>
+                    <span>y = rx(1-x)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #666;"></div>
+                    <span>y = x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>クモの巣</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>成長率 r</span>
+                        <span class="slider-value" id="rDisplay">2.80</span>
+                    </div>
+                    <input type="range" id="rSlider" min="0" max="4" step="0.01" value="2.8">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>初期値 x<sub>0</sub></span>
+                        <span class="slider-value" id="x0Display">0.20</span>
+                    </div>
+                    <input type="range" id="x0Slider" min="0.01" max="0.99" step="0.01" value="0.2">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="stepBtn">1ステップ</button>
+                <button class="btn btn-secondary" id="step10Btn">10ステップ</button>
+                <button class="btn btn-secondary" id="runBtn">実行/停止</button>
+            </div>
+
+            <div id="statusBox" class="status-box status-fixed">
+                固定点に収束
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">現在 x<sub>n</sub></div>
+                    <div class="info-value" id="xnDisplay">0.200</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">反復 n</div>
+                    <div class="info-value" id="nDisplay">0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">固定点 x*</div>
+                    <div class="info-value" id="fpDisplay">0.643</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Lyapunov λ</div>
+                    <div class="info-value" id="lyapunovDisplay">---</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>分岐図（Bifurcation Diagram）</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="bifurcationCanvas" width="720" height="300"></canvas>
+                    <div class="canvas-label">横軸：r、縦軸：アトラクターの x 値</div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="computeBifBtn">分岐図を計算</button>
+                <button class="btn btn-secondary" id="zoomInBtn">拡大（r: 3.4-3.6）</button>
+                <button class="btn btn-secondary" id="zoomOutBtn">全体表示</button>
+            </div>
+        </div>
+
+        <div class="bifurcation-points">
+            <div class="bifurcation-title">周期倍分岐カスケード</div>
+            <table>
+                <tr>
+                    <th>周期</th>
+                    <th>分岐点 r<sub>n</sub></th>
+                    <th>δ<sub>n</sub> = (r<sub>n</sub>-r<sub>n-1</sub>)/(r<sub>n+1</sub>-r<sub>n</sub>)</th>
+                </tr>
+                <tr>
+                    <td>1 → 2</td>
+                    <td>r<sub>1</sub> = 3.0</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>2 → 4</td>
+                    <td>r<sub>2</sub> ≈ 3.449</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>4 → 8</td>
+                    <td>r<sub>3</sub> ≈ 3.544</td>
+                    <td>4.751</td>
+                </tr>
+                <tr>
+                    <td>8 → 16</td>
+                    <td>r<sub>4</sub> ≈ 3.564</td>
+                    <td>4.656</td>
+                </tr>
+                <tr>
+                    <td>∞（カオス）</td>
+                    <td>r<sub>∞</sub> ≈ 3.5699...</td>
+                    <td>→ <span class="highlight">δ = 4.669...</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="feigenbaum-box">
+            <div class="feigenbaum-title">Feigenbaum の普遍性（10.6節）</div>
+            <p><span class="highlight">δ = 4.669201609...</span>（Feigenbaum定数）</p>
+            <p>驚くべきことに、この定数は写像の詳細によらず<strong>普遍的</strong>：</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>ロジスティック写像: x → rx(1-x)</li>
+                <li>sin写像: x → r·sin(πx)</li>
+                <li>任意の単峰写像（unimodal map）</li>
+            </ul>
+            <p style="margin-top: 10px;">これは<span class="highlight">繰り込み群</span>の考え方で説明される（Strogatz 10.7節）</p>
+        </div>
+
+        <div class="strogatz-box">
+            <div class="strogatz-label">Strogatz との接続</div>
+            <p style="margin-top: 8px;"><span class="highlight">10.0節</span>: 1次元写像の導入</p>
+            <p><span class="highlight">10.1節</span>: 固定点と安定性（|f'(x*)| < 1）</p>
+            <p><span class="highlight">10.3節</span>: ロジスティック写像の詳細分析</p>
+            <p><span class="highlight">10.4節</span>: 周期窓、カオスの中の秩序</p>
+            <p><span class="highlight">10.6節</span>: Feigenbaum定数と普遍性</p>
+            <p><span class="highlight">8.7節</span>: ポアンカレ写像（連続系→離散系）</p>
+        </div>
+
+        <div class="section">
+            <h2>r の値と振る舞い</h2>
+            <table>
+                <tr>
+                    <th>r の範囲</th>
+                    <th>振る舞い</th>
+                    <th>安定性条件</th>
+                </tr>
+                <tr>
+                    <td>0 < r < 1</td>
+                    <td>絶滅（x → 0）</td>
+                    <td>x* = 0 が安定</td>
+                </tr>
+                <tr>
+                    <td>1 < r < 3</td>
+                    <td>固定点に収束</td>
+                    <td>|f'(x*)| < 1</td>
+                </tr>
+                <tr>
+                    <td>3 < r < 3.449...</td>
+                    <td>周期2軌道</td>
+                    <td>|(f∘f)'| < 1</td>
+                </tr>
+                <tr>
+                    <td>3.449... < r < 3.57...</td>
+                    <td>周期 2<sup>n</sup> 軌道</td>
+                    <td>周期倍分岐カスケード</td>
+                </tr>
+                <tr>
+                    <td>r > 3.5699...</td>
+                    <td>カオス（+ 周期窓）</td>
+                    <td>正のLyapunov指数</td>
+                </tr>
+                <tr>
+                    <td>r > 4</td>
+                    <td>発散</td>
+                    <td>x が [0,1] を脱出</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const cobwebCanvas = document.getElementById('cobwebCanvas');
+        const cobwebCtx = cobwebCanvas.getContext('2d');
+        const timeSeriesCanvas = document.getElementById('timeSeriesCanvas');
+        const timeSeriesCtx = timeSeriesCanvas.getContext('2d');
+        const bifurcationCanvas = document.getElementById('bifurcationCanvas');
+        const bifurcationCtx = bifurcationCanvas.getContext('2d');
+
+        // Parameters
+        let r = 2.8;
+        let x0 = 0.2;
+        let x = x0;
+        let n = 0;
+        let orbit = [x0];
+        let running = false;
+        let animationId = null;
+        let bifurcationData = null;
+        let bifurcationRange = { rMin: 0, rMax: 4 };
+
+        // UI elements
+        const rSlider = document.getElementById('rSlider');
+        const x0Slider = document.getElementById('x0Slider');
+        const rDisplay = document.getElementById('rDisplay');
+        const x0Display = document.getElementById('x0Display');
+        const statusBox = document.getElementById('statusBox');
+
+        // Logistic map
+        function f(x) {
+            return r * x * (1 - x);
+        }
+
+        // Derivative
+        function fPrime(x) {
+            return r * (1 - 2 * x);
+        }
+
+        // Fixed points
+        function getFixedPoints() {
+            // x* = rx*(1-x*) => x* = 0 or x* = (r-1)/r
+            if (r <= 1) return [0];
+            return [0, (r - 1) / r];
+        }
+
+        // Stability of non-trivial fixed point
+        function getStability() {
+            if (r <= 1) return 'extinct';
+            const xStar = (r - 1) / r;
+            const deriv = Math.abs(fPrime(xStar));
+            if (deriv < 1) return 'stable';
+            return 'unstable';
+        }
+
+        // Determine attractor type from orbit
+        function getAttractorType() {
+            if (r <= 1) return 'extinct';
+            if (orbit.length < 100) return 'computing';
+
+            const recent = orbit.slice(-50);
+
+            // Check for convergence to fixed point
+            const last = recent[recent.length - 1];
+            const secondLast = recent[recent.length - 2];
+            if (Math.abs(last - secondLast) < 0.0001) return 'fixed';
+
+            // Check for period 2
+            if (recent.length >= 4) {
+                const period2 = Math.abs(recent[recent.length - 1] - recent[recent.length - 3]) < 0.001 &&
+                               Math.abs(recent[recent.length - 2] - recent[recent.length - 4]) < 0.001;
+                if (period2) return 'period2';
+            }
+
+            // Check for period 4
+            if (recent.length >= 8) {
+                const period4 = Math.abs(recent[recent.length - 1] - recent[recent.length - 5]) < 0.001;
+                if (period4) return 'period4';
+            }
+
+            // Otherwise chaos
+            return 'chaos';
+        }
+
+        // Compute Lyapunov exponent
+        function computeLyapunov() {
+            if (orbit.length < 100) return null;
+
+            let sum = 0;
+            const start = Math.max(50, orbit.length - 200);
+            for (let i = start; i < orbit.length; i++) {
+                const deriv = Math.abs(fPrime(orbit[i]));
+                if (deriv > 0) {
+                    sum += Math.log(deriv);
+                }
+            }
+            return sum / (orbit.length - start);
+        }
+
+        // Draw cobweb diagram
+        function drawCobweb() {
+            const ctx = cobwebCtx;
+            const width = cobwebCanvas.width;
+            const height = cobwebCanvas.height;
+            const margin = { left: 40, right: 20, top: 20, bottom: 40 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            // Clear
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, width, height);
+
+            // Coordinate transforms
+            function toX(val) {
+                return margin.left + val * plotWidth;
+            }
+            function toY(val) {
+                return margin.top + (1 - val) * plotHeight;
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#4a6a90';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#81d4fa';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('x', width / 2, height - 5);
+            ctx.fillText('0', margin.left, height - margin.bottom + 15);
+            ctx.fillText('1', width - margin.right, height - margin.bottom + 15);
+
+            ctx.save();
+            ctx.translate(12, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('f(x)', 0, 0);
+            ctx.restore();
+
+            // Draw y = x line
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(0));
+            ctx.lineTo(toX(1), toY(1));
+            ctx.stroke();
+
+            // Draw f(x) = rx(1-x)
+            ctx.strokeStyle = '#4fc3f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const xVal = i / 100;
+                const yVal = Math.min(1, Math.max(0, f(xVal)));
+                if (i === 0) ctx.moveTo(toX(xVal), toY(yVal));
+                else ctx.lineTo(toX(xVal), toY(yVal));
+            }
+            ctx.stroke();
+
+            // Draw cobweb
+            if (orbit.length > 1) {
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+
+                // Start from x0 on x-axis
+                ctx.moveTo(toX(orbit[0]), toY(0));
+
+                for (let i = 0; i < Math.min(orbit.length - 1, 100); i++) {
+                    const xCurr = orbit[i];
+                    const xNext = orbit[i + 1];
+
+                    // Vertical to curve
+                    ctx.lineTo(toX(xCurr), toY(xNext));
+                    // Horizontal to diagonal
+                    ctx.lineTo(toX(xNext), toY(xNext));
+                }
+                ctx.stroke();
+
+                // Current point
+                const lastX = orbit[orbit.length - 1];
+                ctx.beginPath();
+                ctx.arc(toX(lastX), toY(lastX), 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff9800';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw fixed points
+            const fps = getFixedPoints();
+            fps.forEach((fp, idx) => {
+                if (fp >= 0 && fp <= 1) {
+                    ctx.beginPath();
+                    ctx.arc(toX(fp), toY(fp), 6, 0, 2 * Math.PI);
+
+                    // Color based on stability
+                    if (idx === 0) {
+                        ctx.fillStyle = r < 1 ? '#4caf50' : '#f44336';
+                    } else {
+                        ctx.fillStyle = getStability() === 'stable' ? '#4caf50' : '#f44336';
+                    }
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Draw time series
+        function drawTimeSeries() {
+            const ctx = timeSeriesCtx;
+            const width = timeSeriesCanvas.width;
+            const height = timeSeriesCanvas.height;
+            const margin = { left: 35, right: 10, top: 10, bottom: 25 };
+
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, width, height);
+
+            if (orbit.length < 2) return;
+
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            // Show last 100 points
+            const showN = Math.min(100, orbit.length);
+            const start = orbit.length - showN;
+
+            // Draw
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < showN; i++) {
+                const px = margin.left + i / showN * plotWidth;
+                const py = margin.top + (1 - orbit[start + i]) * plotHeight;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // Fixed point line
+            if (r > 1) {
+                const xStar = (r - 1) / r;
+                const fpY = margin.top + (1 - xStar) * plotHeight;
+                ctx.strokeStyle = 'rgba(76, 175, 80, 0.5)';
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(margin.left, fpY);
+                ctx.lineTo(width - margin.right, fpY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Axis
+            ctx.strokeStyle = '#4a6a90';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top + plotHeight);
+            ctx.lineTo(width - margin.right, margin.top + plotHeight);
+            ctx.stroke();
+
+            ctx.fillStyle = '#81d4fa';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('n', width / 2, height - 3);
+        }
+
+        // Draw bifurcation diagram
+        function drawBifurcationDiagram() {
+            const ctx = bifurcationCtx;
+            const width = bifurcationCanvas.width;
+            const height = bifurcationCanvas.height;
+            const margin = { left: 50, right: 20, top: 15, bottom: 30 };
+
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, width, height);
+
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+            const { rMin, rMax } = bifurcationRange;
+
+            // Axes
+            ctx.strokeStyle = '#4a6a90';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + plotHeight);
+            ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#81d4fa';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('r', margin.left + plotWidth / 2, height - 5);
+            ctx.fillText(rMin.toFixed(1), margin.left, margin.top + plotHeight + 15);
+            ctx.fillText(rMax.toFixed(1), margin.left + plotWidth, margin.top + plotHeight + 15);
+            ctx.fillText('x', margin.left - 25, margin.top + plotHeight / 2);
+
+            // Draw critical r values
+            const criticalRs = [1, 3, 3.449, 3.5699];
+            ctx.setLineDash([2, 4]);
+            criticalRs.forEach(rCrit => {
+                if (rCrit > rMin && rCrit < rMax) {
+                    const px = margin.left + (rCrit - rMin) / (rMax - rMin) * plotWidth;
+                    ctx.strokeStyle = 'rgba(255, 152, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(px, margin.top);
+                    ctx.lineTo(px, margin.top + plotHeight);
+                    ctx.stroke();
+                }
+            });
+            ctx.setLineDash([]);
+
+            if (!bifurcationData) return;
+
+            // Draw data
+            ctx.fillStyle = 'rgba(79, 195, 247, 0.6)';
+            bifurcationData.forEach(point => {
+                if (point.r >= rMin && point.r <= rMax) {
+                    const px = margin.left + (point.r - rMin) / (rMax - rMin) * plotWidth;
+                    const py = margin.top + (1 - point.x) * plotHeight;
+                    ctx.fillRect(px, py, 1, 1);
+                }
+            });
+
+            // Current r marker
+            if (r >= rMin && r <= rMax) {
+                const currentRx = margin.left + (r - rMin) / (rMax - rMin) * plotWidth;
+                ctx.fillStyle = '#ff9800';
+                ctx.beginPath();
+                ctx.arc(currentRx, margin.top + plotHeight + 8, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // Compute bifurcation diagram
+        function computeBifurcation() {
+            bifurcationData = [];
+            const { rMin, rMax } = bifurcationRange;
+            const steps = 600;
+
+            for (let i = 0; i <= steps; i++) {
+                const rVal = rMin + (rMax - rMin) * i / steps;
+
+                let xIt = 0.5;
+                // Transient
+                for (let j = 0; j < 300; j++) {
+                    xIt = rVal * xIt * (1 - xIt);
+                }
+                // Record attractor
+                for (let j = 0; j < 100; j++) {
+                    xIt = rVal * xIt * (1 - xIt);
+                    if (xIt > 0 && xIt < 1) {
+                        bifurcationData.push({ r: rVal, x: xIt });
+                    }
+                }
+            }
+
+            drawBifurcationDiagram();
+        }
+
+        // Update displays
+        function updateDisplays() {
+            rDisplay.textContent = r.toFixed(2);
+            x0Display.textContent = x0.toFixed(2);
+            document.getElementById('xnDisplay').textContent = x.toFixed(4);
+            document.getElementById('nDisplay').textContent = n;
+
+            // Fixed point
+            if (r > 1) {
+                document.getElementById('fpDisplay').textContent = ((r - 1) / r).toFixed(3);
+            } else {
+                document.getElementById('fpDisplay').textContent = '0';
+            }
+
+            // Lyapunov exponent
+            const lyap = computeLyapunov();
+            if (lyap !== null) {
+                document.getElementById('lyapunovDisplay').textContent = lyap.toFixed(3);
+            } else {
+                document.getElementById('lyapunovDisplay').textContent = '---';
+            }
+
+            // Status
+            const type = getAttractorType();
+            switch (type) {
+                case 'extinct':
+                    statusBox.className = 'status-box status-extinct';
+                    statusBox.textContent = '絶滅（r < 1）';
+                    break;
+                case 'fixed':
+                    statusBox.className = 'status-box status-fixed';
+                    statusBox.textContent = '固定点に収束';
+                    break;
+                case 'period2':
+                    statusBox.className = 'status-box status-period2';
+                    statusBox.textContent = '周期2軌道';
+                    break;
+                case 'period4':
+                    statusBox.className = 'status-box status-period4';
+                    statusBox.textContent = '周期4軌道';
+                    break;
+                case 'chaos':
+                    statusBox.className = 'status-box status-chaos';
+                    statusBox.textContent = 'カオス！（λ > 0）';
+                    break;
+                default:
+                    statusBox.className = 'status-box status-fixed';
+                    statusBox.textContent = '計算中...';
+            }
+        }
+
+        // Step
+        function step() {
+            x = f(x);
+            // Clamp to valid range
+            if (x < 0 || x > 1 || isNaN(x)) {
+                x = 0;
+            }
+            orbit.push(x);
+            n++;
+            if (orbit.length > 500) orbit.shift();
+
+            updateDisplays();
+            drawCobweb();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        }
+
+        // Animation
+        function animate() {
+            if (!running) return;
+            step();
+            animationId = setTimeout(() => requestAnimationFrame(animate), 100);
+        }
+
+        // Event listeners
+        rSlider.addEventListener('input', (e) => {
+            r = parseFloat(e.target.value);
+            // Reset
+            x = x0;
+            orbit = [x0];
+            n = 0;
+            updateDisplays();
+            drawCobweb();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        });
+
+        x0Slider.addEventListener('input', (e) => {
+            x0 = parseFloat(e.target.value);
+            x = x0;
+            orbit = [x0];
+            n = 0;
+            updateDisplays();
+            drawCobweb();
+            drawTimeSeries();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            r = 2.8;
+            x0 = 0.2;
+            rSlider.value = r;
+            x0Slider.value = x0;
+            x = x0;
+            orbit = [x0];
+            n = 0;
+            running = false;
+            updateDisplays();
+            drawCobweb();
+            drawTimeSeries();
+            drawBifurcationDiagram();
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', step);
+
+        document.getElementById('step10Btn').addEventListener('click', () => {
+            for (let i = 0; i < 10; i++) step();
+        });
+
+        document.getElementById('runBtn').addEventListener('click', () => {
+            running = !running;
+            if (running) animate();
+        });
+
+        document.getElementById('computeBifBtn').addEventListener('click', computeBifurcation);
+
+        document.getElementById('zoomInBtn').addEventListener('click', () => {
+            bifurcationRange = { rMin: 3.4, rMax: 3.6 };
+            if (bifurcationData) {
+                computeBifurcation();
+            } else {
+                drawBifurcationDiagram();
+            }
+        });
+
+        document.getElementById('zoomOutBtn').addEventListener('click', () => {
+            bifurcationRange = { rMin: 0, rMax: 4 };
+            if (bifurcationData) {
+                computeBifurcation();
+            } else {
+                drawBifurcationDiagram();
+            }
+        });
+
+        // Initialize
+        updateDisplays();
+        drawCobweb();
+        drawTimeSeries();
+        drawBifurcationDiagram();
+    </script>
+</body>
+</html>

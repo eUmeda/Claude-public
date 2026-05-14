@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.4 周期窓と間欠性</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; margin-bottom: 6px; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 100px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.78em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.key-event {
+  font-size: 0.78em; color: #bbb;
+  line-height: 1.6; margin-top: 6px;
+}
+.math {
+  font-family: serif; font-style: italic;
+}
+</style>
+</head>
+<body>
+<h1>3周期窓と接線分岐</h1>
+<div class="note">
+3周期窓は <span class="math">r₁ = 1 + √8 ≈ 3.8284</span> で接線分岐により誕生。
+r をこの値のすぐ下に設定すると「ほぼ3周期」の長い区間と
+カオスの爆発が交互に現れる (I型間欠性, Pomeau-Manneville)。
+f³(x, r) のグラフが対角線に接する瞬間がその誕生。
+</div>
+
+<canvas id="ts" width="360" height="200"></canvas>
+<canvas id="f3" width="360" height="240"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>r</span><span id="rv">3.8280</span></label>
+    <input type="range" id="rs" min="3.7" max="3.87" step="0.00005" value="3.828">
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="3.8">間欠 (r=3.8)</button>
+    <button class="preset" data-r="3.8282">臨界直下</button>
+    <button class="preset" data-r="3.8284">r₁=1+√8</button>
+    <button class="preset" data-r="3.83">3周期安定</button>
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="3.855">3→6倍分岐</button>
+    <button class="preset" data-r="3.86">6周期</button>
+    <button class="preset" data-r="3.74">5周期窓</button>
+  </div>
+  <div class="status">
+    <div>軌道タイプ: <span id="otype">-</span></div>
+    <div>|f³'(x*)| (中間点) = <span id="slope">-</span></div>
+    <div class="key-event">
+      青線: f³(x) &nbsp;|&nbsp; 灰線: y=x<br>
+      3交点 → 3周期、接する → 誕生、1交点のみ → 間欠性
+    </div>
+  </div>
+</div>
+
+<script>
+const tsC = document.getElementById('ts');
+const f3C = document.getElementById('f3');
+const tCtx = tsC.getContext('2d');
+const fCtx = f3C.getContext('2d');
+
+let r = 3.828;
+
+function f(x) { return r * x * (1 - x); }
+function f3(x) { return f(f(f(x))); }
+function f3prime(x) {
+  const h = 1e-6;
+  return (f3(x + h) - f3(x - h)) / (2*h);
+}
+
+function drawTS() {
+  const W = tsC.width, H = tsC.height;
+  tCtx.fillStyle = '#0f1a2e';
+  tCtx.fillRect(0, 0, W, H);
+  const PAD = 25;
+  const N = 150;
+  let x = 0.3;
+  for (let i = 0; i < 500; i++) x = f(x);
+  const ts = [];
+  for (let i = 0; i < N; i++) { x = f(x); ts.push(x); }
+
+  const toX = i => PAD + i * (W - 2*PAD) / (N - 1);
+  const toY = v => H - PAD - v * (H - 2*PAD);
+  tCtx.strokeStyle = '#444';
+  tCtx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  tCtx.strokeStyle = '#4fc3f7';
+  tCtx.lineWidth = 1;
+  tCtx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const sx = toX(i), sy = toY(ts[i]);
+    if (i === 0) tCtx.moveTo(sx, sy); else tCtx.lineTo(sx, sy);
+  }
+  tCtx.stroke();
+  tCtx.fillStyle = '#4fc3f7';
+  for (let i = 0; i < N; i++) {
+    tCtx.beginPath();
+    tCtx.arc(toX(i), toY(ts[i]), 1.8, 0, 2*Math.PI);
+    tCtx.fill();
+  }
+
+  tCtx.fillStyle = '#888';
+  tCtx.font = '10px sans-serif';
+  tCtx.fillText('時系列', 4, 12);
+  tCtx.fillText('n', W - 10, H - 6);
+  tCtx.fillText('x_n', 4, PAD + 4);
+
+  // 周期判定
+  const eps = 1e-4;
+  let period = 0;
+  for (let p = 1; p <= 16; p++) {
+    let ok = true;
+    for (let k = 0; k < Math.min(5, N - p - 1); k++) {
+      if (Math.abs(ts[N-1-k] - ts[N-1-k-p]) > eps) { ok = false; break; }
+    }
+    if (ok) { period = p; break; }
+  }
+  let typeStr;
+  if (period === 3) typeStr = '安定3周期';
+  else if (period === 6) typeStr = '6周期 (3→6倍分岐)';
+  else if (period === 5) typeStr = '5周期 (5窓)';
+  else if (period === 0) typeStr = 'カオス/間欠';
+  else typeStr = `${period}周期`;
+  document.getElementById('otype').textContent = typeStr;
+}
+
+function drawF3() {
+  const W = f3C.width, H = f3C.height;
+  fCtx.fillStyle = '#0f1a2e';
+  fCtx.fillRect(0, 0, W, H);
+  const PAD = 25;
+  const toX = x => PAD + x * (W - 2*PAD);
+  const toY = y => H - PAD - y * (H - 2*PAD);
+
+  // 枠
+  fCtx.strokeStyle = '#444';
+  fCtx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  // 対角線
+  fCtx.strokeStyle = '#777';
+  fCtx.beginPath();
+  fCtx.moveTo(toX(0), toY(0));
+  fCtx.lineTo(toX(1), toY(1));
+  fCtx.stroke();
+
+  // f³(x)
+  fCtx.strokeStyle = '#4fc3f7';
+  fCtx.lineWidth = 1.5;
+  fCtx.beginPath();
+  for (let i = 0; i <= 400; i++) {
+    const x = i / 400;
+    const y = f3(x);
+    if (y < -0.1 || y > 1.1) continue;
+    if (i === 0) fCtx.moveTo(toX(x), toY(y));
+    else fCtx.lineTo(toX(x), toY(y));
+  }
+  fCtx.stroke();
+
+  // 不動点 (f³(x) = x の解)
+  const fps = [];
+  for (let i = 0; i < 300; i++) {
+    const xa = i / 300, xb = (i + 1) / 300;
+    const fa = f3(xa) - xa, fb = f3(xb) - xb;
+    if (fa * fb < 0) {
+      let a = xa, b = xb;
+      for (let j = 0; j < 30; j++) {
+        const m = (a + b) / 2;
+        if ((f3(a) - a) * (f3(m) - m) < 0) b = m; else a = m;
+      }
+      fps.push((a + b) / 2);
+    }
+  }
+  for (const p of fps) {
+    const slope = Math.abs(f3prime(p));
+    fCtx.fillStyle = slope < 1 ? '#2ecc71' : '#e74c3c';
+    fCtx.beginPath();
+    fCtx.arc(toX(p), toY(p), 4, 0, 2*Math.PI);
+    fCtx.fill();
+  }
+
+  // 乗数 (中央の不動点)
+  // 最大の x に対応するもの (3周期軌道の1点)
+  if (fps.length > 2) {
+    // ロジスティック写像の真の3周期の不動点（x=1/2 を除外）
+    const midFps = fps.filter(p => Math.abs(p - 0.5) > 0.05);
+    let slopes = midFps.map(p => Math.abs(f3prime(p)));
+    let minSlope = Math.min(...slopes);
+    document.getElementById('slope').textContent = minSlope.toFixed(3);
+  } else {
+    document.getElementById('slope').textContent = '-';
+  }
+
+  fCtx.fillStyle = '#888';
+  fCtx.font = '10px sans-serif';
+  fCtx.fillText('f³(x) の様子', 4, 12);
+  fCtx.fillText('x', W - 10, H - 6);
+  fCtx.fillText('f³(x)', 4, PAD + 4);
+}
+
+function draw() { drawTS(); drawF3(); }
+
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(4);
+  draw();
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r = parseFloat(btn.dataset.r);
+    document.getElementById('rs').value = r;
+    document.getElementById('rv').textContent = r.toFixed(4);
+    draw();
+  });
+});
+
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>無限周期分岐デモ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .equation {
+            font-family: serif;
+            font-style: italic;
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        canvas {
+            background: #16213e;
+            border-radius: 12px;
+            max-width: 100%;
+            touch-action: none;
+        }
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            margin-top: 20px;
+        }
+        .slider-container {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        .mu-value {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -10px;
+            cursor: pointer;
+        }
+        .info-panel {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #0f3460;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-value {
+            font-family: monospace;
+            color: #4fc3f7;
+        }
+        .speed-bar-container {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #0f3460;
+        }
+        .speed-bar-label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .speed-bar {
+            height: 20px;
+            background: #0f3460;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .speed-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+            transition: width 0.1s;
+            border-radius: 10px;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.cycle {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status.critical {
+            background: #4a3000;
+            color: #ff9800;
+        }
+        .status.no-cycle {
+            background: #4a1010;
+            color: #f44336;
+        }
+        .trail-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+        }
+        .trail-toggle input {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>無限周期分岐 (SNIC)</h1>
+    <div class="equation">
+        ṙ = r(1 − r²), &nbsp; θ̇ = μ − sin θ
+    </div>
+
+<canvas id="canvas" width="350" height="350"></canvas>
+
+<div class="controls">
+    <div class="slider-container">
+        <div class="slider-label">
+            <span>パラメータ μ</span>
+            <span class="mu-value" id="muDisplay">1.50</span>
+        </div>
+        <input type="range" id="muSlider" min="0.5" max="2.5" step="0.01" value="1.5">
+    </div>
+    
+    <div class="info-panel">
+        <div class="info-row">
+            <span>現在の角度 θ</span>
+            <span class="info-value" id="thetaDisplay">0.00</span>
+        </div>
+        <div class="info-row">
+            <span>角速度 θ̇</span>
+            <span class="info-value" id="thetaDotDisplay">0.00</span>
+        </div>
+        <div class="info-row">
+            <span>最小角速度 (μ−1)</span>
+            <span class="info-value" id="minSpeedDisplay">0.00</span>
+        </div>
+        <div class="speed-bar-container">
+            <div class="speed-bar-label">現在の速度（相対）</div>
+            <div class="speed-bar">
+                <div class="speed-bar-fill" id="speedBar"></div>
+            </div>
+        </div>
+        <div class="trail-toggle">
+            <input type="checkbox" id="trailToggle" checked>
+            <label for="trailToggle">軌跡を表示</label>
+        </div>
+    </div>
+    
+    <div class="status cycle" id="status">
+        リミットサイクル存在（回転中）
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const muSlider = document.getElementById('muSlider');
+    const muDisplay = document.getElementById('muDisplay');
+    const thetaDisplay = document.getElementById('thetaDisplay');
+    const thetaDotDisplay = document.getElementById('thetaDotDisplay');
+    const minSpeedDisplay = document.getElementById('minSpeedDisplay');
+    const speedBar = document.getElementById('speedBar');
+    const status = document.getElementById('status');
+    const trailToggle = document.getElementById('trailToggle');
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 120;
+
+    let mu = 1.5;
+    let theta = 0;
+    let r = 0.3;
+    let trail = [];
+    const maxTrailLength = 500;
+    let lastTime = performance.now();
+
+    function thetaDot(theta, mu) {
+        return mu - Math.sin(theta);
+    }
+
+    function rDot(r) {
+        return r * (1 - r * r);
+    }
+
+    function updateStatus() {
+        if (mu > 1.01) {
+            status.className = 'status cycle';
+            status.textContent = 'リミットサイクル存在（回転中）';
+        } else if (mu >= 0.99) {
+            status.className = 'status critical';
+            status.textContent = '⚠️ 臨界点付近（μ ≈ 1）';
+        } else {
+            status.className = 'status no-cycle';
+            status.textContent = '固定点出現（回転停止）';
+        }
+    }
+
+    function draw() {
+        const currentTime = performance.now();
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.05);
+        lastTime = currentTime;
+
+        const speed = thetaDot(theta, mu);
+        const rSpeed = rDot(r);
+        
+        const timeScale = 0.8;
+        theta += speed * dt * timeScale;
+        r += rSpeed * dt * timeScale * 2;
+        
+        r = Math.max(0.01, Math.min(2, r));
+        
+        if (theta > 2 * Math.PI) theta -= 2 * Math.PI;
+        if (theta < 0) theta += 2 * Math.PI;
+
+        const displayR = r * radius;
+        const x = centerX + displayR * Math.cos(theta);
+        const y = centerY - displayR * Math.sin(theta);
+
+        if (trailToggle.checked) {
+            trail.push({ x, y, speed: Math.abs(speed) });
+            if (trail.length > maxTrailLength) {
+                trail.shift();
+            }
+        }
+
+        ctx.fillStyle = '#16213e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const segments = 60;
+        for (let i = 0; i < segments; i++) {
+            const a1 = (i / segments) * 2 * Math.PI;
+            const a2 = ((i + 1) / segments) * 2 * Math.PI;
+            const segSpeed = thetaDot((a1 + a2) / 2, mu);
+            
+            let hue;
+            if (mu > 1) {
+                const normalizedSpeed = segSpeed / mu;
+                hue = normalizedSpeed * 120;
+            } else {
+                hue = segSpeed > 0 ? 120 : 0;
+            }
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + 15, -a1, -a2, true);
+            ctx.strokeStyle = `hsla(${hue}, 80%, 50%, 0.7)`;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+        }
+
+        const bottleneckX = centerX;
+        const bottleneckY = centerY - radius - 30;
+        ctx.fillStyle = '#ff9800';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('θ=π/2 (遅)', bottleneckX, bottleneckY);
+
+        if (trail.length > 1 && trailToggle.checked) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = i / trail.length;
+                const p = trail[i];
+                const prev = trail[i - 1];
+                
+                const hue = Math.min(p.speed / mu, 1) * 120;
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = `hsla(${hue}, 80%, 50%, ${alpha * 0.8})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        if (mu < 1) {
+            const fixedTheta1 = Math.asin(mu);
+            const fixedTheta2 = Math.PI - fixedTheta1;
+            
+            const fx1 = centerX + radius * Math.cos(fixedTheta1);
+            const fy1 = centerY - radius * Math.sin(fixedTheta1);
+            ctx.beginPath();
+            ctx.arc(fx1, fy1, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#4caf50';
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('安定', fx1 + 15, fy1);
+            
+            const fx2 = centerX + radius * Math.cos(fixedTheta2);
+            const fy2 = centerY - radius * Math.sin(fixedTheta2);
+            ctx.beginPath();
+            ctx.arc(fx2, fy2, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f44336';
+            ctx.fill();
+            ctx.fillText('不安定', fx2 + 15, fy2);
+        }
+
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        const pointHue = Math.min(Math.abs(speed) / mu, 1) * 120;
+        ctx.fillStyle = `hsl(${pointHue}, 80%, 50%)`;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = '#888';
+        ctx.fill();
+
+        thetaDisplay.textContent = (theta * 180 / Math.PI).toFixed(1) + '°';
+        thetaDotDisplay.textContent = speed.toFixed(3);
+        minSpeedDisplay.textContent = (mu - 1).toFixed(3);
+        
+        const speedPercent = mu > 0 ? (Math.abs(speed) / mu) * 100 : 0;
+        speedBar.style.width = Math.min(speedPercent, 100) + '%';
+
+        requestAnimationFrame(draw);
+    }
+
+    muSlider.addEventListener('input', (e) => {
+        mu = parseFloat(e.target.value);
+        muDisplay.textContent = mu.toFixed(2);
+        updateStatus();
+        trail = [];
+    });
+
+    updateStatus();
+    draw();
+</script>
+
+</body>
+</html>

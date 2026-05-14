@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strogatz「非線形ダイナミクスとカオス」チートシート</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #30363d;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 2em;
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 1.1em;
+        }
+        nav {
+            background: #161b22;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        nav h2 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        nav ul {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            list-style: none;
+        }
+        nav a {
+            color: #58a6ff;
+            text-decoration: none;
+            display: block;
+            padding: 8px 15px;
+            background: #21262d;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        nav a:hover {
+            background: #30363d;
+        }
+        section {
+            background: #161b22;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #30363d;
+        }
+        h2 {
+            color: #58a6ff;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        h3 {
+            color: #79c0ff;
+            font-size: 1.2em;
+            margin: 20px 0 15px 0;
+        }
+        h4 {
+            color: #a5d6ff;
+            font-size: 1.05em;
+            margin: 15px 0 10px 0;
+        }
+        .eq-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.15em;
+            text-align: center;
+            color: #f0f6fc;
+        }
+        .eq-box.important {
+            border-color: #f85149;
+            background: linear-gradient(135deg, #0d1117 0%, #1a1520 100%);
+        }
+        .eq-box.theorem {
+            border-color: #3fb950;
+            background: linear-gradient(135deg, #0d1117 0%, #0d1a12 100%);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+        th {
+            background: #21262d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #21262d;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #21262d;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #30363d;
+        }
+        .card h4 {
+            color: #58a6ff;
+            margin-top: 0;
+        }
+        .highlight {
+            color: #ffa657;
+            font-weight: bold;
+        }
+        .stable {
+            color: #3fb950;
+        }
+        .unstable {
+            color: #f85149;
+        }
+        .note {
+            background: #1f2937;
+            border-left: 4px solid #58a6ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning {
+            background: #2d1f1f;
+            border-left: 4px solid #f85149;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .theorem-box {
+            background: #0d1a12;
+            border: 2px solid #3fb950;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .theorem-box h4 {
+            color: #3fb950;
+            margin-top: 0;
+        }
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        .chapter-ref {
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 10px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .bifurcation-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .bif-card {
+            background: #21262d;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #58a6ff;
+        }
+        .bif-card h5 {
+            color: #58a6ff;
+            margin: 0 0 10px 0;
+            font-size: 1.05em;
+        }
+        .bif-card .eq {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            color: #f0f6fc;
+            margin: 8px 0;
+        }
+        .toc-section {
+            margin-bottom: 8px;
+        }
+        footer {
+            text-align: center;
+            padding: 30px;
+            border-top: 1px solid #30363d;
+            margin-top: 30px;
+            color: #8b949e;
+        }
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            section {
+                break-inside: avoid;
+                border: 1px solid #ccc;
+            }
+            .eq-box {
+                border: 1px solid #ccc;
+                background: #f5f5f5;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Strogatz「非線形ダイナミクスとカオス」</h1>
+            <div class="subtitle">Nonlinear Dynamics and Chaos - Quick Reference Guide</div>
+        </header>
+
+        <nav>
+            <h2>目次</h2>
+            <ul>
+                <li><a href="#ch1d">1次元力学系（2-3章）</a></li>
+                <li><a href="#bifurcations1d">1次元の分岐（3章）</a></li>
+                <li><a href="#ch2d">2次元力学系（5-7章）</a></li>
+                <li><a href="#bifurcations2d">2次元の分岐（8章）</a></li>
+                <li><a href="#maps">離散写像とカオス（10章）</a></li>
+                <li><a href="#theorems">重要定理一覧</a></li>
+                <li><a href="#summary">分類早見表</a></li>
+            </ul>
+        </nav>
+
+        <!-- ==================== 1次元力学系 ==================== -->
+        <section id="ch1d">
+            <h2>1次元力学系 <span class="chapter-ref">（第2-3章）</span></h2>
+
+            <h3>基本形式</h3>
+            <div class="eq-box">
+                ẋ = f(x)
+            </div>
+            <p>1変数の常微分方程式。<span class="highlight">軌道は数直線上の点の流れ</span>として表現。</p>
+
+            <h3>固定点の解析</h3>
+            <table>
+                <tr>
+                    <th>概念</th>
+                    <th>定義・条件</th>
+                    <th>意味</th>
+                </tr>
+                <tr>
+                    <td>固定点 x*</td>
+                    <td>f(x*) = 0</td>
+                    <td>時間発展しない点</td>
+                </tr>
+                <tr>
+                    <td><span class="stable">安定</span></td>
+                    <td>f'(x*) < 0</td>
+                    <td>近傍の軌道が収束</td>
+                </tr>
+                <tr>
+                    <td><span class="unstable">不安定</span></td>
+                    <td>f'(x*) > 0</td>
+                    <td>近傍の軌道が発散</td>
+                </tr>
+                <tr>
+                    <td>半安定</td>
+                    <td>f'(x*) = 0</td>
+                    <td>片側から安定、片側から不安定</td>
+                </tr>
+            </table>
+
+            <h3>ポテンシャル関数（勾配系）</h3>
+            <div class="eq-box">
+                ẋ = −dV/dx
+            </div>
+            <ul>
+                <li>V(x) の<span class="highlight">極小点</span> → 安定固定点</li>
+                <li>V(x) の<span class="highlight">極大点</span> → 不安定固定点</li>
+                <li>軌道は常に V を減少させる方向に流れる</li>
+            </ul>
+
+            <div class="note">
+                <strong>1次元系の特徴：</strong>
+                <ul>
+                    <li>軌道は交差しない（一意性）</li>
+                    <li>振動は起きない</li>
+                    <li>カオスは起きない</li>
+                    <li>固定点に収束するか、±∞に発散するかのみ</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================== 1次元の分岐 ==================== -->
+        <section id="bifurcations1d">
+            <h2>1次元の分岐 <span class="chapter-ref">（第3章）</span></h2>
+
+            <p><span class="highlight">分岐（bifurcation）</span>：パラメータの変化により、系の定性的な振る舞いが変化する現象。</p>
+
+            <div class="bifurcation-list">
+                <div class="bif-card">
+                    <h5>サドルノード分岐</h5>
+                    <div class="eq">ẋ = r + x²</div>
+                    <p>r < 0: 2固定点（安定・不安定）<br>
+                       r = 0: 合流して消滅<br>
+                       r > 0: 固定点なし</p>
+                    <p><em>固定点の生成・消滅</em></p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>トランスクリティカル分岐</h5>
+                    <div class="eq">ẋ = rx − x²</div>
+                    <p>x* = 0 と x* = r が<br>
+                       r = 0 で交差し、<br>
+                       安定性を交換</p>
+                    <p><em>固定点は消滅しない</em></p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>ピッチフォーク分岐（超臨界）</h5>
+                    <div class="eq">ẋ = rx − x³</div>
+                    <p>r < 0: x* = 0 のみ（安定）<br>
+                       r > 0: x* = 0（不安定）<br>
+                       　　　x* = ±√r（安定）</p>
+                    <p><em>対称性のある系</em></p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>ピッチフォーク分岐（亜臨界）</h5>
+                    <div class="eq">ẋ = rx + x³</div>
+                    <p>r < 0: x* = ±√|r|（不安定）<br>
+                       r > 0: x* = 0（不安定のみ）</p>
+                    <p><em>危険！突然のジャンプ</em></p>
+                </div>
+            </div>
+
+            <h3>分岐図の読み方</h3>
+            <table>
+                <tr>
+                    <th>表記</th>
+                    <th>意味</th>
+                </tr>
+                <tr>
+                    <td>実線</td>
+                    <td>安定固定点の軌跡</td>
+                </tr>
+                <tr>
+                    <td>破線</td>
+                    <td>不安定固定点の軌跡</td>
+                </tr>
+                <tr>
+                    <td>分岐点</td>
+                    <td>線が合流・分岐する点</td>
+                </tr>
+            </table>
+
+            <div class="note">
+                <strong>正規形（Normal Form）：</strong>
+                分岐点近傍での系の本質的な振る舞いを捉えた最も単純な形式。
+                実際の系は座標変換により正規形に帰着できる。
+            </div>
+        </section>
+
+        <!-- ==================== 2次元力学系 ==================== -->
+        <section id="ch2d">
+            <h2>2次元力学系 <span class="chapter-ref">（第5-7章）</span></h2>
+
+            <h3>基本形式</h3>
+            <div class="eq-box">
+                ẋ = f(x, y), &nbsp; ẏ = g(x, y)
+            </div>
+            <p>または行列形式（線形系）：<strong>ẋ</strong> = A<strong>x</strong></p>
+
+            <h3>固定点の分類（線形化）</h3>
+            <p>固定点 (x*, y*) での<span class="highlight">ヤコビ行列</span>：</p>
+            <div class="eq-box">
+                J = [∂f/∂x, ∂f/∂y; ∂g/∂x, ∂g/∂y]<sub>(x*, y*)</sub>
+            </div>
+            <p>固有値 λ<sub>1</sub>, λ<sub>2</sub> を求める：<code>det(J - λI) = 0</code></p>
+
+            <div class="eq-box">
+                τ = tr(J) = λ₁ + λ₂, &nbsp; Δ = det(J) = λ₁λ₂
+            </div>
+
+            <table>
+                <tr>
+                    <th>固定点の種類</th>
+                    <th>固有値の条件</th>
+                    <th>τ, Δ の条件</th>
+                    <th>安定性</th>
+                </tr>
+                <tr>
+                    <td><span class="stable">安定ノード</span></td>
+                    <td>λ₁, λ₂ < 0 (実数)</td>
+                    <td>τ < 0, Δ > 0, τ² > 4Δ</td>
+                    <td>漸近安定</td>
+                </tr>
+                <tr>
+                    <td><span class="unstable">不安定ノード</span></td>
+                    <td>λ₁, λ₂ > 0 (実数)</td>
+                    <td>τ > 0, Δ > 0, τ² > 4Δ</td>
+                    <td>不安定</td>
+                </tr>
+                <tr>
+                    <td><span class="stable">安定スパイラル</span></td>
+                    <td>Re(λ) < 0 (複素)</td>
+                    <td>τ < 0, τ² < 4Δ</td>
+                    <td>漸近安定</td>
+                </tr>
+                <tr>
+                    <td><span class="unstable">不安定スパイラル</span></td>
+                    <td>Re(λ) > 0 (複素)</td>
+                    <td>τ > 0, τ² < 4Δ</td>
+                    <td>不安定</td>
+                </tr>
+                <tr>
+                    <td>サドル点</td>
+                    <td>λ₁ < 0 < λ₂</td>
+                    <td>Δ < 0</td>
+                    <td>不安定</td>
+                </tr>
+                <tr>
+                    <td>中心点 (Center)</td>
+                    <td>純虚数 ±iω</td>
+                    <td>τ = 0, Δ > 0</td>
+                    <td>安定（非漸近的）</td>
+                </tr>
+            </table>
+
+            <h3>相平面の要素</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>ヌルクライン (Nullclines)</h4>
+                    <ul>
+                        <li><strong>x-ヌルクライン</strong>: f(x,y) = 0 の曲線（軌道は垂直に横切る）</li>
+                        <li><strong>y-ヌルクライン</strong>: g(x,y) = 0 の曲線（軌道は水平に横切る）</li>
+                        <li><strong>交点</strong> = 固定点</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>多様体 (Manifolds)</h4>
+                    <ul>
+                        <li><strong>安定多様体 W<sup>s</sup></strong>: t→∞ で固定点に収束する軌道の集合</li>
+                        <li><strong>不安定多様体 W<sup>u</sup></strong>: t→-∞ で固定点に収束する軌道の集合</li>
+                        <li>サドル点では両方が存在</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>リミットサイクル</h3>
+            <p><span class="highlight">孤立した閉軌道</span>。近傍の軌道が渦巻きながら近づく（または離れる）。</p>
+
+            <div class="theorem-box">
+                <h4>Poincaré-Bendixson 定理</h4>
+                <p>平面上の有界な領域 R に閉じ込められた軌道で、R 内に固定点を含まないものは、
+                   <strong>リミットサイクルに漸近する</strong>（または自身がリミットサイクル）。</p>
+                <p class="chapter-ref">→ 2次元連続系ではカオスは起きない</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Bendixson-Dulac 判定法</h4>
+                <p>単連結領域 D で <code>∂(ρf)/∂x + ∂(ρg)/∂y</code> が符号一定（≠0）ならば、D 内に閉軌道は存在しない。</p>
+                <p>ρ(x,y) は適当な正の関数（Dulac関数）。</p>
+            </div>
+
+            <h3>指数理論 (Index Theory)</h3>
+            <div class="eq-box">
+                I<sub>C</sub> = (1/2π) ∮<sub>C</sub> dφ
+            </div>
+            <table>
+                <tr>
+                    <th>対象</th>
+                    <th>指数</th>
+                </tr>
+                <tr>
+                    <td>ノード、スパイラル、中心点</td>
+                    <td>+1</td>
+                </tr>
+                <tr>
+                    <td>サドル点</td>
+                    <td>-1</td>
+                </tr>
+                <tr>
+                    <td>閉曲線内の指数の和</td>
+                    <td>閉曲線の指数</td>
+                </tr>
+                <tr>
+                    <td>リミットサイクル内</td>
+                    <td>必ず +1</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ==================== 2次元の分岐 ==================== -->
+        <section id="bifurcations2d">
+            <h2>2次元の分岐 <span class="chapter-ref">（第8章）</span></h2>
+
+            <h3>固定点の分岐</h3>
+            <p>1次元と同様に、サドルノード、トランスクリティカル、ピッチフォーク分岐が起こりうる。</p>
+
+            <h3>Hopf 分岐</h3>
+            <p><span class="highlight">固定点からリミットサイクルが生まれる</span>分岐。</p>
+
+            <div class="grid-2">
+                <div class="bif-card">
+                    <h5>超臨界 Hopf 分岐 (Supercritical)</h5>
+                    <div class="eq">ṙ = μr − r³, θ̇ = ω</div>
+                    <p>μ < 0: 安定スパイラル<br>
+                       μ = 0: 分岐点<br>
+                       μ > 0: 不安定スパイラル + <span class="stable">安定リミットサイクル</span></p>
+                    <p><em>ソフトな遷移</em></p>
+                </div>
+                <div class="bif-card">
+                    <h5>亜臨界 Hopf 分岐 (Subcritical)</h5>
+                    <div class="eq">ṙ = μr + r³ − r⁵, θ̇ = ω</div>
+                    <p>μ < 0: 安定スパイラル + <span class="unstable">不安定サイクル</span><br>
+                       μ = 0: 分岐点<br>
+                       μ > 0: 不安定スパイラル</p>
+                    <p><em>突然のジャンプ（ハード遷移）</em></p>
+                </div>
+            </div>
+
+            <h3>大域分岐（閉軌道の分岐）</h3>
+
+            <div class="bifurcation-list">
+                <div class="bif-card">
+                    <h5>サドルノードサイクル分岐 (SNLC)</h5>
+                    <p>2つのリミットサイクル（安定・不安定）が合流して消滅</p>
+                    <p>Hopf分岐の閉軌道版</p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>ホモクリニック分岐</h5>
+                    <p>リミットサイクルがサドル点に接触</p>
+                    <p>周期 T → ∞（対数的発散）</p>
+                    <p><em>サイクルがサドルの「ループ」に</em></p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>SNIPER / SNIC 分岐</h5>
+                    <p>Saddle-Node on Invariant Circle</p>
+                    <p>周期 T ∝ 1/√|μ - μ_c|</p>
+                    <p><em>ボトルネック効果</em></p>
+                </div>
+
+                <div class="bif-card">
+                    <h5>ヘテロクリニック分岐</h5>
+                    <p>リミットサイクルが複数のサドル点を結ぶ軌道に</p>
+                    <p><em>まれだが重要</em></p>
+                </div>
+            </div>
+
+            <h3>周期スケーリング</h3>
+            <table>
+                <tr>
+                    <th>分岐の種類</th>
+                    <th>周期 T の発散</th>
+                </tr>
+                <tr>
+                    <td>SNIPER (SNIC)</td>
+                    <td>T ∝ 1/√|μ - μ_c|</td>
+                </tr>
+                <tr>
+                    <td>ホモクリニック</td>
+                    <td>T ∝ -ln|μ - μ_c|</td>
+                </tr>
+                <tr>
+                    <td>Hopf</td>
+                    <td>T → 2π/ω（有限）</td>
+                </tr>
+            </table>
+
+            <h3>ヒステリシス</h3>
+            <p>亜臨界分岐やサドルノード分岐を含む系では、パラメータを上げるときと下げるときで異なる経路をたどる。</p>
+            <p>例：ジョセフソン接合（8.5節）</p>
+        </section>
+
+        <!-- ==================== 離散写像とカオス ==================== -->
+        <section id="maps">
+            <h2>離散写像とカオス <span class="chapter-ref">（第10章）</span></h2>
+
+            <h3>1次元写像</h3>
+            <div class="eq-box">
+                x<sub>n+1</sub> = f(x<sub>n</sub>)
+            </div>
+
+            <h4>固定点の安定性</h4>
+            <table>
+                <tr>
+                    <th>条件</th>
+                    <th>結果</th>
+                </tr>
+                <tr>
+                    <td>|f'(x*)| < 1</td>
+                    <td><span class="stable">安定</span></td>
+                </tr>
+                <tr>
+                    <td>|f'(x*)| > 1</td>
+                    <td><span class="unstable">不安定</span></td>
+                </tr>
+                <tr>
+                    <td>|f'(x*)| = 1</td>
+                    <td>臨界（分岐点）</td>
+                </tr>
+            </table>
+
+            <h4>周期 n 軌道</h4>
+            <p>f を n 回合成した写像 f<sup>n</sup> の固定点。安定条件：</p>
+            <div class="eq-box">
+                |（f<sup>n</sup>）'(x*)| = |f'(x₁)·f'(x₂)·...·f'(x_n)| < 1
+            </div>
+
+            <h3>ロジスティック写像</h3>
+            <div class="eq-box important">
+                x<sub>n+1</sub> = r·x<sub>n</sub>(1 − x<sub>n</sub>)
+            </div>
+
+            <table>
+                <tr>
+                    <th>r の範囲</th>
+                    <th>振る舞い</th>
+                </tr>
+                <tr>
+                    <td>0 < r < 1</td>
+                    <td>絶滅（x → 0）</td>
+                </tr>
+                <tr>
+                    <td>1 < r < 3</td>
+                    <td>固定点 x* = (r-1)/r に収束</td>
+                </tr>
+                <tr>
+                    <td>3 < r < 3.449...</td>
+                    <td>周期2軌道</td>
+                </tr>
+                <tr>
+                    <td>3.449... < r < 3.5699...</td>
+                    <td>周期 2<sup>n</sup>（周期倍分岐カスケード）</td>
+                </tr>
+                <tr>
+                    <td>r > r<sub>∞</sub> ≈ 3.5699...</td>
+                    <td>カオス（周期窓あり）</td>
+                </tr>
+            </table>
+
+            <h3>Feigenbaum 定数と普遍性</h3>
+            <div class="eq-box important">
+                δ = lim<sub>n→∞</sub> (r<sub>n</sub> - r<sub>n-1</sub>) / (r<sub>n+1</sub> - r<sub>n</sub>) = 4.669201609...
+            </div>
+            <p>この定数は<span class="highlight">普遍的</span>：すべての単峰写像（unimodal map）で同じ値。</p>
+            <p>繰り込み群の考え方で説明される（10.7節）。</p>
+
+            <h3>Lyapunov 指数</h3>
+            <div class="eq-box">
+                λ = lim<sub>n→∞</sub> (1/n) Σ<sub>i=0</sub><sup>n-1</sup> ln|f'(x<sub>i</sub>)|
+            </div>
+            <table>
+                <tr>
+                    <th>λ の値</th>
+                    <th>意味</th>
+                </tr>
+                <tr>
+                    <td>λ < 0</td>
+                    <td>周期的アトラクター</td>
+                </tr>
+                <tr>
+                    <td>λ = 0</td>
+                    <td>分岐点、準周期</td>
+                </tr>
+                <tr>
+                    <td>λ > 0</td>
+                    <td><span class="highlight">カオス</span>（初期値鋭敏性）</td>
+                </tr>
+            </table>
+
+            <h3>カオスの特徴</h3>
+            <ul>
+                <li><strong>初期値鋭敏依存性</strong>：近い初期値が指数関数的に離れる</li>
+                <li><strong>非周期性</strong>：同じ状態に戻らない</li>
+                <li><strong>決定論的</strong>：ランダムではない、方程式に従う</li>
+                <li><strong>有界性</strong>：軌道は有界領域に留まる</li>
+            </ul>
+
+            <div class="warning">
+                <strong>注意：</strong>2次元<em>連続</em>系ではカオスは起きない（Poincaré-Bendixson）。
+                しかし<em>離散</em>系（写像）では1次元でもカオスが可能。
+            </div>
+        </section>
+
+        <!-- ==================== 重要定理 ==================== -->
+        <section id="theorems">
+            <h2>重要定理一覧</h2>
+
+            <div class="theorem-box">
+                <h4>存在と一意性定理</h4>
+                <p>f が C<sup>1</sup> 級ならば、初期値問題 ẋ = f(x), x(0) = x₀ の解は局所的に存在し一意。</p>
+                <p><strong>帰結</strong>：軌道は交差しない。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Hartman-Grobman 定理</h4>
+                <p>双曲型固定点（Re(λ) ≠ 0）の近傍では、非線形系の軌道は線形化 ẋ = Jx の軌道と位相的に同値。</p>
+                <p><strong>意味</strong>：線形化で固定点の定性的な振る舞いがわかる。</p>
+                <p class="chapter-ref">注意：中心点（Re(λ) = 0）には適用不可。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Poincaré-Bendixson 定理</h4>
+                <p>平面上の閉じた有界領域 R に閉じ込められた軌道が R 内に固定点を含まないとき、その軌道はリミットサイクルに漸近するか、自身がリミットサイクル。</p>
+                <p><strong>帰結</strong>：2次元連続系ではカオスは起きない。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Bendixson-Dulac 判定法</h4>
+                <p>単連結領域 D で div(ρF) = ∂(ρf)/∂x + ∂(ρg)/∂y が符号一定（≠0）ならば、D 内に閉軌道は存在しない。</p>
+                <p><strong>使い方</strong>：適切な ρ(x,y) > 0 を見つける。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Liapunov の安定性定理</h4>
+                <p>固定点 x* の近傍で V(x) > 0 (x ≠ x*), V(x*) = 0, V̇ ≤ 0 を満たす関数 V が存在するなら、x* は安定。
+                   V̇ < 0 なら漸近安定。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>指数定理</h4>
+                <p>閉曲線 C が固定点を含まないとき、C の指数は C 内部の全固定点の指数の和に等しい。</p>
+                <p><strong>帰結</strong>：リミットサイクル内には指数の合計が +1 になる固定点がある。</p>
+            </div>
+
+            <div class="theorem-box">
+                <h4>Hopf 分岐定理</h4>
+                <p>パラメータ μ の変化で固有値 λ(μ) = α(μ) ± iω(μ) が虚軸を横切るとき（α(0) = 0, dα/dμ ≠ 0, ω(0) ≠ 0）、
+                   固定点からリミットサイクルが分岐する。</p>
+            </div>
+        </section>
+
+        <!-- ==================== 分類早見表 ==================== -->
+        <section id="summary">
+            <h2>分類早見表</h2>
+
+            <h3>2次元固定点の分類（τ-Δ平面）</h3>
+            <div class="eq-box">
+                <table style="margin: 0 auto; text-align: center;">
+                    <tr>
+                        <td></td>
+                        <td colspan="3">Δ > 0</td>
+                        <td>Δ < 0</td>
+                    </tr>
+                    <tr>
+                        <td>τ < 0</td>
+                        <td>τ² > 4Δ: <span class="stable">安定ノード</span></td>
+                        <td>τ² < 4Δ: <span class="stable">安定スパイラル</span></td>
+                        <td></td>
+                        <td rowspan="3"><strong>サドル点</strong></td>
+                    </tr>
+                    <tr>
+                        <td>τ = 0</td>
+                        <td colspan="2">中心点 または 分岐点</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>τ > 0</td>
+                        <td>τ² > 4Δ: <span class="unstable">不安定ノード</span></td>
+                        <td>τ² < 4Δ: <span class="unstable">不安定スパイラル</span></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>分岐の対応表</h3>
+            <table>
+                <tr>
+                    <th>分岐</th>
+                    <th>次元</th>
+                    <th>何が起こるか</th>
+                    <th>標準形</th>
+                </tr>
+                <tr>
+                    <td>サドルノード</td>
+                    <td>1D/2D</td>
+                    <td>固定点の生成・消滅</td>
+                    <td>ẋ = r + x²</td>
+                </tr>
+                <tr>
+                    <td>トランスクリティカル</td>
+                    <td>1D/2D</td>
+                    <td>固定点の安定性交換</td>
+                    <td>ẋ = rx - x²</td>
+                </tr>
+                <tr>
+                    <td>ピッチフォーク</td>
+                    <td>1D/2D</td>
+                    <td>対称性破れ</td>
+                    <td>ẋ = rx ∓ x³</td>
+                </tr>
+                <tr>
+                    <td>Hopf</td>
+                    <td>2D</td>
+                    <td>固定点→リミットサイクル</td>
+                    <td>ṙ = μr - r³</td>
+                </tr>
+                <tr>
+                    <td>ホモクリニック</td>
+                    <td>2D</td>
+                    <td>サイクル→サドルループ</td>
+                    <td>（大域的）</td>
+                </tr>
+                <tr>
+                    <td>SNIPER</td>
+                    <td>2D</td>
+                    <td>円上のサドルノード</td>
+                    <td>θ̇ = μ - sin θ</td>
+                </tr>
+                <tr>
+                    <td>周期倍分岐</td>
+                    <td>写像</td>
+                    <td>周期n → 周期2n</td>
+                    <td>ロジスティック写像</td>
+                </tr>
+            </table>
+
+            <h3>カオスへの3つの道</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>1. 周期倍分岐カスケード</h4>
+                    <p>周期2 → 4 → 8 → ... → カオス</p>
+                    <p>Feigenbaum定数 δ ≈ 4.669...</p>
+                    <p>例：ロジスティック写像</p>
+                </div>
+                <div class="card">
+                    <h4>2. 準周期からの遷移</h4>
+                    <p>トーラス上の準周期運動 → カオス</p>
+                    <p>Ruelle-Takens-Newhouse シナリオ</p>
+                    <p>例：結合振動子</p>
+                </div>
+                <div class="card">
+                    <h4>3. 間欠性</h4>
+                    <p>規則的な運動にカオス的バーストが混入</p>
+                    <p>タイプI, II, III 間欠性</p>
+                    <p>例：ローレンツ系</p>
+                </div>
+            </div>
+
+            <h3>Strogatz 章構成</h3>
+            <table>
+                <tr>
+                    <th>章</th>
+                    <th>内容</th>
+                    <th>キーワード</th>
+                </tr>
+                <tr>
+                    <td>2章</td>
+                    <td>1次元の流れ</td>
+                    <td>固定点、安定性、ポテンシャル</td>
+                </tr>
+                <tr>
+                    <td>3章</td>
+                    <td>1次元の分岐</td>
+                    <td>サドルノード、トランスクリティカル、ピッチフォーク</td>
+                </tr>
+                <tr>
+                    <td>4章</td>
+                    <td>円上の流れ</td>
+                    <td>振動子、同期、位相ロック</td>
+                </tr>
+                <tr>
+                    <td>5章</td>
+                    <td>2次元線形系</td>
+                    <td>固有値、固定点分類</td>
+                </tr>
+                <tr>
+                    <td>6章</td>
+                    <td>2次元の相平面</td>
+                    <td>ヌルクライン、多様体、Hartman-Grobman</td>
+                </tr>
+                <tr>
+                    <td>7章</td>
+                    <td>リミットサイクル</td>
+                    <td>Poincaré-Bendixson、Bendixson-Dulac、Liapunov</td>
+                </tr>
+                <tr>
+                    <td>8章</td>
+                    <td>2次元の分岐</td>
+                    <td>Hopf、ホモクリニック、SNIPER、ジョセフソン</td>
+                </tr>
+                <tr>
+                    <td>9章</td>
+                    <td>ローレンツ方程式</td>
+                    <td>3次元、ストレンジアトラクター</td>
+                </tr>
+                <tr>
+                    <td>10章</td>
+                    <td>1次元写像</td>
+                    <td>ロジスティック、Feigenbaum、カオス</td>
+                </tr>
+                <tr>
+                    <td>11章</td>
+                    <td>フラクタル</td>
+                    <td>次元、自己相似性、カントール集合</td>
+                </tr>
+                <tr>
+                    <td>12章</td>
+                    <td>ストレンジアトラクター</td>
+                    <td>エノン、ローレンツ、次元</td>
+                </tr>
+            </table>
+        </section>
+
+        <footer>
+            <p>Based on Steven H. Strogatz, "Nonlinear Dynamics and Chaos" (2nd Edition)</p>
+            <p>Created for educational purposes | <a href="index.html" style="color: #58a6ff;">Back to Demo Index</a></p>
+        </footer>
+    </div>
+</body>
+</html>

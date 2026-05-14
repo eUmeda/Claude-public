@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>10.2 軌道図 (分岐図)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 440px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; cursor: crosshair; }
+.controls { width: 100%; max-width: 440px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 80px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.78em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.hint {
+  font-size: 0.75em; color: #888; margin-top: 4px; text-align: center;
+}
+select {
+  background: #0f3460; color: #fff; border: none;
+  border-radius: 6px; padding: 6px 10px; font-size: 0.85em;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+<h1>軌道図 (分岐図)</h1>
+<div class="note">
+横軸 r、縦軸 x の漸近値。各 r で過渡を除去した後の数百点の x をプロット。
+ロジスティック写像ではイチジクの木状の構造が見える。周期倍分岐の境界は
+r₁=3, r₂=3.449, r₃=3.544, ..., r∞=3.5699。カオス領域中の隙間が周期窓。
+</div>
+
+<canvas id="bif" width="360" height="360"></canvas>
+<div class="hint">カンバスをドラッグ → 矩形選択で拡大 | ダブルタップ → リセット</div>
+
+<div class="controls">
+  <div class="slider-box">
+    <label>写像</label>
+    <select id="mapSel">
+      <option value="logistic">ロジスティック r·x(1-x)</option>
+      <option value="sin">サイン写像 r·sin(πx)</option>
+      <option value="tent">テント写像</option>
+      <option value="cubic">三次 r·x - x³</option>
+    </select>
+  </div>
+  <div class="slider-box">
+    <label><span>r 範囲 開始</span><span id="r1v">2.50</span></label>
+    <input type="range" id="r1s" min="0" max="4" step="0.001" value="2.5">
+  </div>
+  <div class="slider-box">
+    <label><span>r 範囲 終了</span><span id="r2v">4.00</span></label>
+    <input type="range" id="r2s" min="0" max="4" step="0.001" value="4.0">
+  </div>
+  <div class="slider-box">
+    <label><span>解像度 (列数)</span><span id="nv">600</span></label>
+    <input type="range" id="ns" min="200" max="1200" step="50" value="600">
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r1="2.5" data-r2="4">全体</button>
+    <button class="preset" data-r1="3.4" data-r2="3.6">倍分岐</button>
+    <button class="preset" data-r1="3.56" data-r2="3.58">r∞ 付近</button>
+    <button class="preset" data-r1="3.82" data-r2="3.86">3周期窓</button>
+  </div>
+  <div class="buttons">
+    <button id="draw">描画</button>
+    <button id="reset">リセット</button>
+  </div>
+  <div class="status">
+    <div>r 範囲: [<span id="r1Show">2.50</span>, <span id="r2Show">4.00</span>]</div>
+    <div>カーソル位置: r = <span id="cr">-</span>, x = <span id="cx">-</span></div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('bif');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+
+let mapName = 'logistic';
+let r1 = 2.5, r2 = 4.0;
+let N = 600;  // 列数
+let warmup = 500, plot = 300;
+
+function f(x, r) {
+  switch (mapName) {
+    case 'logistic': return r * x * (1 - x);
+    case 'sin': return r * Math.sin(Math.PI * x);
+    case 'tent': return x < 0.5 ? r * x : r * (1 - x);
+    case 'cubic': return r * x - x * x * x;
+  }
+}
+
+function getX0(r) {
+  if (mapName === 'cubic') return 0.1;
+  return 0.3;
+}
+
+function xRange() {
+  switch (mapName) {
+    case 'logistic':
+    case 'sin': return [0, 1];
+    case 'tent': return [0, 1];
+    case 'cubic': return [-2, 2];
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#0f1a2e';
+  ctx.fillRect(0, 0, W, H);
+  const [xmin, xmax] = xRange();
+  const PAD = 30;
+  const toSX = r => PAD + (r - r1) / (r2 - r1) * (W - 2*PAD);
+  const toSY = x => H - PAD - (x - xmin) / (xmax - xmin) * (H - 2*PAD);
+
+  // 枠
+  ctx.strokeStyle = '#444';
+  ctx.strokeRect(PAD, PAD, W - 2*PAD, H - 2*PAD);
+
+  // 軸ラベル
+  ctx.fillStyle = '#888';
+  ctx.font = '10px sans-serif';
+  ctx.fillText(r1.toFixed(3), PAD - 5, H - PAD + 14);
+  ctx.fillText(r2.toFixed(3), W - PAD - 25, H - PAD + 14);
+  ctx.fillText(xmin.toFixed(1), 4, H - PAD + 4);
+  ctx.fillText(xmax.toFixed(1), 4, PAD + 4);
+  ctx.fillText('r', W - 15, H - 6);
+  ctx.fillText('x', PAD + 4, 14);
+
+  // メインプロット
+  for (let i = 0; i < N; i++) {
+    const r = r1 + (r2 - r1) * i / (N - 1);
+    let x = getX0(r);
+    for (let k = 0; k < warmup; k++) x = f(x, r);
+    const sx = toSX(r);
+    for (let k = 0; k < plot; k++) {
+      x = f(x, r);
+      const sy = toSY(x);
+      if (sy >= PAD && sy <= H - PAD) {
+        ctx.fillStyle = 'rgba(79, 195, 247, 0.4)';
+        ctx.fillRect(sx, sy, 1, 1);
+      }
+    }
+  }
+
+  document.getElementById('r1Show').textContent = r1.toFixed(3);
+  document.getElementById('r2Show').textContent = r2.toFixed(3);
+}
+
+document.getElementById('mapSel').addEventListener('change', e => {
+  mapName = e.target.value;
+  const defaults = {
+    logistic: [2.5, 4.0],
+    sin: [0.6, 1.0],
+    tent: [0, 2],
+    cubic: [2, 3]
+  };
+  [r1, r2] = defaults[mapName];
+  document.getElementById('r1s').value = r1;
+  document.getElementById('r2s').value = r2;
+  document.getElementById('r1v').textContent = r1.toFixed(2);
+  document.getElementById('r2v').textContent = r2.toFixed(2);
+  draw();
+});
+document.getElementById('r1s').addEventListener('input', e => {
+  r1 = parseFloat(e.target.value);
+  document.getElementById('r1v').textContent = r1.toFixed(3);
+});
+document.getElementById('r2s').addEventListener('input', e => {
+  r2 = parseFloat(e.target.value);
+  document.getElementById('r2v').textContent = r2.toFixed(3);
+});
+document.getElementById('ns').addEventListener('input', e => {
+  N = parseInt(e.target.value);
+  document.getElementById('nv').textContent = N;
+});
+document.getElementById('draw').addEventListener('click', draw);
+document.getElementById('reset').addEventListener('click', () => {
+  const defaults = {
+    logistic: [2.5, 4.0],
+    sin: [0.6, 1.0],
+    tent: [0, 2],
+    cubic: [2, 3]
+  };
+  [r1, r2] = defaults[mapName];
+  document.getElementById('r1s').value = r1;
+  document.getElementById('r2s').value = r2;
+  document.getElementById('r1v').textContent = r1.toFixed(3);
+  document.getElementById('r2v').textContent = r2.toFixed(3);
+  draw();
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r1 = parseFloat(btn.dataset.r1);
+    r2 = parseFloat(btn.dataset.r2);
+    document.getElementById('r1s').value = r1;
+    document.getElementById('r2s').value = r2;
+    document.getElementById('r1v').textContent = r1.toFixed(3);
+    document.getElementById('r2v').textContent = r2.toFixed(3);
+    draw();
+  });
+});
+
+// ドラッグで選択→拡大
+let dragStart = null, dragEnd = null;
+cv.addEventListener('pointerdown', e => {
+  const rect = cv.getBoundingClientRect();
+  const scale = cv.width / rect.width;
+  dragStart = {x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale};
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragStart) return;
+  const rect = cv.getBoundingClientRect();
+  const scale = cv.width / rect.width;
+  dragEnd = {x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale};
+  draw();
+  // 矩形表示
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(
+    Math.min(dragStart.x, dragEnd.x),
+    Math.min(dragStart.y, dragEnd.y),
+    Math.abs(dragEnd.x - dragStart.x),
+    Math.abs(dragEnd.y - dragStart.y)
+  );
+});
+cv.addEventListener('pointerup', e => {
+  if (!dragStart || !dragEnd) { dragStart = null; return; }
+  if (Math.abs(dragEnd.x - dragStart.x) < 10) { dragStart = null; dragEnd = null; return; }
+  const PAD = 30;
+  const fromX = sx => r1 + (sx - PAD) / (W - 2*PAD) * (r2 - r1);
+  const newR1 = fromX(Math.min(dragStart.x, dragEnd.x));
+  const newR2 = fromX(Math.max(dragStart.x, dragEnd.x));
+  r1 = Math.max(0, newR1);
+  r2 = Math.min(4, newR2);
+  document.getElementById('r1s').value = r1;
+  document.getElementById('r2s').value = r2;
+  document.getElementById('r1v').textContent = r1.toFixed(4);
+  document.getElementById('r2v').textContent = r2.toFixed(4);
+  dragStart = null; dragEnd = null;
+  draw();
+});
+
+draw();
+</script>
+</body>
+</html>

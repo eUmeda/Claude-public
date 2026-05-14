@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NBA Offseason — Draft・FA・Summer League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="js/nba-common.js"></script>
+<style>
+  .offseason-gradient {
+    background:
+      radial-gradient(ellipse 70% 50% at 30% 80%, rgba(232,93,38,.06) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 50% at 70% 20%, rgba(212,168,67,.08) 0%, transparent 50%),
+      var(--bg-deep);
+  }
+
+  /* Draft board */
+  .draft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .draft-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex; align-items: center; gap: .8rem;
+    transition: border-color .3s, transform .2s;
+  }
+  .draft-card:hover {
+    border-color: rgba(212,168,67,.2);
+    transform: translateY(-2px);
+  }
+  .draft-pick-num {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.6rem; font-weight: 700;
+    color: var(--accent-gold);
+    min-width: 36px; text-align: center;
+  }
+  .draft-pick-num.round2 { color: var(--text-muted); }
+  .draft-team-logo { width: 36px; height: 36px; object-fit: contain; }
+  .draft-info { flex: 1; }
+  .draft-player {
+    font-family: 'Oswald', sans-serif;
+    font-size: .9rem; font-weight: 600;
+  }
+  .draft-details {
+    font-size: .72rem; color: var(--text-secondary);
+    margin-top: .15rem;
+  }
+  .draft-team-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: .65rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-top: .1rem;
+  }
+
+  /* Lottery highlight */
+  .draft-card.lottery { border-left: 3px solid var(--accent-gold); }
+  .draft-card.pick-1 {
+    border: 1px solid rgba(212,168,67,.3);
+    background: rgba(212,168,67,.04);
+  }
+
+  /* Round separator */
+  .round-divider {
+    grid-column: 1 / -1;
+    font-family: 'Oswald', sans-serif;
+    font-size: .75rem; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--text-muted);
+    padding: 1.5rem 0 .5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* FA section */
+  .fa-notice {
+    background: rgba(45,125,210,.05);
+    border: 1px solid rgba(45,125,210,.15);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    font-size: .85rem; color: var(--text-secondary);
+  }
+
+  /* Summer League scoreboard inherits from common */
+  .sl-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .5rem;
+  }
+  .sl-header h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: .7rem; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .sl-status { font-size: .68rem; color: var(--text-muted); }
+
+  /* Season notice */
+  .season-notice {
+    background: rgba(212,168,67,.06);
+    border: 1px solid rgba(212,168,67,.15);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-size: .88rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+  .season-notice strong { color: var(--accent-gold); }
+
+  /* Draft stats summary */
+  .draft-summary {
+    display: flex; gap: 2rem; justify-content: center;
+    flex-wrap: wrap; margin: 1.5rem 0;
+  }
+  .draft-stat {
+    text-align: center;
+  }
+  .draft-stat-val {
+    font-family: 'Oswald', sans-serif;
+    font-size: 2rem; font-weight: 700;
+    color: var(--accent-gold);
+  }
+  .draft-stat-label {
+    font-size: .68rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+</style>
+</head>
+<body>
+<nav class="site-nav" id="siteNav"></nav>
+
+<!-- HERO -->
+<section class="hero offseason-gradient">
+  <div class="hero-label" id="heroLabel"></div>
+  <h1>NBA <span class="west">OFF</span><span class="east">SEASON</span></h1>
+  <p class="hero-sub" id="heroSub">ドラフト、フリーエージェント、サマーリーグ。NBAの次世代を追う。</p>
+</section>
+
+<div class="section">
+  <!-- Tab bar -->
+  <div class="tab-bar" id="mainTabs">
+    <button class="tab-btn active" data-tab="draft">ドラフト</button>
+    <button class="tab-btn" data-tab="fa">フリーエージェント</button>
+    <button class="tab-btn" data-tab="summer">サマーリーグ</button>
+  </div>
+
+  <!-- ─── DRAFT TAB ─── -->
+  <div class="tab-panel active" id="tab-draft">
+    <div id="draftNotice" class="season-notice" style="display:none;"></div>
+
+    <div class="section-header">
+      <div class="section-label gold">NBA DRAFT</div>
+      <div class="section-title" id="draftTitle">ドラフト指名一覧</div>
+      <p class="section-intro" id="draftIntro"></p>
+    </div>
+
+    <div class="draft-summary" id="draftSummary" style="display:none;">
+      <div class="draft-stat">
+        <div class="draft-stat-val" id="statTotal">0</div>
+        <div class="draft-stat-label">総指名数</div>
+      </div>
+      <div class="draft-stat">
+        <div class="draft-stat-val" id="statIntl">0</div>
+        <div class="draft-stat-label">海外選手</div>
+      </div>
+    </div>
+
+    <div class="draft-grid" id="draftGrid">
+      <div class="placeholder-msg" style="grid-column:1/-1;">ドラフトデータを読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- ─── FA TAB ─── -->
+  <div class="tab-panel" id="tab-fa">
+    <div class="section-header">
+      <div class="section-label" style="color:var(--accent-east);">FREE AGENCY</div>
+      <div class="section-title">フリーエージェント動向</div>
+      <p class="section-intro">主要FA契約の動向。ESPNのFA専用APIは存在しないため、シーズン中は手動更新を予定。</p>
+    </div>
+
+    <div class="fa-notice">
+      <p>FA情報はシーズンごとに更新されます。<br>
+      現在のFA市場の詳細は <a href="https://www.espn.com/nba/freeagents" target="_blank">ESPN Free Agents</a> を参照してください。</p>
+    </div>
+  </div>
+
+  <!-- ─── SUMMER LEAGUE TAB ─── -->
+  <div class="tab-panel" id="tab-summer">
+    <div id="slNotice" class="season-notice" style="display:none;"></div>
+
+    <div class="section-header">
+      <div class="section-label" style="color:var(--accent-west);">LAS VEGAS SUMMER LEAGUE</div>
+      <div class="section-title">サマーリーグ スコアボード</div>
+      <p class="section-intro">NBA Summer League（ラスベガス開催）のライブスコア。7月中旬に開催。</p>
+    </div>
+
+    <div class="sl-header">
+      <h3>Games</h3>
+      <span class="sl-status" id="slStatus">読み込み中...</span>
+    </div>
+    <div class="scoreboard-wrap" id="slScoreboard">
+      <div class="placeholder-msg">サマーリーグデータを読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>データ: <a href="https://www.espn.com/nba/" target="_blank">ESPN NBA</a>
+    ・ 更新: <span id="footerTime"></span></p>
+  <div class="footer-credit">eUmeda Basketball Dashboard</div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  const C = NBACommon;
+  C.injectCSS();
+  document.getElementById('siteNav').innerHTML = C.buildSiteNav('offseason.html');
+
+  const season = C.getNBASeason();
+  const phase = C.getSeasonPhase();
+  document.getElementById('heroLabel').textContent = `NBA OFFSEASON ${season}`;
+  document.getElementById('footerTime').textContent =
+    new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ' JST';
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Season check
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const isOffseason = month >= 6 && month <= 9;
+
+  if (!isOffseason) {
+    const notice = document.getElementById('draftNotice');
+    notice.style.display = 'block';
+    notice.innerHTML = `NBAドラフトは毎年<strong>6月下旬</strong>に開催されます。以下は直近のドラフト結果です。`;
+  }
+
+  // ═══════════════════════════
+  //  DRAFT
+  // ═══════════════════════════
+  async function loadDraft() {
+    const grid = document.getElementById('draftGrid');
+    try {
+      const data = await C.fetchJSON(C.draftURL());
+      const picks = data.picks || [];
+
+      if (!picks.length) {
+        grid.innerHTML = '<div class="placeholder-msg" style="grid-column:1/-1;">ドラフトデータが利用できません</div>';
+        return;
+      }
+
+      const year = data.year || data.season?.year || season;
+      document.getElementById('draftTitle').textContent = `${year} NBAドラフト`;
+      document.getElementById('draftIntro').textContent = `全${picks.length}指名`;
+
+      // Stats
+      document.getElementById('draftSummary').style.display = 'flex';
+      document.getElementById('statTotal').textContent = picks.length;
+
+      // Count international
+      let intl = 0;
+      picks.forEach(p => {
+        const college = p.athlete?.college?.name || '';
+        if (!college || college === '--') intl++;
+      });
+      document.getElementById('statIntl').textContent = intl;
+
+      let html = '';
+      let currentRound = 0;
+
+      for (const pick of picks) {
+        const round = pick.round || 1;
+        if (round !== currentRound) {
+          currentRound = round;
+          html += `<div class="round-divider">ラウンド ${round}</div>`;
+        }
+
+        const num = pick.overall || pick.pick || '?';
+        const athlete = pick.athlete || {};
+        const team = pick.team || {};
+        const pos = athlete.position?.abbreviation || '';
+        const college = athlete.college?.name || '';
+        const playerName = athlete.displayName || athlete.fullName || 'Unknown';
+        const abbr = team.abbreviation || '';
+        const nbaTeam = C.NBA_TEAMS[abbr];
+        const teamJa = nbaTeam ? nbaTeam.ja : '';
+        const logo = C.espnLogo(abbr);
+        const isLottery = round === 1 && num <= 14;
+        const isPick1 = num === 1;
+
+        html += `<div class="draft-card ${isLottery ? 'lottery' : ''} ${isPick1 ? 'pick-1' : ''}">
+          <div class="draft-pick-num ${round > 1 ? 'round2' : ''}">${num}</div>
+          <img class="draft-team-logo" src="${logo}" alt="${abbr}" onerror="this.style.display='none'" loading="lazy">
+          <div class="draft-info">
+            <div class="draft-player">${playerName}</div>
+            <div class="draft-details">${[pos, college].filter(Boolean).join(' ・ ')}</div>
+            <div class="draft-team-name">${abbr}${teamJa ? ' ' + teamJa : ''}</div>
+          </div>
+        </div>`;
+      }
+
+      grid.innerHTML = html;
+
+    } catch (e) {
+      console.error('Draft load error:', e);
+      grid.innerHTML = '<div class="placeholder-msg" style="grid-column:1/-1;">ドラフトデータの取得に失敗しました</div>';
+    }
+  }
+  loadDraft();
+
+  // ═══════════════════════════
+  //  SUMMER LEAGUE
+  // ═══════════════════════════
+  async function loadSummerLeague() {
+    const wrap = document.getElementById('slScoreboard');
+    const status = document.getElementById('slStatus');
+
+    // Summer League is July only
+    if (month < 7 || month > 8) {
+      const notice = document.getElementById('slNotice');
+      notice.style.display = 'block';
+      notice.innerHTML = `NBAサマーリーグは毎年<strong>7月中旬</strong>にラスベガスで開催されます。`;
+    }
+
+    try {
+      const data = await C.fetchJSON(
+        'https://site.api.espn.com/apis/site/v2/sports/basketball/nba-summer-las-vegas/scoreboard'
+      );
+      const events = data.events || [];
+      if (!events.length) {
+        wrap.innerHTML = '<div class="placeholder-msg">サマーリーグの試合データはありません</div>';
+        status.textContent = '試合なし';
+        return;
+      }
+
+      const hasLive = C.renderScoreboard(events, wrap, status, 'nba');
+      if (hasLive) setTimeout(loadSummerLeague, 30000);
+
+    } catch (e) {
+      console.error('Summer League error:', e);
+      wrap.innerHTML = '<div class="placeholder-msg">サマーリーグのデータを取得できませんでした</div>';
+      status.textContent = 'オフシーズン';
+    }
+  }
+  loadSummerLeague();
+
+})();
+</script>
+</body>
+</html>

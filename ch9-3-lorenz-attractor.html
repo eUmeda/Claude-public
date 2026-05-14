@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>9.2-9.3 ローレンツ・アトラクター</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.equation {
+  font-family: 'Times New Roman', serif;
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.88em; text-align: center;
+  line-height: 1.6;
+}
+canvas {
+  background: #0f1a2e; border-radius: 10px;
+  max-width: 100%;
+}
+.canvas-row {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.controls {
+  width: 100%; max-width: 440px; margin-top: 10px;
+}
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.buttons button {
+  flex: 1 1 100px; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.82em;
+}
+.regime {
+  padding: 3px 8px; border-radius: 4px; display: inline-block;
+  font-weight: bold;
+}
+.r-fp { background: #2e7d4f; }
+.r-hopf { background: #f39c12; }
+.r-chaos { background: #c0392b; }
+.r-hyst { background: #9b59b6; }
+</style>
+</head>
+<body>
+<h1>ローレンツ系 ẋ=σ(y-x), ẏ=rx-y-xz, ż=xy-bz</h1>
+<div class="equation">
+固定点: 原点 &nbsp;|&nbsp; C±: (±√(b(r-1)), ±√(b(r-1)), r-1)<br>
+ピッチフォーク分岐 r=1, 亜臨界ホップ分岐 r<sub>H</sub>=σ(σ+b+3)/(σ-b-1)
+</div>
+
+<div class="canvas-row">
+  <canvas id="xz" width="340" height="260"></canvas>
+  <canvas id="ts" width="340" height="120"></canvas>
+</div>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>r (レイリー数)</span><span id="rv">28.0</span></label>
+    <input type="range" id="rs" min="0.5" max="50" step="0.1" value="28">
+  </div>
+  <div class="slider-box">
+    <label><span>σ (プラントル数)</span><span id="sv">10.0</span></label>
+    <input type="range" id="ss" min="1" max="20" step="0.1" value="10">
+  </div>
+  <div class="slider-box">
+    <label><span>b</span><span id="bv">2.67</span></label>
+    <input type="range" id="bs" min="0.5" max="5" step="0.05" value="2.667">
+  </div>
+  <div class="buttons">
+    <button id="reset">再初期化</button>
+    <button id="twin">双子軌道</button>
+    <button id="traceClear">軌跡消去</button>
+  </div>
+  <div class="buttons">
+    <button class="preset" data-r="0.5">r=0.5</button>
+    <button class="preset" data-r="10">r=10</button>
+    <button class="preset" data-r="21">r=21</button>
+    <button class="preset" data-r="28">r=28</button>
+    <button class="preset" data-r="24.5">r=24.5</button>
+  </div>
+  <div class="status">
+    <div>レジーム: <span id="regime" class="regime r-chaos">カオス</span></div>
+    <div>臨界値: r<sub>H</sub> = <span id="rh">24.74</span></div>
+    <div>x = <span id="xv">0.00</span>, y = <span id="yv">0.00</span>, z = <span id="zv">0.00</span></div>
+    <div id="twinInfo" style="display:none">分離距離 ||Δ|| = <span id="dist">0</span></div>
+  </div>
+</div>
+
+<script>
+const xzCanvas = document.getElementById('xz');
+const tsCanvas = document.getElementById('ts');
+const xzCtx = xzCanvas.getContext('2d');
+const tsCtx = tsCanvas.getContext('2d');
+
+let r = 28, sigma = 10, b = 8/3;
+
+let state = [0.1, 0, 0];
+let twinState = [0.1 + 1e-5, 0, 0];
+let twinMode = false;
+const trail = [];
+const twinTrail = [];
+const yTime = [];
+const maxTrail = 8000;
+const maxTime = 600;
+
+function lorenzRHS(s) {
+  const [x, y, z] = s;
+  return [
+    sigma * (y - x),
+    r * x - y - x * z,
+    x * y - b * z
+  ];
+}
+
+function rk4(s, dt) {
+  const k1 = lorenzRHS(s);
+  const s2 = s.map((v, i) => v + 0.5*dt*k1[i]);
+  const k2 = lorenzRHS(s2);
+  const s3 = s.map((v, i) => v + 0.5*dt*k2[i]);
+  const k3 = lorenzRHS(s3);
+  const s4 = s.map((v, i) => v + dt*k3[i]);
+  const k4 = lorenzRHS(s4);
+  return s.map((v, i) => v + dt/6 * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]));
+}
+
+function reset() {
+  state = [0.1, 0, 0];
+  twinState = [0.1 + 1e-5, 0, 0];
+  trail.length = 0; twinTrail.length = 0; yTime.length = 0;
+}
+
+function classifyRegime() {
+  const rH = sigma * (sigma + b + 3) / (sigma - b - 1);
+  document.getElementById('rh').textContent = rH.toFixed(2);
+  const el = document.getElementById('regime');
+  if (r < 1) { el.textContent = '大域安定 (原点のみ)'; el.className = 'regime r-fp'; }
+  else if (r < 13.926) { el.textContent = 'C± 安定'; el.className = 'regime r-fp'; }
+  else if (r < 24.06) { el.textContent = '過渡カオス + C± 安定 (ヒステリシス)'; el.className = 'regime r-hyst'; }
+  else if (r < rH) { el.textContent = 'ストレンジアトラクター'; el.className = 'regime r-chaos'; }
+  else { el.textContent = 'ホップ後 (カオス主体)'; el.className = 'regime r-hopf'; }
+}
+
+function projectXZ(x, z) {
+  // x ∈ [-25, 25], z ∈ [0, 50]
+  const W = xzCanvas.width, H = xzCanvas.height;
+  const sx = W/2 + x * (W/2 - 20) / 30;
+  const sy = H - 10 - z * (H - 20) / 55;
+  return [sx, sy];
+}
+
+function draw() {
+  // 更新
+  for (let k = 0; k < 15; k++) {
+    state = rk4(state, 0.01);
+    if (twinMode) twinState = rk4(twinState, 0.01);
+    trail.push([...state]);
+    if (twinMode) twinTrail.push([...twinState]);
+    yTime.push(state[1]);
+    if (trail.length > maxTrail) trail.shift();
+    if (twinTrail.length > maxTrail) twinTrail.shift();
+    if (yTime.length > maxTime) yTime.shift();
+  }
+
+  // x-z 位相図
+  const W = xzCanvas.width, H = xzCanvas.height;
+  xzCtx.fillStyle = 'rgba(15, 26, 46, 0.08)';
+  xzCtx.fillRect(0, 0, W, H);
+
+  // 固定点マーカー
+  if (r > 1) {
+    const rr = Math.sqrt(b*(r-1));
+    const zFp = r - 1;
+    const [cx1, cy1] = projectXZ(rr, zFp);
+    const [cx2, cy2] = projectXZ(-rr, zFp);
+    xzCtx.fillStyle = '#f39c12';
+    xzCtx.beginPath(); xzCtx.arc(cx1, cy1, 3, 0, 2*Math.PI); xzCtx.fill();
+    xzCtx.beginPath(); xzCtx.arc(cx2, cy2, 3, 0, 2*Math.PI); xzCtx.fill();
+  }
+
+  // 軌跡
+  xzCtx.strokeStyle = '#4fc3f7';
+  xzCtx.lineWidth = 0.7;
+  xzCtx.beginPath();
+  for (let i = 1; i < trail.length; i++) {
+    const [p1] = [projectXZ(trail[i-1][0], trail[i-1][2])];
+    const [p2] = [projectXZ(trail[i][0], trail[i][2])];
+    xzCtx.moveTo(p1[0], p1[1]);
+    xzCtx.lineTo(p2[0], p2[1]);
+  }
+  xzCtx.stroke();
+
+  if (twinMode) {
+    xzCtx.strokeStyle = '#e74c3c';
+    xzCtx.beginPath();
+    for (let i = 1; i < twinTrail.length; i++) {
+      const p1 = projectXZ(twinTrail[i-1][0], twinTrail[i-1][2]);
+      const p2 = projectXZ(twinTrail[i][0], twinTrail[i][2]);
+      xzCtx.moveTo(p1[0], p1[1]);
+      xzCtx.lineTo(p2[0], p2[1]);
+    }
+    xzCtx.stroke();
+  }
+
+  // 現在点
+  const [sx, sy] = projectXZ(state[0], state[2]);
+  xzCtx.fillStyle = '#fff';
+  xzCtx.beginPath(); xzCtx.arc(sx, sy, 3, 0, 2*Math.PI); xzCtx.fill();
+
+  // 軸ラベル
+  xzCtx.fillStyle = '#888';
+  xzCtx.font = '10px sans-serif';
+  xzCtx.fillText('x', W - 14, H - 4);
+  xzCtx.fillText('z', 4, 12);
+
+  // 時系列 y(t)
+  const tW = tsCanvas.width, tH = tsCanvas.height;
+  tsCtx.fillStyle = '#0f1a2e';
+  tsCtx.fillRect(0, 0, tW, tH);
+  tsCtx.strokeStyle = '#444';
+  tsCtx.beginPath();
+  tsCtx.moveTo(0, tH/2); tsCtx.lineTo(tW, tH/2);
+  tsCtx.stroke();
+  tsCtx.strokeStyle = '#9b59b6';
+  tsCtx.lineWidth = 1;
+  tsCtx.beginPath();
+  let maxY = 30;
+  for (let i = 0; i < yTime.length; i++) {
+    const x = i * tW / maxTime;
+    const y = tH/2 - yTime[i] / maxY * (tH/2 - 5);
+    if (i === 0) tsCtx.moveTo(x, y); else tsCtx.lineTo(x, y);
+  }
+  tsCtx.stroke();
+  tsCtx.fillStyle = '#888';
+  tsCtx.font = '10px sans-serif';
+  tsCtx.fillText('y(t)', 4, 12);
+
+  // 表示更新
+  document.getElementById('xv').textContent = state[0].toFixed(2);
+  document.getElementById('yv').textContent = state[1].toFixed(2);
+  document.getElementById('zv').textContent = state[2].toFixed(2);
+  if (twinMode) {
+    const d = Math.hypot(state[0]-twinState[0], state[1]-twinState[1], state[2]-twinState[2]);
+    document.getElementById('dist').textContent = d.toExponential(2);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(1);
+  classifyRegime();
+});
+document.getElementById('ss').addEventListener('input', e => {
+  sigma = parseFloat(e.target.value);
+  document.getElementById('sv').textContent = sigma.toFixed(1);
+  classifyRegime();
+});
+document.getElementById('bs').addEventListener('input', e => {
+  b = parseFloat(e.target.value);
+  document.getElementById('bv').textContent = b.toFixed(2);
+  classifyRegime();
+});
+document.getElementById('reset').addEventListener('click', reset);
+document.getElementById('traceClear').addEventListener('click', () => { trail.length = 0; twinTrail.length = 0; });
+document.getElementById('twin').addEventListener('click', function() {
+  twinMode = !twinMode;
+  this.classList.toggle('active');
+  document.getElementById('twinInfo').style.display = twinMode ? 'block' : 'none';
+  if (twinMode) twinState = [state[0] + 1e-5, state[1], state[2]];
+});
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    r = parseFloat(btn.dataset.r);
+    document.getElementById('rs').value = r;
+    document.getElementById('rv').textContent = r.toFixed(1);
+    reset();
+    classifyRegime();
+  });
+});
+
+classifyRegime();
+draw();
+</script>
+</body>
+</html>

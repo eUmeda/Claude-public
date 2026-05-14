@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Strogatz 8.5節：ジョセフソン接合とヒステリシス</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #81d4fa;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .section {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .equation-box .main-eq {
+            font-size: 1.2em;
+            color: #4fc3f7;
+        }
+        p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .highlight {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .canvas-box {
+            text-align: center;
+        }
+        .canvas-box canvas {
+            background: #0a1628;
+            border-radius: 8px;
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.85em;
+            color: #81d4fa;
+            margin-top: 5px;
+        }
+        .controls {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .slider-row {
+            margin: 12px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .slider-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-top: -7px;
+            cursor: pointer;
+        }
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .info-item {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-label {
+            font-size: 0.8em;
+            color: #81d4fa;
+        }
+        .info-value {
+            font-size: 1.1em;
+            font-family: monospace;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .status-box {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-fixed {
+            background: #1e5128;
+            color: #4caf50;
+        }
+        .status-cycle {
+            background: #4a3000;
+            color: #ff9800;
+        }
+        .status-hysteresis {
+            background: #4a1040;
+            color: #e91e63;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #1a1a2e;
+        }
+        .btn-secondary {
+            background: #0f3460;
+            color: #e8e8e8;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .hysteresis-diagram {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ジョセフソン接合とヒステリシス</h1>
+
+        <div class="section">
+            <h2>支配方程式（Strogatz 8.5節）</h2>
+            <div class="equation-box">
+                <div class="main-eq">(1/β<sub>c</sub>)φ'' + φ' + sin φ = i</div>
+            </div>
+            <p>φ: 位相差、β<sub>c</sub>: McCumberパラメータ（慣性）、i = I/I<sub>c</sub>: 正規化電流</p>
+            <p>1階系に書き直すと：</p>
+            <div class="equation-box">
+                φ' = y, &nbsp; y' = β<sub>c</sub>(i − sin φ − y)
+            </div>
+            <p style="margin-top: 8px; font-size: 0.9em; color: #81d4fa;">
+                β<sub>c</sub> &gt; 1: 減衰不足（ヒステリシスあり）<br>
+                β<sub>c</sub> &lt; 1: 過減衰（ヒステリシスなし）
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>相図（円筒を展開）</h2>
+            <div class="canvas-container">
+                <div class="canvas-box">
+                    <canvas id="phaseCanvas" width="380" height="300"></canvas>
+                    <div class="canvas-label">φ-y 相平面</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>安定固定点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span>サドル点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>軌道</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>電流 I</span>
+                        <span class="slider-value" id="IDisplay">0.50</span>
+                    </div>
+                    <input type="range" id="ISlider" min="0" max="2" step="0.01" value="0.5">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>McCumber β<sub>c</sub></span>
+                        <span class="slider-value" id="betaDisplay">2.00</span>
+                    </div>
+                    <input type="range" id="betaSlider" min="0.5" max="10" step="0.1" value="2.0">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-secondary" id="addTrajectoryBtn">軌道追加</button>
+                <button class="btn btn-secondary" id="clearBtn">軌道クリア</button>
+            </div>
+
+            <div id="statusBox" class="status-box status-fixed">
+                固定点あり（I < 1）
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-label">固定点 φ*</div>
+                    <div class="info-value" id="fixedPhiDisplay">0.52</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">状態</div>
+                    <div class="info-value" id="stateDisplay">シンク</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>ヒステリシス現象</h2>
+            <p>β<sub>c</sub> &gt; 1（減衰不足）のとき、電流 i を上下させるとヒステリシスが生じる：</p>
+            <div class="hysteresis-diagram">
+                <canvas id="hysteresisCanvas" width="360" height="200"></canvas>
+            </div>
+            <p><span class="highlight">I を増加</span>: I = 1 でサドルノード分岐 → 振動状態にジャンプ</p>
+            <p><span class="highlight">I を減少</span>: I < 1 でもリミットサイクルが持続 → I_c でホモクリニック分岐</p>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="sweepUpBtn">I を増加 ↑</button>
+                <button class="btn btn-secondary" id="sweepDownBtn">I を減少 ↓</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>振り子アナロジー</h2>
+            <p>この方程式は<span class="highlight">駆動された減衰振り子</span>と同じ：</p>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>φ: 振り子の角度</li>
+                <li>α: 摩擦（減衰）</li>
+                <li>I: 外部トルク</li>
+            </ul>
+            <p style="margin-top: 10px;">I > 1 では振り子を支えきれず、回転運動（リミットサイクル）が生じる</p>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
+        const hysteresisCanvas = document.getElementById('hysteresisCanvas');
+        const hysteresisCtx = hysteresisCanvas.getContext('2d');
+
+        // Parameters
+        let I = 0.5;
+        let beta_c = 2.0;  // McCumber parameter (Strogatz 8.5)
+
+        // Trajectories
+        let trajectories = [];
+        let currentTrajectory = null;
+        let animationId = null;
+
+        // Hysteresis state
+        let hysteresisPath = [];
+        let isInCycleState = false;
+
+        // UI elements
+        const ISlider = document.getElementById('ISlider');
+        const betaSlider = document.getElementById('betaSlider');
+        const IDisplay = document.getElementById('IDisplay');
+        const betaDisplay = document.getElementById('betaDisplay');
+        const statusBox = document.getElementById('statusBox');
+        const fixedPhiDisplay = document.getElementById('fixedPhiDisplay');
+        const stateDisplay = document.getElementById('stateDisplay');
+
+        // Phase space bounds
+        const phiMin = -Math.PI;
+        const phiMax = 3 * Math.PI;
+        const yMin = -3;
+        const yMax = 3;
+
+        // Coordinate transforms
+        function toCanvasX(phi) {
+            return 30 + (phi - phiMin) / (phiMax - phiMin) * (phaseCanvas.width - 60);
+        }
+        function toCanvasY(y) {
+            return 20 + (yMax - y) / (yMax - yMin) * (phaseCanvas.height - 40);
+        }
+        function fromCanvasX(cx) {
+            return phiMin + (cx - 30) / (phaseCanvas.width - 60) * (phiMax - phiMin);
+        }
+        function fromCanvasY(cy) {
+            return yMax - (cy - 20) / (phaseCanvas.height - 40) * (yMax - yMin);
+        }
+
+        // Dynamics (Strogatz 8.5: (1/βc)φ'' + φ' + sin φ = i)
+        // => φ' = y, y' = βc(i - sin φ - y)
+        function dphidt(phi, y) {
+            return y;
+        }
+        function dydt(phi, y) {
+            return beta_c * (I - Math.sin(phi) - y);
+        }
+
+        // RK4 integration
+        function rk4Step(phi, y, dt) {
+            const k1_phi = dphidt(phi, y);
+            const k1_y = dydt(phi, y);
+
+            const k2_phi = dphidt(phi + 0.5*dt*k1_phi, y + 0.5*dt*k1_y);
+            const k2_y = dydt(phi + 0.5*dt*k1_phi, y + 0.5*dt*k1_y);
+
+            const k3_phi = dphidt(phi + 0.5*dt*k2_phi, y + 0.5*dt*k2_y);
+            const k3_y = dydt(phi + 0.5*dt*k2_phi, y + 0.5*dt*k2_y);
+
+            const k4_phi = dphidt(phi + dt*k3_phi, y + dt*k3_y);
+            const k4_y = dydt(phi + dt*k3_phi, y + dt*k3_y);
+
+            return {
+                phi: phi + dt/6 * (k1_phi + 2*k2_phi + 2*k3_phi + k4_phi),
+                y: y + dt/6 * (k1_y + 2*k2_y + 2*k3_y + k4_y)
+            };
+        }
+
+        // Find fixed points
+        function getFixedPoints() {
+            if (I > 1) return [];
+            const phi1 = Math.asin(I);
+            const phi2 = Math.PI - Math.asin(I);
+            return [
+                { phi: phi1, y: 0, type: 'sink' },
+                { phi: phi2, y: 0, type: 'saddle' }
+            ];
+        }
+
+        // Classify fixed point (Strogatz form)
+        function classifyFixedPoint(phi) {
+            // Jacobian at (phi*, 0) for y' = βc(i - sin φ - y):
+            // [0, 1]
+            // [-βc·cos(phi*), -βc]
+            const cosPhi = Math.cos(phi);
+            const trace = -beta_c;
+            const det = beta_c * cosPhi;
+
+            if (det < 0) return 'saddle';
+            if (trace < 0 && det > 0) return 'sink';
+            return 'source';
+        }
+
+        // Draw phase portrait
+        function drawPhasePortrait() {
+            phaseCtx.fillStyle = '#0a1628';
+            phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+            // Draw grid
+            phaseCtx.strokeStyle = '#1a3050';
+            phaseCtx.lineWidth = 1;
+
+            // Vertical lines at φ = 0, π, 2π
+            for (let p = 0; p <= 2; p++) {
+                const x = toCanvasX(p * Math.PI);
+                phaseCtx.beginPath();
+                phaseCtx.moveTo(x, 20);
+                phaseCtx.lineTo(x, phaseCanvas.height - 20);
+                phaseCtx.stroke();
+            }
+
+            // Horizontal line at y = 0
+            const y0 = toCanvasY(0);
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(30, y0);
+            phaseCtx.lineTo(phaseCanvas.width - 30, y0);
+            phaseCtx.stroke();
+
+            // Draw vector field
+            phaseCtx.strokeStyle = '#2a4a70';
+            phaseCtx.lineWidth = 1;
+            const step = 25;
+            for (let cx = 40; cx < phaseCanvas.width - 30; cx += step) {
+                for (let cy = 30; cy < phaseCanvas.height - 20; cy += step) {
+                    const phi = fromCanvasX(cx);
+                    const y = fromCanvasY(cy);
+                    const dphi = dphidt(phi, y);
+                    const dy = dydt(phi, y);
+                    const mag = Math.sqrt(dphi*dphi + dy*dy);
+                    if (mag > 0.01) {
+                        const scale = 8 / Math.max(mag, 0.5);
+                        const dx = dphi * scale;
+                        const dyCanvas = -dy * scale;
+                        phaseCtx.beginPath();
+                        phaseCtx.moveTo(cx, cy);
+                        phaseCtx.lineTo(cx + dx, cy + dyCanvas);
+                        phaseCtx.stroke();
+                    }
+                }
+            }
+
+            // Draw nullclines
+            // φ-nullcline: y = 0
+            phaseCtx.strokeStyle = '#4fc3f7';
+            phaseCtx.lineWidth = 2;
+            phaseCtx.setLineDash([5, 5]);
+            phaseCtx.beginPath();
+            phaseCtx.moveTo(toCanvasX(phiMin), toCanvasY(0));
+            phaseCtx.lineTo(toCanvasX(phiMax), toCanvasY(0));
+            phaseCtx.stroke();
+
+            // y-nullcline: y = i - sin(φ) (Strogatz form)
+            phaseCtx.strokeStyle = '#ff9800';
+            phaseCtx.beginPath();
+            let first = true;
+            for (let cx = 30; cx < phaseCanvas.width - 30; cx += 2) {
+                const phi = fromCanvasX(cx);
+                const yNull = I - Math.sin(phi);
+                if (yNull >= yMin && yNull <= yMax) {
+                    const cy = toCanvasY(yNull);
+                    if (first) {
+                        phaseCtx.moveTo(cx, cy);
+                        first = false;
+                    } else {
+                        phaseCtx.lineTo(cx, cy);
+                    }
+                }
+            }
+            phaseCtx.stroke();
+            phaseCtx.setLineDash([]);
+
+            // Draw trajectories
+            trajectories.forEach((traj, idx) => {
+                if (traj.length < 2) return;
+                phaseCtx.strokeStyle = `hsla(${30 + idx * 40}, 80%, 60%, 0.8)`;
+                phaseCtx.lineWidth = 2;
+                phaseCtx.beginPath();
+                traj.forEach((pt, i) => {
+                    const cx = toCanvasX(pt.phi);
+                    const cy = toCanvasY(pt.y);
+                    if (i === 0) phaseCtx.moveTo(cx, cy);
+                    else phaseCtx.lineTo(cx, cy);
+                });
+                phaseCtx.stroke();
+
+                // Draw current point
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    const cx = toCanvasX(last.phi);
+                    const cy = toCanvasY(last.y);
+                    phaseCtx.beginPath();
+                    phaseCtx.arc(cx, cy, 5, 0, 2 * Math.PI);
+                    phaseCtx.fillStyle = `hsl(${30 + idx * 40}, 80%, 60%)`;
+                    phaseCtx.fill();
+                }
+            });
+
+            // Draw fixed points
+            const fps = getFixedPoints();
+            fps.forEach(fp => {
+                // Draw at multiple periods
+                for (let k = 0; k <= 2; k++) {
+                    const phiDraw = fp.phi + k * 2 * Math.PI;
+                    if (phiDraw >= phiMin && phiDraw <= phiMax) {
+                        const cx = toCanvasX(phiDraw);
+                        const cy = toCanvasY(fp.y);
+
+                        phaseCtx.beginPath();
+                        phaseCtx.arc(cx, cy, 8, 0, 2 * Math.PI);
+                        if (fp.type === 'sink') {
+                            phaseCtx.fillStyle = '#4caf50';
+                        } else {
+                            phaseCtx.fillStyle = '#f44336';
+                        }
+                        phaseCtx.fill();
+                        phaseCtx.strokeStyle = '#fff';
+                        phaseCtx.lineWidth = 2;
+                        phaseCtx.stroke();
+                    }
+
+                    // Also draw saddle at π - asin(I)
+                    if (fp.type === 'saddle') {
+                        const phiSaddle = Math.PI - Math.asin(I) + k * 2 * Math.PI;
+                        if (phiSaddle >= phiMin && phiSaddle <= phiMax) {
+                            const cx = toCanvasX(phiSaddle);
+                            const cy = toCanvasY(0);
+                            phaseCtx.beginPath();
+                            phaseCtx.arc(cx, cy, 8, 0, 2 * Math.PI);
+                            phaseCtx.fillStyle = '#f44336';
+                            phaseCtx.fill();
+                            phaseCtx.strokeStyle = '#fff';
+                            phaseCtx.lineWidth = 2;
+                            phaseCtx.stroke();
+                        }
+                    }
+                }
+            });
+
+            // Axis labels
+            phaseCtx.fillStyle = '#81d4fa';
+            phaseCtx.font = '12px sans-serif';
+            phaseCtx.textAlign = 'center';
+            phaseCtx.fillText('0', toCanvasX(0), phaseCanvas.height - 5);
+            phaseCtx.fillText('π', toCanvasX(Math.PI), phaseCanvas.height - 5);
+            phaseCtx.fillText('2π', toCanvasX(2 * Math.PI), phaseCanvas.height - 5);
+            phaseCtx.fillText('φ', phaseCanvas.width - 15, toCanvasY(0) + 4);
+
+            phaseCtx.textAlign = 'right';
+            phaseCtx.fillText('y', 25, 30);
+        }
+
+        // Draw hysteresis diagram
+        function drawHysteresisDiagram() {
+            hysteresisCtx.fillStyle = '#0a1628';
+            hysteresisCtx.fillRect(0, 0, hysteresisCanvas.width, hysteresisCanvas.height);
+
+            const margin = { left: 50, right: 20, top: 20, bottom: 30 };
+            const width = hysteresisCanvas.width - margin.left - margin.right;
+            const height = hysteresisCanvas.height - margin.top - margin.bottom;
+
+            // Axes
+            hysteresisCtx.strokeStyle = '#4a6a90';
+            hysteresisCtx.lineWidth = 1;
+            hysteresisCtx.beginPath();
+            hysteresisCtx.moveTo(margin.left, margin.top);
+            hysteresisCtx.lineTo(margin.left, margin.top + height);
+            hysteresisCtx.lineTo(margin.left + width, margin.top + height);
+            hysteresisCtx.stroke();
+
+            // Labels
+            hysteresisCtx.fillStyle = '#81d4fa';
+            hysteresisCtx.font = '11px sans-serif';
+            hysteresisCtx.textAlign = 'center';
+            hysteresisCtx.fillText('I', margin.left + width / 2, hysteresisCanvas.height - 5);
+            hysteresisCtx.fillText('0', margin.left, margin.top + height + 15);
+            hysteresisCtx.fillText('1', margin.left + width * 0.5, margin.top + height + 15);
+            hysteresisCtx.fillText('2', margin.left + width, margin.top + height + 15);
+
+            hysteresisCtx.save();
+            hysteresisCtx.translate(15, margin.top + height / 2);
+            hysteresisCtx.rotate(-Math.PI / 2);
+            hysteresisCtx.fillText('<V>', 0, 0);
+            hysteresisCtx.restore();
+
+            // Critical line at I = 1
+            const I1x = margin.left + width * 0.5;
+            hysteresisCtx.strokeStyle = '#ff5722';
+            hysteresisCtx.setLineDash([3, 3]);
+            hysteresisCtx.beginPath();
+            hysteresisCtx.moveTo(I1x, margin.top);
+            hysteresisCtx.lineTo(I1x, margin.top + height);
+            hysteresisCtx.stroke();
+            hysteresisCtx.setLineDash([]);
+
+            // Ic line (homoclinic bifurcation) - approximate
+            // For underdamped case (beta_c > 1), Ic ≈ 4/(π√βc)
+            const Ic = beta_c > 1 ? 4 / (Math.PI * Math.sqrt(beta_c)) : 1;
+            const Icx = margin.left + width * Ic / 2;
+            if (beta_c > 1) {
+                hysteresisCtx.strokeStyle = '#9c27b0';
+                hysteresisCtx.setLineDash([3, 3]);
+                hysteresisCtx.beginPath();
+                hysteresisCtx.moveTo(Icx, margin.top);
+                hysteresisCtx.lineTo(Icx, margin.top + height);
+                hysteresisCtx.stroke();
+                hysteresisCtx.setLineDash([]);
+            }
+
+            // Draw hysteresis curves
+            // Fixed point branch (V = 0)
+            hysteresisCtx.strokeStyle = '#4caf50';
+            hysteresisCtx.lineWidth = 3;
+            hysteresisCtx.beginPath();
+            hysteresisCtx.moveTo(margin.left, margin.top + height);
+            hysteresisCtx.lineTo(I1x, margin.top + height);
+            hysteresisCtx.stroke();
+
+            // Limit cycle branch (V > 0)
+            hysteresisCtx.strokeStyle = '#ff9800';
+            hysteresisCtx.beginPath();
+            if (beta_c > 1) {
+                hysteresisCtx.moveTo(Icx, margin.top + height);
+            } else {
+                hysteresisCtx.moveTo(I1x, margin.top + height);
+            }
+            for (let ix = (beta_c > 1 ? Icx : I1x); ix <= margin.left + width; ix += 2) {
+                const Ival = (ix - margin.left) / width * 2;
+                const Vavg = Math.sqrt(Math.max(0, Ival - (beta_c > 1 ? Ic : 1))) * 0.8;
+                const cy = margin.top + height - Vavg * height;
+                hysteresisCtx.lineTo(ix, cy);
+            }
+            hysteresisCtx.stroke();
+
+            // Jump arrows
+            hysteresisCtx.fillStyle = '#ff5722';
+            hysteresisCtx.font = '10px sans-serif';
+
+            // Up jump at I = 1
+            hysteresisCtx.beginPath();
+            hysteresisCtx.moveTo(I1x, margin.top + height - 10);
+            hysteresisCtx.lineTo(I1x - 5, margin.top + height - 5);
+            hysteresisCtx.lineTo(I1x + 5, margin.top + height - 5);
+            hysteresisCtx.fill();
+            hysteresisCtx.fillText('↑増加', I1x + 25, margin.top + height - 20);
+
+            // Down jump at Ic
+            if (beta_c > 1) {
+                hysteresisCtx.fillStyle = '#9c27b0';
+                hysteresisCtx.beginPath();
+                hysteresisCtx.moveTo(Icx, margin.top + height - 5);
+                hysteresisCtx.lineTo(Icx - 5, margin.top + height - 10);
+                hysteresisCtx.lineTo(Icx + 5, margin.top + height - 10);
+                hysteresisCtx.fill();
+                hysteresisCtx.fillText('↓減少', Icx - 25, margin.top + 40);
+            }
+
+            // Current I marker
+            const currentIx = margin.left + width * I / 2;
+            hysteresisCtx.fillStyle = '#4fc3f7';
+            hysteresisCtx.beginPath();
+            hysteresisCtx.arc(currentIx, margin.top + height + 10, 5, 0, 2 * Math.PI);
+            hysteresisCtx.fill();
+
+            // Legend
+            hysteresisCtx.font = '9px sans-serif';
+            hysteresisCtx.fillStyle = '#ff5722';
+            hysteresisCtx.fillText('i=1 (SN)', I1x, margin.top + 10);
+            if (beta_c > 1) {
+                hysteresisCtx.fillStyle = '#9c27b0';
+                hysteresisCtx.fillText('ic (HC)', Icx, margin.top + 10);
+            }
+        }
+
+        // Update displays
+        function updateDisplays() {
+            IDisplay.textContent = I.toFixed(2);
+            betaDisplay.textContent = beta_c.toFixed(2);
+
+            const fps = getFixedPoints();
+            if (I >= 1) {
+                statusBox.className = 'status-box status-cycle';
+                statusBox.textContent = 'リミットサイクル（i > 1）';
+                fixedPhiDisplay.textContent = 'なし';
+                stateDisplay.textContent = '振動';
+            } else {
+                if (fps.length > 0) {
+                    fixedPhiDisplay.textContent = (fps[0].phi * 180 / Math.PI).toFixed(1) + '°';
+                    stateDisplay.textContent = 'シンク';
+                }
+
+                // Check for hysteresis region (occurs when beta_c > 1)
+                const Ic = beta_c > 1 ? 4 / (Math.PI * Math.sqrt(beta_c)) : 1;
+                if (isInCycleState && I > Ic && I < 1) {
+                    statusBox.className = 'status-box status-hysteresis';
+                    statusBox.textContent = 'ヒステリシス領域（ic < i < 1）';
+                } else {
+                    statusBox.className = 'status-box status-fixed';
+                    statusBox.textContent = '固定点あり（i < 1）';
+                }
+            }
+        }
+
+        // Animation
+        function animate() {
+            trajectories.forEach(traj => {
+                if (traj.length > 0) {
+                    const last = traj[traj.length - 1];
+                    const dt = 0.02;
+                    for (let i = 0; i < 5; i++) {
+                        const next = rk4Step(last.phi, last.y, dt);
+                        last.phi = next.phi;
+                        last.y = next.y;
+
+                        // Wrap phi for display
+                        while (last.phi > phiMax) last.phi -= 2 * Math.PI;
+                        while (last.phi < phiMin) last.phi += 2 * Math.PI;
+
+                        // Clamp y
+                        last.y = Math.max(yMin, Math.min(yMax, last.y));
+                    }
+                    traj.push({ phi: last.phi, y: last.y });
+                    if (traj.length > 500) traj.shift();
+                }
+            });
+
+            drawPhasePortrait();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Add trajectory at click
+        phaseCanvas.addEventListener('click', (e) => {
+            const rect = phaseCanvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const phi = fromCanvasX(cx);
+            const y = fromCanvasY(cy);
+            trajectories.push([{ phi, y }]);
+        });
+
+        // Event listeners
+        ISlider.addEventListener('input', (e) => {
+            const newI = parseFloat(e.target.value);
+            const Ic = beta_c > 1 ? 4 / (Math.PI * Math.sqrt(beta_c)) : 1;
+            if (newI > I && newI >= 1 && I < 1) {
+                isInCycleState = true;
+            }
+            if (newI < I && newI <= Ic) {
+                isInCycleState = false;
+            }
+            I = newI;
+            updateDisplays();
+            drawHysteresisDiagram();
+        });
+
+        betaSlider.addEventListener('input', (e) => {
+            beta_c = parseFloat(e.target.value);
+            updateDisplays();
+            drawHysteresisDiagram();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            I = 0.5;
+            beta_c = 2.0;
+            ISlider.value = I;
+            betaSlider.value = beta_c;
+            trajectories = [];
+            isInCycleState = false;
+            updateDisplays();
+            drawHysteresisDiagram();
+        });
+
+        document.getElementById('addTrajectoryBtn').addEventListener('click', () => {
+            const phi = Math.random() * 2 * Math.PI;
+            const y = (Math.random() - 0.5) * 4;
+            trajectories.push([{ phi, y }]);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            trajectories = [];
+        });
+
+        // Sweep functions
+        document.getElementById('sweepUpBtn').addEventListener('click', () => {
+            isInCycleState = false;
+            let sweepI = 0;
+            const sweepUp = setInterval(() => {
+                sweepI += 0.02;
+                if (sweepI > 2) {
+                    clearInterval(sweepUp);
+                    return;
+                }
+                I = sweepI;
+                ISlider.value = I;
+                if (I >= 1) isInCycleState = true;
+                updateDisplays();
+                drawHysteresisDiagram();
+            }, 50);
+        });
+
+        document.getElementById('sweepDownBtn').addEventListener('click', () => {
+            isInCycleState = true;
+            let sweepI = 2;
+            const sweepDown = setInterval(() => {
+                sweepI -= 0.02;
+                if (sweepI < 0) {
+                    clearInterval(sweepDown);
+                    return;
+                }
+                I = sweepI;
+                ISlider.value = I;
+                const Ic = beta_c > 1 ? 4 / (Math.PI * Math.sqrt(beta_c)) : 1;
+                if (I <= Ic) isInCycleState = false;
+                updateDisplays();
+                drawHysteresisDiagram();
+            }, 50);
+        });
+
+        // Initialize
+        updateDisplays();
+        drawPhasePortrait();
+        drawHysteresisDiagram();
+        animate();
+    </script>
+</body>
+</html>

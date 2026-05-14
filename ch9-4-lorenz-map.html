@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>9.4 ローレンツ写像</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.15em; margin-bottom: 8px; text-align: center; }
+.note {
+  font-family: sans-serif;
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 10px; font-size: 0.85em;
+  max-width: 420px; line-height: 1.5;
+}
+canvas { background: #0f1a2e; border-radius: 10px; max-width: 100%; }
+.canvas-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.controls { width: 100%; max-width: 420px; margin-top: 10px; }
+.slider-box {
+  background: #16213e; padding: 8px 14px;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] { width: 100%; }
+.buttons { display: flex; gap: 6px; margin-top: 8px; }
+.buttons button {
+  flex: 1; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+}
+.buttons button.active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.85em;
+}
+</style>
+</head>
+<body>
+<h1>ローレンツ写像 z<sub>n+1</sub> = f(z<sub>n</sub>)</h1>
+<div class="note">
+Lorenz が連続流から1次元写像を取り出した方法: 軌道の z(t) の極大値を順番に
+記録し、z<sub>n</sub> (n番目の極大) vs z<sub>n+1</sub> (n+1番目の極大)
+をプロットすると、ほぼ1次元のテント形の曲線が現れる。写像の傾きが
+どこでも |f'(z)| > 1 なので、吸引的周期軌道はあり得ない → カオス。
+</div>
+
+<div class="canvas-row">
+  <canvas id="map" width="340" height="340"></canvas>
+  <canvas id="ts" width="340" height="140"></canvas>
+</div>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>r</span><span id="rv">28.0</span></label>
+    <input type="range" id="rs" min="23" max="50" step="0.1" value="28">
+  </div>
+  <div class="buttons">
+    <button id="run">計算開始</button>
+    <button id="clear">クリア</button>
+    <button id="cobweb">クモの巣描画</button>
+  </div>
+  <div class="status">
+    <div>極大点の数: <span id="cnt">0</span></div>
+    <div>z の範囲: [<span id="zmin">-</span>, <span id="zmax">-</span>]</div>
+    <div>最大乗数 max|f'(z)| ≈ <span id="slope">-</span></div>
+  </div>
+</div>
+
+<script>
+const mapC = document.getElementById('map');
+const tsC = document.getElementById('ts');
+const mCtx = mapC.getContext('2d');
+const tCtx = tsC.getContext('2d');
+
+let r = 28, sigma = 10, b = 8/3;
+const peaks = [];     // z の極大の列
+let running = false;
+let state = [0.1, 0, 0];
+let prevZ = 0, prevZdot = 0;
+let tElapsed = 0;
+let cobwebOn = false;
+
+function rhs(s) {
+  const [x, y, z] = s;
+  return [sigma*(y-x), r*x - y - x*z, x*y - b*z];
+}
+function rk4(s, dt) {
+  const k1 = rhs(s);
+  const s2 = s.map((v,i) => v + 0.5*dt*k1[i]);
+  const k2 = rhs(s2);
+  const s3 = s.map((v,i) => v + 0.5*dt*k2[i]);
+  const k3 = rhs(s3);
+  const s4 = s.map((v,i) => v + dt*k3[i]);
+  const k4 = rhs(s4);
+  return s.map((v,i) => v + dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+
+function start() {
+  running = true;
+  peaks.length = 0;
+  state = [0.1, 0, 0];
+  prevZ = 0; prevZdot = 0; tElapsed = 0;
+  // 過渡除去
+  for (let i = 0; i < 3000; i++) state = rk4(state, 0.01);
+}
+
+function step() {
+  if (!running) return;
+  for (let i = 0; i < 30; i++) {
+    const prev = state[2];
+    state = rk4(state, 0.01);
+    const zdot = state[0]*state[1] - b*state[2];
+    // 極大 = zdot が正→負 になった瞬間
+    if (prevZdot > 0 && zdot < 0) peaks.push(prev);
+    prevZ = prev;
+    prevZdot = zdot;
+    tElapsed += 0.01;
+  }
+  if (peaks.length > 4000) running = false;
+}
+
+function drawMap() {
+  const W = mapC.width, H = mapC.height;
+  mCtx.fillStyle = '#0f1a2e';
+  mCtx.fillRect(0, 0, W, H);
+
+  if (peaks.length < 2) return;
+
+  let zmin = Infinity, zmax = -Infinity;
+  for (const z of peaks) { if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
+  const pad = (zmax - zmin) * 0.05;
+  zmin -= pad; zmax += pad;
+  document.getElementById('zmin').textContent = zmin.toFixed(1);
+  document.getElementById('zmax').textContent = zmax.toFixed(1);
+
+  const toX = z => 20 + (z - zmin) / (zmax - zmin) * (W - 40);
+  const toY = z => H - 20 - (z - zmin) / (zmax - zmin) * (H - 40);
+
+  // 対角線
+  mCtx.strokeStyle = '#444';
+  mCtx.lineWidth = 1;
+  mCtx.beginPath();
+  mCtx.moveTo(toX(zmin), toY(zmin));
+  mCtx.lineTo(toX(zmax), toY(zmax));
+  mCtx.stroke();
+
+  // プロット点
+  mCtx.fillStyle = '#4fc3f7';
+  for (let i = 0; i < peaks.length - 1; i++) {
+    const x = toX(peaks[i]);
+    const y = toY(peaks[i+1]);
+    mCtx.beginPath();
+    mCtx.arc(x, y, 1.2, 0, 2*Math.PI);
+    mCtx.fill();
+  }
+
+  // 最大乗数の推定（差分から）
+  // peaks を z_n でソートして差分比
+  const sorted = [];
+  for (let i = 0; i < peaks.length - 1; i++) sorted.push([peaks[i], peaks[i+1]]);
+  sorted.sort((a,b) => a[0]-b[0]);
+  let maxSlope = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    const dx = sorted[i][0] - sorted[i-1][0];
+    if (dx > 0.01) {
+      const s = Math.abs((sorted[i][1] - sorted[i-1][1]) / dx);
+      if (s > maxSlope && s < 100) maxSlope = s;
+    }
+  }
+  document.getElementById('slope').textContent = maxSlope.toFixed(2);
+
+  // クモの巣
+  if (cobwebOn && peaks.length > 20) {
+    mCtx.strokeStyle = '#e74c3c';
+    mCtx.lineWidth = 0.8;
+    const start = peaks.length - 30;
+    for (let i = start; i < peaks.length - 1; i++) {
+      const x1 = toX(peaks[i]);
+      const y1 = toY(peaks[i]);
+      const y2 = toY(peaks[i+1]);
+      const x2 = toX(peaks[i+1]);
+      mCtx.beginPath();
+      mCtx.moveTo(x1, y1); mCtx.lineTo(x1, y2);
+      mCtx.lineTo(x2, y2);
+      mCtx.stroke();
+    }
+  }
+
+  // 軸ラベル
+  mCtx.fillStyle = '#888';
+  mCtx.font = '11px sans-serif';
+  mCtx.fillText('z_n', W - 30, H - 4);
+  mCtx.fillText('z_{n+1}', 4, 12);
+
+  document.getElementById('cnt').textContent = peaks.length;
+}
+
+function drawTS() {
+  const W = tsC.width, H = tsC.height;
+  tCtx.fillStyle = '#0f1a2e';
+  tCtx.fillRect(0, 0, W, H);
+  const show = Math.min(peaks.length, 120);
+  if (show < 2) return;
+  let zmin = Infinity, zmax = -Infinity;
+  const slice = peaks.slice(-show);
+  for (const z of slice) { if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
+  const toY = z => H - 15 - (z - zmin) / (zmax - zmin + 0.01) * (H - 25);
+  tCtx.strokeStyle = '#9b59b6';
+  tCtx.lineWidth = 1;
+  tCtx.beginPath();
+  for (let i = 0; i < slice.length; i++) {
+    const x = i * W / show;
+    const y = toY(slice[i]);
+    if (i === 0) tCtx.moveTo(x, y); else tCtx.lineTo(x, y);
+  }
+  tCtx.stroke();
+  tCtx.fillStyle = '#9b59b6';
+  for (let i = 0; i < slice.length; i++) {
+    tCtx.beginPath();
+    tCtx.arc(i * W / show, toY(slice[i]), 2, 0, 2*Math.PI);
+    tCtx.fill();
+  }
+  tCtx.fillStyle = '#888';
+  tCtx.font = '10px sans-serif';
+  tCtx.fillText('z の極大の時系列', 4, 12);
+}
+
+function loop() {
+  step();
+  drawMap();
+  drawTS();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('rs').addEventListener('input', e => {
+  r = parseFloat(e.target.value);
+  document.getElementById('rv').textContent = r.toFixed(1);
+});
+document.getElementById('run').addEventListener('click', start);
+document.getElementById('clear').addEventListener('click', () => { peaks.length = 0; running = false; });
+document.getElementById('cobweb').addEventListener('click', function() {
+  cobwebOn = !cobwebOn;
+  this.classList.toggle('active');
+});
+
+loop();
+</script>
+</body>
+</html>

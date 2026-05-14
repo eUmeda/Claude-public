@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>9.1 カオス的な水車 (Malkus-Howard)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e; color: #eee;
+  min-height: 100vh; padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+}
+h1 { font-size: 1.2em; margin-bottom: 8px; text-align: center; }
+.equation {
+  font-family: 'Times New Roman', serif; font-style: italic;
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-bottom: 12px; font-size: 0.9em; text-align: center;
+}
+canvas {
+  background: #0f1a2e; border-radius: 12px;
+  max-width: 100%; touch-action: none;
+}
+.controls {
+  width: 100%; max-width: 420px; margin-top: 12px;
+}
+.slider-box {
+  background: #16213e; padding: 10px 14px;
+  border-radius: 8px; margin-bottom: 8px;
+}
+.slider-box label {
+  display: flex; justify-content: space-between;
+  font-size: 0.85em; margin-bottom: 4px;
+}
+.slider-box input[type=range] {
+  width: 100%;
+}
+.buttons { display: flex; gap: 8px; margin-top: 8px; }
+.buttons button {
+  flex: 1; padding: 8px; background: #0f3460; color: #fff;
+  border: none; border-radius: 6px; font-size: 0.85em; cursor: pointer;
+}
+.buttons button:active { background: #1e5090; }
+.status {
+  background: #16213e; padding: 10px 14px; border-radius: 8px;
+  margin-top: 10px; font-size: 0.85em;
+}
+.status div { margin: 2px 0; }
+.note {
+  font-size: 0.78em; color: #aaa; margin-top: 10px;
+  max-width: 420px; line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<h1>Malkus-Howard の水車</h1>
+<div class="equation">
+m(θ, t): 縁の質量分布 &nbsp;|&nbsp; ω(t): 角速度<br>
+Q(θ): 流入 &nbsp;|&nbsp; K: 水漏れ率 &nbsp;|&nbsp; ν: 減衰率
+</div>
+
+<canvas id="c" width="380" height="380"></canvas>
+
+<div class="controls">
+  <div class="slider-box">
+    <label><span>Q<sub>流入振幅</sub></span><span id="qv">2.00</span></label>
+    <input type="range" id="qs" min="0" max="5" step="0.05" value="2.0">
+  </div>
+  <div class="slider-box">
+    <label><span>K<sub>漏れ率</sub></span><span id="kv">1.00</span></label>
+    <input type="range" id="ks" min="0.2" max="3" step="0.05" value="1.0">
+  </div>
+  <div class="slider-box">
+    <label><span>ν<sub>減衰率</sub></span><span id="nv">0.50</span></label>
+    <input type="range" id="ns" min="0.1" max="3" step="0.05" value="0.5">
+  </div>
+  <div class="buttons">
+    <button id="reset">リセット</button>
+    <button id="pause">一時停止</button>
+    <button id="perturb">摂動</button>
+  </div>
+  <div class="status">
+    <div>角速度 ω = <span id="w">0.000</span></div>
+    <div>a₁ (cos θ 振幅) = <span id="a1">0.000</span></div>
+    <div>b₁ (sin θ 振幅) = <span id="b1">0.000</span></div>
+    <div>状態: <span id="state">静止</span></div>
+  </div>
+</div>
+
+<div class="note">
+N個のチェンバーで水車を離散化。各チェンバー i に質量 m_i, 角度 θ_i を持たせ、
+質量保存 dm_i/dt = Q(θ_i) - K·m_i と回転による移流、トルク方程式
+I·dω/dt = -ν·ω + g·r·Σm_i sin(θ_i) で時間発展させる。
+</div>
+
+<script>
+const N = 48;                         // チェンバー数
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const W = c.width, H = c.height;
+const cx = W/2, cy = H/2, R = 140;
+
+let Q_amp = 2.0, K = 1.0, nu = 0.5;
+const r_wheel = 1.0, g = 9.8, I_wheel = 1.0;
+
+let m = new Float64Array(N);          // 各チェンバーの質量
+let omega = 0;
+let phase = 0;                        // 水車全体の回転角
+let paused = false;
+
+function injection(theta) {
+  // 流入関数: 上部 (θ=0 近く) に集中、cos でモデル化
+  // Q(θ) = Q_amp * max(0, cos θ) を使う（真上から注ぐ）
+  const c = Math.cos(theta);
+  return Q_amp * Math.max(0, c);
+}
+
+function reset() {
+  for (let i = 0; i < N; i++) m[i] = 0.1;
+  omega = 0;
+  phase = 0;
+}
+reset();
+
+function step(dt) {
+  // オイラー法
+  // チェンバー i の実験室座標系での角度: θ_i = phase + 2πi/N
+  // 質量保存: dm_i/dt = Q(θ_i) - K·m_i
+  const dm = new Float64Array(N);
+  let torque = 0;
+  for (let i = 0; i < N; i++) {
+    const theta = phase + 2*Math.PI*i/N;
+    const Qi = injection(theta);
+    dm[i] = Qi - K * m[i];
+    torque += m[i] * Math.sin(theta);
+  }
+  // Strogatz 式 (9.1.3): I·dω/dt = -νω + gR·∫m(θ,t) sinθ dθ
+  // Strogatz は CCW 正、本コードは CW 正 (描画の都合) なので符号関係を反転すると
+  // 結局 dω/dt = -νω + gR·Σ m_i sin(θ_my_i) / I が正しい。
+  const dw = (-nu * omega + g * r_wheel * torque / I_wheel) * dt;
+
+  for (let i = 0; i < N; i++) m[i] += dm[i] * dt;
+  omega += dw;
+  phase += omega * dt;
+  // phase を [0, 2π) に
+  phase = ((phase % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+}
+
+function fourierModes() {
+  // a1, b1 を計算（実験室座標系の sin, cos）
+  let a1 = 0, b1 = 0;
+  for (let i = 0; i < N; i++) {
+    const theta = phase + 2*Math.PI*i/N;
+    a1 += m[i] * Math.cos(theta);
+    b1 += m[i] * Math.sin(theta);
+  }
+  a1 *= 2/N; b1 *= 2/N;
+  return {a1, b1};
+}
+
+function draw() {
+  if (!paused) {
+    // 1フレームで複数ステップ（安定化）
+    for (let s = 0; s < 4; s++) step(0.01);
+  }
+
+  ctx.fillStyle = '#0f1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // 流入水の矢印（上から）
+  ctx.strokeStyle = '#4fc3f7';
+  ctx.lineWidth = 2;
+  for (let x = cx - 30; x <= cx + 30; x += 15) {
+    ctx.beginPath();
+    ctx.moveTo(x, 20);
+    ctx.lineTo(x, cy - R - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-3, cy - R - 25);
+    ctx.lineTo(x, cy - R - 20);
+    ctx.lineTo(x+3, cy - R - 25);
+    ctx.stroke();
+  }
+
+  // リム
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 2*Math.PI);
+  ctx.stroke();
+
+  // チェンバー描画
+  // 画面座標: θ=0 が真上、反時計回り正
+  let maxM = 0.01;
+  for (let i = 0; i < N; i++) if (m[i] > maxM) maxM = m[i];
+
+  for (let i = 0; i < N; i++) {
+    const theta = phase + 2*Math.PI*i/N;
+    // 画面上の位置: 上方向を θ=0 に
+    const sx = cx + R * Math.sin(theta);
+    const sy = cy - R * Math.cos(theta);
+    // 質量に応じた色の濃さ
+    const frac = Math.min(1, m[i] / maxM);
+    const blue = Math.floor(50 + 180*frac);
+    ctx.fillStyle = `rgb(${Math.floor(60+30*frac)}, ${Math.floor(140+40*frac)}, ${blue})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 6 + 4*frac, 0, 2*Math.PI);
+    ctx.fill();
+  }
+
+  // 中心軸
+  ctx.fillStyle = '#888';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, 2*Math.PI);
+  ctx.fill();
+
+  // 現在の回転方向を矢印で
+  ctx.strokeStyle = omega > 0 ? '#4fc3f7' : '#e74c3c';
+  ctx.lineWidth = 2;
+  const dir = omega > 0 ? 1 : -1;
+  const arrR = R + 18;
+  ctx.beginPath();
+  ctx.arc(cx, cy, arrR, -Math.PI/2, -Math.PI/2 + dir*Math.min(0.6, Math.abs(omega)*0.3));
+  ctx.stroke();
+
+  // 表示更新
+  const {a1, b1} = fourierModes();
+  document.getElementById('w').textContent = omega.toFixed(3);
+  document.getElementById('a1').textContent = a1.toFixed(3);
+  document.getElementById('b1').textContent = b1.toFixed(3);
+  let state = '静止';
+  if (Math.abs(omega) > 0.1) state = omega > 0 ? '反時計回り' : '時計回り';
+  if (Math.abs(omega) < 0.05 && Q_amp > 0) state = 'ほぼ静止';
+  document.getElementById('state').textContent = state;
+
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('qs').addEventListener('input', e => {
+  Q_amp = parseFloat(e.target.value);
+  document.getElementById('qv').textContent = Q_amp.toFixed(2);
+});
+document.getElementById('ks').addEventListener('input', e => {
+  K = parseFloat(e.target.value);
+  document.getElementById('kv').textContent = K.toFixed(2);
+});
+document.getElementById('ns').addEventListener('input', e => {
+  nu = parseFloat(e.target.value);
+  document.getElementById('nv').textContent = nu.toFixed(2);
+});
+document.getElementById('reset').addEventListener('click', reset);
+document.getElementById('pause').addEventListener('click', () => paused = !paused);
+document.getElementById('perturb').addEventListener('click', () => {
+  omega += (Math.random() - 0.5) * 2;
+});
+
+draw();
+</script>
+</body>
+</html>
