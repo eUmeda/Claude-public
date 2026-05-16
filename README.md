@@ -171,8 +171,8 @@ NBA ランドスケープなどは検索フィルタ機能を備えています�
 
 ## リンク
 
-- **GitHub リポジトリ**: [eUmeda/Claude](https://github.com/eUmeda/Claude)
-- **GitHub Pages**: <https://eumeda.github.io/Claude/>
+- **GitHub リポジトリ**: [eUmeda/Claude-public](https://github.com/eUmeda/Claude-public)
+- **GitHub Pages**: <https://eumeda.github.io/Claude-public/>
 
 ---
 
