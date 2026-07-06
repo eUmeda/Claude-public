@@ -123,6 +123,7 @@ Strogatz章     モデル/デモ
 |-----------|------|
 | **[古代ランドスケープ](./ancient-landscapes-by-claude.html)** | 古代史と地形的変化の可視化 |
 | **[プロンプトエンジニアリング・ガイド](./prompt-engineering-guide.md)** | プロンプト設計の原則と実例 |
+| **[RengaBroker](./rengabroker/)** | Claude Code 用端末環境ブローカー。tmux / WezTerm の状態を JSON API で提供し、AI が自己位置把握・ペイン操作できる CLI + 常駐デーモン(Python 標準ライブラリのみ) |
 
 ---
 
