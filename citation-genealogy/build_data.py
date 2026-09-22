@@ -190,13 +190,17 @@ def main():
     shared = [n for n in nodes if not n["isSeed"] and len(n["seedCiters"]) >= 2]
     no_year = [n["id"] for n in nodes if not n["plotYear"]]
 
+    # 起点ごとの参照数は実際に記録された辺から数える (scite の seed_coverage は
+    # 4起点で実辺数と1件ずれるため、報告値は参考としてのみ保持する)
+    seed_out = {doi: out_deg.get(doi, 0) for doi in SEEDS}
     meta = {
         "generated": "2026-09-22",
         "source": "scite citation_graph (MCP) 2026-09-22 取得",
         "coverage": {
             "backward": "8起点の参照文献・DOI解決分すべて (打ち切りなし)",
             "forward": "Keitt 2000 の被引用のみ60件サンプル (打ち切りあり)。他の7起点の被引用は未取得。",
-            "seed_ref_counts": back["seed_coverage"],
+            "seed_ref_counts": seed_out,
+            "seed_ref_counts_scite_reported": back["seed_coverage"],
         },
         "counts": {
             "nodes": len(nodes), "edges": len(edges),
@@ -205,7 +209,7 @@ def main():
             "no_year": len(no_year),
         },
         "caveats": [
-            "scite は DOI に解決できた引用関係のみを返すため、古い文献ほど参照リストが過少 (例: Whittle 1954 は7件)。",
+            f"scite は DOI に解決できた引用関係のみを返すため、古い文献ほど参照リストが過少 (例: Whittle 1954 は{seed_out['10.1093/biomet/41.3-4.434']}件)。",
             "被引用数(全世界)は未取得。ノードの大きさは「この図の中で参照されている数」を表す。",
             "後続文献が Keitt 以外の起点も引用しているかは未調査 (前方探索は Keitt のみ)。",
             "note_ja は Claude による内容注記であり、引用関係の事実とは区別すること。",
@@ -219,7 +223,11 @@ def main():
     tpl = (HERE / "template.html").read_text(encoding="utf-8")
     marker = "__GRAPH_DATA__"
     assert marker in tpl, "template marker missing"
-    frag = tpl.replace(marker, json.dumps(graph, ensure_ascii=False, separators=(",", ":")))
+    # "<" を < にエスケープ: 外部API由来のタイトルや DOI に "</script" 等の
+    # 断片が含まれても <script> ブロックが終端されない (JSON としても妥当なまま)
+    payload = json.dumps(graph, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
+    assert "<" not in payload
+    frag = tpl.replace(marker, payload)
 
     # Artifact 用: フラグメント (公開時に doctype/head/body が付与される)
     (HERE / "artifact.html").write_text(frag, encoding="utf-8")

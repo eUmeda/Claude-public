@@ -129,8 +129,8 @@ body {
 .node-label.minor { display: none; }
 .labels-all .node-label.minor, .zoomed-in .node-label.minor { display: block; }
 /* 選択時の強調・減光 */
-.has-selection .node:not(.related) { opacity: 0.12; }
-.has-selection .edge:not(.related-edge) { stroke-opacity: 0.04; }
+.has-selection .node:not(.related) { opacity: 0.22; }
+.has-selection .edge:not(.related-edge) { stroke-opacity: 0.06; }
 .edge.related-edge { stroke-opacity: 0.85; stroke-width: 1.5; }
 .node.selected .core { stroke: var(--hit); stroke-width: 2.6; }
 .node.search-hit .core { stroke: var(--hit); stroke-width: 2.2; }
@@ -176,6 +176,7 @@ body {
 .chip.c-a { color: var(--line-a); border-color: var(--line-a); }
 .chip.c-b { color: var(--line-b); border-color: var(--line-b); }
 .chip.c-ab { color: var(--bridge); border-color: var(--bridge); font-weight: 700; }
+#detail { overflow-wrap: break-word; }
 #detail .d-title { font-family: var(--font-serif); font-size: 15.5px; line-height: 1.4; margin: 4px 0 2px; }
 #detail .d-meta { font-size: 12px; color: var(--ink-2); }
 #detail .d-note {
@@ -192,7 +193,7 @@ body {
 .rel-list button {
   display: block; width: 100%; text-align: left; font: inherit; font-size: 11.5px;
   line-height: 1.35; color: var(--ink); background: none; border: 0;
-  padding: 5px 4px; cursor: pointer;
+  padding: 5px 4px; cursor: pointer; overflow-wrap: break-word;
 }
 .rel-list button:hover, .rel-list button:focus-visible { background: var(--bg); outline: none; }
 .rel-list .rl-year { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -214,9 +215,11 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
 
 /* ---- mobile ---- */
 @media (max-width: 760px) {
+  /* モバイルは自然なページスクロール: グラフ固定高 + パネルは成り行きの高さ */
+  #app { height: auto; }
   #main { flex-direction: column; }
-  #graph-wrap { flex: 1; min-height: 52vh; }
-  #panel { width: auto; max-height: 40vh; border-left: 0; border-top: 1px solid var(--border); }
+  #graph-wrap { flex: none; height: 56vh; min-height: 320px; }
+  #panel { width: auto; max-height: none; overflow-y: visible; border-left: 0; border-top: 1px solid var(--border); }
   .controls { margin-left: 0; }
   #search { width: 130px; }
 }
@@ -335,7 +338,7 @@ function homeXOf(n) {
   if (n.isSeed) return SEED_HOME[n.seedKey] * W;
   if (n.lineage === "AB") return 0.47 * W;
   const anchors = (n.seedCiters.length ? n.seedCiters : n.seedRefs).map(k => SEED_HOME[k] || 0.5);
-  const mean = anchors.reduce((a, b) => a + b, 0) / anchors.length;
+  const mean = anchors.length ? anchors.reduce((a, b) => a + b, 0) / anchors.length : 0.5;
   return (mean + (hash01(n.id) - 0.5) * 0.17) * W;
 }
 nodes.forEach(n => {
@@ -443,6 +446,9 @@ svg.call(zoom)
 function fitAll(animate) {
   const bw = wrap.clientWidth, bh = wrap.clientHeight;
   const k = Math.min(bw / W, bh / H) * 0.97;
+  // 小さい画面ではフィット倍率が既定下限 0.3 を下回るため、下限を動的に合わせる
+  // (でないと最初のホイール/ピンチで表示が下限へ跳ね、ジェスチャで全体に戻れない)
+  zoom.scaleExtent([Math.min(0.3, k), 7]);
   const t = d3.zoomIdentity.translate((bw - W * k) / 2, (bh - H * k) / 2).scale(k);
   (animate ? svg.transition().duration(500) : svg).call(zoom.transform, t);
 }
