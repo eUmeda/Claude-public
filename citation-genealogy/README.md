@@ -30,10 +30,10 @@
 | 起点 | 8件の work レコード（被引用数・著者・掲載誌・要旨・参照リスト） | 8 |
 | 1ホップ | 起点が参照する文献（要旨付き・参照リスト付き）。打ち切りなし | 421 |
 | 2ホップ | 1ホップ文献が参照する文献（参照リスト付き・要旨なし）。打ち切りなし。要求 7,933 件のうち OpenAlex 側で消えた ID を除く | 7,569 |
-| 後続 | 起点を引用する文献。**OpenAlex 分は未取得**（下記）。暫定で v0.1 の Scite サンプル（Keitt 2000 の被引用 60 件）を表示 | 60 |
+| 後続 | 各起点を引用する文献（参照リスト付き・要旨なし）。8 起点すべて打ち切りなし（Whittle 1,507 / Gardner 818 / Keitt 142 / Lindgren 2,787 / Monsi 682 / Pacala 1,217 / Canham 974 / Nicotra 397、重複除去後） | 7,864 |
 
-合計 8,058 文献・49,809 引用辺（取得済みノード集合の中で参照リストが示す辺すべて。
-2ホップ層どうしの引用も含む）。
+合計 15,862 文献・156,506 引用辺（取得済みノード集合の中で参照リストが示す辺すべて。
+2ホップ層どうしの引用、後続文献から祖先への引用も含む）。
 
 ### OpenAlex の料金体系と取得時の制約
 
@@ -43,10 +43,9 @@
   すぐ枯渇する（今回は起点 8 件を取った時点で残高ゼロだった）。
 - そこで後方 2 ホップは単一レコード取得を 8 並列で回して取り切った
   （`fetch_status.json` の `backward_mode: single`）。
-- 前方（被引用）は `cites:` フィルタ＝一覧クエリが必須なので打ち切り。
-  **無料の API キーを `openalex_key.md` に置いて再実行すれば全件入る**
-  （各起点 142〜2,806 件、合計 8,500 件程度・一覧 45 リクエストほど）。
-  Scite MCP も月間上限に達しており代替にならなかった。
+- 前方（被引用）は `cites:` フィルタ＝一覧クエリが必須なので初回は打ち切り。
+  その後ユーザーから API キーを受け取り `python3 fetch_openalex.py --citers-only`
+  で 8 起点すべての被引用を取得した（一覧クエリ約 50 回）。
 
 ### 系譜の判定と主な結果（引用関係の事実として確認できたこと）
 
@@ -65,13 +64,16 @@
   Cressie 1991 “Statistics for Spatial Data” (3起点・図内 268・Keitt/Lindgren が直接引用)。
 - 2起点以上が直接引用する共通祖先: 13件（v0.1 と同数）。2ホップ以内で2起点以上から
   到達する文献: 647件。
+- 後続文献のうち、**両系譜の起点を直接引用するものは 7 件**（例: Urban 2005
+  “Modeling ecological processes across scales” が Gardner 1987 と Pacala 1996 を引用）、
+  2 起点を引用するものは 460 件、1 起点のみが 7,397 件。
 - これらは引用関係の事実であり、「内容上の系譜が同じ」という解釈とは別。
 
 既知の限界:
 
 - 辺は OpenAlex が解決した参照関係のみ。古い文献ほど参照リストが過少（Whittle 1954 は 9件、
   Monsi & Saeki は 10件）。辺が無いことは「引用なし」を意味しない。
-- 2ホップ層は参照リストの ID だけ既知で、その先の文献は取得していない
+- 2ホップ層と後続層は参照リストの ID だけ既知で、その先の文献は取得していない
   （図内にある文献への辺だけ描く）。詳細パネルの「探索状態」で区別している。
 - 世界全体の被引用数（`cited_by_count`）はノードの濃さに使うが、質や関連性の指標ではない。
 
@@ -97,7 +99,7 @@ citation-genealogy/
     │   ├── refs.json           # 1ホップ（要旨付き）
     │   ├── refs_hop2.json      # 2ホップ（約 9 MB）
     │   ├── fetch_status.json   # 取得モードと前方取得の打ち切り理由
-    │   └── citers_<key>.json   # 前方（キー取得後に生成される）
+    │   └── citers_<key>.json   # 前方（8 起点の被引用・合計約 32 MB）
     ├── backward_scite.json       # v0.1 raw（比較用）
     ├── forward_keitt_scite.json  # v0.1 raw（暫定の後続層に使用）
     └── graph.json                # 整形済みグラフデータ（レイアウト座標込み）
@@ -152,8 +154,8 @@ citation-genealogy/
   **新しい PR は作らず #1 に積む**。
 - 公開済み Artifact: https://claude.ai/artifact/44wTSdKhvzR7bEBL8VvEFz
   （更新時は `url` にこれを渡して同じリンクを維持する）
-- 前方（被引用）を入れるには: OpenAlex の無料キーを `openalex_key.md` に置き
-  `python3 fetch_openalex.py`（seeds.json は再利用される）→ `python3 build_data.py`
-  → `artifact.html` を再公開。`build_data.py` は `citers_*.json` があれば
-  Scite サンプルの代わりにそれを後続層に使う。
+- 再取得: OpenAlex のキーを `openalex_key.md` に置き `python3 fetch_openalex.py`
+  （seeds.json は再利用される。前方だけなら `--citers-only`）→ `python3 build_data.py`
+  → `artifact.html` を再公開。`build_data.py` は `citers_*.json` が無ければ
+  v0.1 の Scite サンプルを後続層に使う。
 - v0.1 の Scite データ（`data/*_scite.json`）は比較用に残す。

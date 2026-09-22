@@ -1,5 +1,38 @@
 {
  "backward_mode": "single",
- "citers": {},
- "citers_skipped_reason": "cites: フィルタ（一覧クエリ）の無料予算が枯渇。API キーを openalex_key.md に置くか、UTC 深夜のリセット後に再実行してください。"
+ "citers": {
+  "whittle1954": {
+   "count": 1507,
+   "truncated": false
+  },
+  "gardner1987": {
+   "count": 818,
+   "truncated": false
+  },
+  "keitt2000": {
+   "count": 142,
+   "truncated": false
+  },
+  "lindgren2011": {
+   "count": 2787,
+   "truncated": false
+  },
+  "monsi1953": {
+   "count": 682,
+   "truncated": false
+  },
+  "pacala1996": {
+   "count": 1217,
+   "truncated": false
+  },
+  "canham1990": {
+   "count": 974,
+   "truncated": false
+  },
+  "nicotra1999": {
+   "count": 397,
+   "truncated": false
+  }
+ },
+ "citers_skipped_reason": null
 }

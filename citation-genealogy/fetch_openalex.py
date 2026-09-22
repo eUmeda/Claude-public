@@ -206,6 +206,8 @@ def main():
                     help="後方探索の深さ。1=起点の参照文献まで、2=その参照文献の参照文献まで全網羅（既定）")
     ap.add_argument("--no-citers", action="store_true", help="前方（被引用）の取得を省略")
     ap.add_argument("--refresh", action="store_true", help="既存の seeds.json を無視して再取得")
+    ap.add_argument("--citers-only", action="store_true",
+                    help="後方（refs.json / refs_hop2.json）は既存ファイルを使い、前方（被引用）だけ取得する")
     args = ap.parse_args()
     api_key, mailto = load_key()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -234,12 +236,16 @@ def main():
     # 2. 参照文献メタデータ（1ホップ目・重複除去して 50件ずつ）
     seed_ids = {s["id"] for s in seeds.values()}
     ref_ids = sorted({rid for s in seeds.values() for rid in s["referenced_works"]} - seed_ids)
-    refs = fetch_by_ids(ref_ids, WORK_FIELDS, api_key, mailto, "refs(hop1)")
-    (OUT / "refs.json").write_text(json.dumps(refs, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"hop1: {len(refs)} 件")
+    if args.citers_only and (OUT / "refs.json").exists():
+        print("--citers-only: 後方データは既存ファイルを再利用")
+        refs = []
+    else:
+        refs = fetch_by_ids(ref_ids, WORK_FIELDS, api_key, mailto, "refs(hop1)")
+        (OUT / "refs.json").write_text(json.dumps(refs, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"hop1: {len(refs)} 件")
 
     # 2b. 2ホップ目: 参照文献がさらに参照している文献をすべて取得（文献の宇宙の幹と枝）
-    if args.depth >= 2:
+    if args.depth >= 2 and not args.citers_only:
         known = seed_ids | set(ref_ids)
         hop2_ids = sorted({rid for w in refs for rid in w.get("referenced_works", [])} - known)
         truncated = len(hop2_ids) > MAX_HOP2_WORKS
@@ -254,7 +260,10 @@ def main():
 
     # 3. 各起点の被引用文献（全件・cursor paging）。cites: フィルタは一覧クエリ
     #    なので予算切れなら打ち切り、状態を fetch_status.json に残す。
-    status = {"backward_mode": "single" if MODE["single"] else "batch",
+    prev = {}
+    if (OUT / "fetch_status.json").exists():
+        prev = json.loads((OUT / "fetch_status.json").read_text(encoding="utf-8"))
+    status = {"backward_mode": prev.get("backward_mode") if args.citers_only else ("single" if MODE["single"] else "batch"),
               "citers": {}, "citers_skipped_reason": None}
     for key, s in ({} if args.no_citers else seeds).items():
         wid = s["id"].rsplit("/", 1)[-1]
