@@ -10,3 +10,7 @@ __pycache__/
 # 取得状況の記録だけは残す
 citation-genealogy/data/openalex/*.json
 !citation-genealogy/data/openalex/fetch_status.json
+
+# v0.3 クロールの生データ（fetch_crawl.py で再現可能）。status.json だけ残す
+citation-genealogy/data/crawl/*.json
+!citation-genealogy/data/crawl/status.json
