@@ -122,6 +122,85 @@ def hash01(s):
     return (h % 10000) / 10000
 
 
+STOPWORDS = set("""
+a an the and or of in on at to for from by with without as is are was were be been being this that these those
+it its into than then there their they them we our us you your he she his her not no nor but if so such which who
+whom whose what when where why how all any both each few more most other some own same very can will just should
+may might must also between among over under during before after above below up down out off again further once
+here about against because until while do does did doing have has had having only own too s t via use used using
+based results result study studies show shows shown found data model models analysis approach method methods
+paper present presented effect effects two three one however within across using new high low large small
+""".split())
+TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9\-]+")
+
+
+def stem(t):
+    """軽い語幹処理（複数形・-ies のみ）。ビューア側の query 正規化と同じ規則にする"""
+    if len(t) > 4 and t.endswith("ies"):
+        return t[:-3] + "y"
+    if len(t) > 4 and t.endswith("es") and not t.endswith("ss"):
+        return t[:-2] if t.endswith(("shes", "ches", "xes", "zes")) else t[:-1]
+    if len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
+        return t[:-1]
+    return t
+
+
+def tokenize(text):
+    out = set()
+    for t in TOKEN_RE.findall(text.lower()):
+        t = t.strip("-")
+        if len(t) < 3 or t in STOPWORDS or t.isdigit():
+            continue
+        out.add(stem(t))
+    return out
+
+
+def varint_bytes(values):
+    b = bytearray()
+    for v in values:
+        while v >= 0x80:
+            b.append((v & 0x7F) | 0x80)
+            v >>= 7
+        b.append(v)
+    return bytes(b)
+
+
+def build_keyword_index(nodes):
+    """要旨の語ごとに、その語を含むノード添字の昇順リストをデルタ varint で連結し base64 で 1 本の
+    文字列にする（vocab / off / blob）。ビューア側は語彙を前方一致で引いて postings を復号する。
+    df < 2 の語と、全体の 25% 超に現れる語は落とす。"""
+    import base64
+    postings = defaultdict(list)
+    n_docs = 0
+    for i, n in enumerate(nodes):
+        text = n.get("_abs_text") or ""
+        if not text:
+            continue
+        n_docs += 1
+        for t in tokenize(text):
+            postings[t].append(i)
+    max_df = max(2, int(0.25 * max(1, n_docs)))
+    vocab = sorted(t for t, lst in postings.items() if 2 <= len(lst) <= max_df)
+    blob = bytearray()
+    offsets = []
+    total = 0
+    for t in vocab:
+        lst = postings[t]
+        offsets.append(len(blob))
+        prev = -1
+        deltas = []
+        for i in lst:
+            deltas.append(i - prev - 1)
+            prev = i
+        blob += varint_bytes([len(lst)] + deltas)
+        total += len(lst)
+    offsets.append(len(blob))
+    index = {"vocab": vocab, "off": offsets, "blob": base64.b64encode(bytes(blob)).decode("ascii")}
+    stats = {"docs_with_abstract": n_docs, "terms": len(vocab), "postings": total,
+             "blob_kb": len(index["blob"]) // 1024}
+    return index, stats
+
+
 def load_json(p, default=None):
     if not p.exists():
         return default
@@ -135,6 +214,8 @@ def main():
     refs1 = load_json(OA / "refs.json", [])
     hop2 = load_json(OA / "refs_hop2.json", {"truncated": None, "requested": 0, "works": []})
     status = load_json(OA / "fetch_status.json", {})
+    # 2ホップ層・後続層の要旨（fetch_openalex.py --abstracts）。ビューアには埋め込まず索引のみに使う
+    abstracts_extra = load_json(OA / "abstracts.json", {})
 
     # ---- ノード表: OpenAlex 短縮ID をキーにする --------------------------------
     works = {}          # id -> raw work
@@ -305,7 +386,11 @@ def main():
         }
         ab = clean_text(w.get("abstract"), 1500)
         if ab:
-            node["abstract"] = ab
+            node["abstract"] = ab          # 起点・1ホップは本文を埋め込む（詳細パネルで表示）
+            node["hasAbstract"] = True
+        elif abstracts_extra.get(wid):
+            node["hasAbstract"] = True     # 2ホップ層・後続層は索引のみ（本文は埋め込まない）
+        node["_abs_text"] = ab or abstracts_extra.get(wid) or ""
         if key:
             node.update({"seedKey": key, "label": SEEDS[key]["label"], "noteJa": SEEDS[key]["note_ja"]})
         nodes.append(node)
@@ -394,6 +479,11 @@ def main():
         n["y"] = round(n["y"], 1)
         n.pop("_row", None)
 
+    # ---- キーワード索引（要旨の語 → ノード添字。タイトルは本文をそのまま埋め込むので索引不要） ----
+    kw_index, kw_stats = build_keyword_index(nodes)
+    for n in nodes:
+        n.pop("_abs_text", None)
+
     # ---- 検証 ----------------------------------------------------------------
     for s, t in edges:
         assert s in index and t in index and s != t
@@ -448,10 +538,12 @@ def main():
     }
 
     # 埋め込み用の圧縮表現: 辺はノード添字のペア
+    meta["coverage"]["abstracts"] = kw_stats
     graph = {
         "meta": meta,
         "nodes": nodes,
         "edges": [[index[s], index[t]] for s, t in edges],
+        "kw": kw_index,
     }
     out = HERE / "data" / "graph.json"
     out.write_text(json.dumps(graph, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -489,6 +581,7 @@ def main():
     print(f"shared ancestors: direct(>=2 seeds cite)={len(shared_direct)}  reach(>=2 seeds reach)={len(shared_reach)}")
     print(f"forward nodes={len(fwd_nodes)} (source={citers_source})  no_year={len(no_year)}")
     print(f"year range {min_year + 1}–{max_year - 1}; max cited_by_count={max_cited}")
+    print(f"keyword index: {kw_stats}")
     print(f"wrote {out} ({out.stat().st_size // 1024} KB) and index.html ({len(html) // 1024} KB)")
     bridges.sort(key=lambda n: (-(len(n["seedAnc"])), -n["inDeg"]))
     print("\n-- direct bridges (hop1 from both lineages) --")

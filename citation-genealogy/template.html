@@ -212,14 +212,14 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
     </div>
     <div id="stats"></div>
     <div class="controls">
-      <input id="keyword" type="search" placeholder="キーワード（タイトル・要旨で関連度）" aria-label="キーワードで関連文献を強調">
+      <input id="keyword" type="search" placeholder="キーワード（英語。タイトル・要旨で関連度）" aria-label="キーワードで関連文献を強調">
       <label><input type="checkbox" id="toggle-hop2" checked> 2ホップ層</label>
       <label><input type="checkbox" id="toggle-fwd" checked> 後続層</label>
       <label><input type="checkbox" id="toggle-shared"> 共通祖先のみ</label>
       <label>枝の刈り込み
         <select id="prune" aria-label="図内で引用されている数の下限">
-          <option value="0">なし</option>
-          <option value="2">図内被引用 2 以上</option>
+          <option value="0">なし（全 文献）</option>
+          <option value="2" selected>図内被引用 2 以上</option>
           <option value="3">3 以上</option>
           <option value="5">5 以上</option>
         </select>
@@ -250,7 +250,7 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
         <div class="placeholder">
           <h2>文献詳細</h2>
           ノードをクリックすると、その文献の書誌情報と、この図の中での引用関係（祖先・子孫のハイライト）を表示します。
-          <p class="ph-hint">大きい丸＝起点8文献。橙のひし形＝<b>両方の系譜から引用をたどって到達できる祖先</b>。濃いノードほど世界全体での被引用数が多い。上のキーワード欄に語を入れると、タイトル・要旨が関連する文献だけが浮かび上がります。</p>
+          <p class="ph-hint">大きい丸＝起点8文献。橙のひし形＝<b>両方の系譜から引用をたどって到達できる祖先</b>。濃いノードほど世界全体での被引用数が多い。初期状態は「図内で2回以上引用されている文献」だけを描いています（枝の刈り込みを「なし」にすると全文献）。上のキーワード欄に語を入れると、タイトル・要旨が関連する文献だけが浮かび上がります。</p>
         </div>
       </div>
       <details id="legend" open>
@@ -316,7 +316,8 @@ nodes.forEach(n => {
   n.trunk = Math.log1p(n.inDeg) / logMaxIn;               // 0..1
   n.isDirectBridge = n.lineage === "AB" && n.hopA === 1 && n.hopB === 1;
   n.isKey = n.isSeed || n.isDirectBridge || n.seedCiters.length >= 2 || n.inDeg >= 8;
-  n.searchText = ((n.title || "") + " " + (n.abstract || "") + " " + (n.venue || "") + " " + (n.authors || "")).toLowerCase();
+  n.titleLower = (n.title || "").toLowerCase();
+  n.venueLower = (n.venue || "").toLowerCase();
 });
 edges.forEach(e => { e.w = Math.max(e.t.trunk, e.s.isSeed ? 0.35 : 0); });
 
@@ -347,7 +348,7 @@ function resize() {
 
 /* ================= 表示状態 ================= */
 const state = {
-  hop2: true, fwd: true, sharedOnly: false, prune: 0, labelsAll: false, depth: 2,
+  hop2: true, fwd: true, sharedOnly: false, prune: 2, labelsAll: false, depth: 2,
   selected: null, anc: null, desc: null,      // 選択とその祖先・子孫（Set of id）
   kw: "", kwScore: null,                      // キーワード関連度（Map id -> score）
   hover: null,
@@ -743,7 +744,11 @@ function renderDetail(n) {
   fwd.textContent = ef === "full" ? "前方（被引用）: 全件取得済"
     : ef === "sample" ? "前方（被引用）: サンプルのみ取得（打ち切りあり）"
     : "前方（被引用）: 未取得 — 世界全体の被引用数のみ既知";
-  ex.append(back, fwd);
+  const abs = el("div", n.hasAbstract ? "ex-yes" : "ex-no");
+  abs.textContent = n.abstract ? "要旨: 取得済（下に表示）"
+    : n.hasAbstract ? "要旨: 取得済（キーワード索引にのみ使用。本文は OpenAlex リンク先で）"
+    : "要旨: OpenAlex に無し";
+  ex.append(back, fwd, abs);
   detail.append(ex);
   if (state.anc && state.selected === n) {
     const dl = state.depth ? state.depth + "ホップ以内" : "無制限";
@@ -757,21 +762,48 @@ function renderDetail(n) {
 const kwInput = document.getElementById("keyword");
 const kwResults = document.getElementById("kw-results");
 let kwTimer = null;
-function scoreNode(n, terms) {
-  let s = 0;
-  const title = (n.title || "").toLowerCase();
-  for (const t of terms) {
-    if (title.includes(t)) s += 3;
-    if (n.abstract) {
-      const ab = n.abstract.toLowerCase();
-      let c = 0, i = -1;
-      while ((i = ab.indexOf(t, i + 1)) !== -1 && c < 3) c++;
-      s += c;
+/* 要旨索引（build_data.py が生成）: vocab は語幹化済み・昇順。blob は語ごとの [件数, デルタ...] の varint */
+const KW = GRAPH.kw || { vocab: [], off: [0], blob: "" };
+const kwBytes = (() => { const bin = atob(KW.blob); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; })();
+const kwCache = new Map();
+function postingsOf(vi) {
+  if (kwCache.has(vi)) return kwCache.get(vi);
+  let p = KW.off[vi]; const end = KW.off[vi + 1];
+  const read = () => { let v = 0, sh = 0, b; do { b = kwBytes[p++]; v |= (b & 0x7f) << sh; sh += 7; } while (b & 0x80); return v; };
+  const cnt = read(); const out = new Array(cnt); let prev = -1;
+  for (let i = 0; i < cnt && p <= end; i++) { prev = prev + read() + 1; out[i] = prev; }
+  kwCache.set(vi, out); return out;
+}
+function stem(t) {
+  if (t.length > 4 && t.endsWith("ies")) return t.slice(0, -3) + "y";
+  if (t.length > 4 && t.endsWith("es") && !t.endsWith("ss")) return /(shes|ches|xes|zes)$/.test(t) ? t.slice(0, -2) : t.slice(0, -1);
+  if (t.length > 3 && t.endsWith("s") && !t.endsWith("ss")) return t.slice(0, -1);
+  return t;
+}
+function vocabPrefix(term) {
+  // 昇順語彙を二分探索して前方一致する語のインデックスを最大 12 件返す
+  let lo = 0, hi = KW.vocab.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (KW.vocab[mid] < term) lo = mid + 1; else hi = mid; }
+  const out = [];
+  for (let i = lo; i < KW.vocab.length && out.length < 12 && KW.vocab[i].startsWith(term); i++) out.push(i);
+  return out;
+}
+function scoreAll(terms) {
+  // 返り値: Map(node.id -> score)。タイトル一致 3、要旨一致 1（語ごと）、掲載誌 1、DOI 5
+  const sc = new Map();
+  const add = (n, v) => sc.set(n.id, (sc.get(n.id) || 0) + v);
+  for (const raw of terms) {
+    const t = stem(raw);
+    for (const n of nodes) {
+      if (n.titleLower.includes(raw) || n.titleLower.includes(t)) add(n, 3);
+      else if (n.venueLower.includes(raw)) add(n, 1);
+      if (n.doi && n.doi.includes(raw)) add(n, 5);
     }
-    if (n.venue && n.venue.toLowerCase().includes(t)) s += 1;
-    if (n.doi && n.doi.includes(t)) s += 5;
+    const hit = new Set();
+    for (const vi of vocabPrefix(t)) for (const idx of postingsOf(vi)) hit.add(idx);
+    for (const idx of hit) add(nodes[idx], 1);
   }
-  return s;
+  return sc;
 }
 function runKeyword() {
   const q = kwInput.value.trim().toLowerCase();
@@ -781,13 +813,12 @@ function runKeyword() {
     state.kwScore = null; kwResults.hidden = true; kwResults.innerHTML = "";
     scheduleDraw(); if (state.selected) renderDetail(state.selected); return;
   }
-  const sc = new Map();
-  for (const n of nodes) { const s = scoreNode(n, terms); if (s > 0) sc.set(n.id, s); }
+  const sc = scoreAll(terms);
   state.kwScore = sc;
   kwResults.innerHTML = "";
   const head = el("div", "kw-head");
   head.append(document.createTextNode("キーワード「" + q + "」に関連: "), el("b", null, sc.size.toLocaleString() + " 件"),
-    document.createTextNode("（タイトル・要旨・掲載誌の一致度順。要旨は起点と1ホップのみ取得済）"));
+    document.createTextNode("（タイトル・要旨・掲載誌の一致度順。要旨は全層を索引化、語は英語）"));
   kwResults.append(el("h2", null, "関連文献"), head);
   const ranked = nodes.filter(n => sc.has(n.id)).sort((a, b) => sc.get(b.id) - sc.get(a.id) || (b.cited || 0) - (a.cited || 0));
   const ul = el("ul", "rel-list");
@@ -857,9 +888,5 @@ document.fonts && document.fonts.ready.then(scheduleDraw);
 resize();
 refreshVisible();
 fitAll(false);
-/* 初期表示: 直接ブリッジ文献を選択して見どころを示す */
-{
-  const bridge = nodes.find(n => n.isDirectBridge) || nodes.find(n => n.lineage === "AB");
-  if (bridge) selectNode(bridge);
-}
+/* 初期表示は選択なしの全体図（枝の刈り込み 2 以上）。「なし」にすると全文献を描く */
 </script>

@@ -199,6 +199,31 @@ def fetch_by_ids(ids, fields, api_key, mailto, label):
     return out
 
 
+def fetch_abstracts(api_key, mailto):
+    """refs_hop2.json / citers_*.json の文献のうち要旨未取得のものを取得して abstracts.json に保存。
+    要旨はビューアに埋め込まず、キーワード関連度の索引（build_data.py）だけに使う。"""
+    have = {}
+    out_path = OUT / "abstracts.json"
+    if out_path.exists():
+        have = json.loads(out_path.read_text(encoding="utf-8"))
+    ids = []
+    hop2 = json.loads((OUT / "refs_hop2.json").read_text(encoding="utf-8"))
+    ids += [w["id"] for w in hop2["works"]]
+    for p in sorted(OUT.glob("citers_*.json")):
+        ids += [w["id"] for w in json.loads(p.read_text(encoding="utf-8"))["citers"]]
+    ids = sorted({i for i in ids if i.rsplit("/", 1)[-1] not in have})
+    print(f"abstracts: 取得対象 {len(ids)} 件（取得済 {len(have)} 件）")
+    works = fetch_by_ids(ids, "id,abstract_inverted_index", api_key, mailto, "abstracts")
+    got = 0
+    for w in works:
+        wid = w["id"].rsplit("/", 1)[-1]
+        have[wid] = w.get("abstract")   # None も記録（OpenAlex に要旨が無い＝再取得不要）
+        if w.get("abstract"):
+            got += 1
+    out_path.write_text(json.dumps(have, ensure_ascii=False), encoding="utf-8")
+    print(f"abstracts: 要旨あり {got} / {len(works)} 件 → {out_path}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--test", action="store_true", help="接続確認のみ（Keitt 2000 を1件取得）")
@@ -208,9 +233,15 @@ def main():
     ap.add_argument("--refresh", action="store_true", help="既存の seeds.json を無視して再取得")
     ap.add_argument("--citers-only", action="store_true",
                     help="後方（refs.json / refs_hop2.json）は既存ファイルを使い、前方（被引用）だけ取得する")
+    ap.add_argument("--abstracts", action="store_true",
+                    help="既存の 2ホップ層・後続層の文献について要旨だけ取得し abstracts.json に保存する")
     args = ap.parse_args()
     api_key, mailto = load_key()
     OUT.mkdir(parents=True, exist_ok=True)
+
+    if args.abstracts:
+        fetch_abstracts(api_key, mailto)
+        return
 
     if args.test:
         w = request(f"/works/doi:{urllib.parse.quote(SEED_DOIS['keitt2000'], safe='')}",

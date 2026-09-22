@@ -5,3 +5,8 @@ openalex_key.md
 # 作業用
 node_modules/
 __pycache__/
+
+# OpenAlex の生データ（fetch_openalex.py で再現可能・合計 50 MB 超になるため Git 管理外）
+# 取得状況の記録だけは残す
+citation-genealogy/data/openalex/*.json
+!citation-genealogy/data/openalex/fetch_status.json
