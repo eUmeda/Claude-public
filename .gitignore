@@ -1,0 +1,7 @@
+# OpenAlex API キー（機密・コミット禁止）
+citation-genealogy/openalex_key.md
+openalex_key.md
+
+# 作業用
+node_modules/
+__pycache__/

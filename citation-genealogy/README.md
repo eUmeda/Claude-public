@@ -70,6 +70,21 @@ citation-genealogy/
 
 再生成: `python3 build_data.py`（依存なし・標準ライブラリのみ）
 
+## OpenAlex API キーの引き継ぎ
+
+被引用数・著者・abstract・前方探索の拡張（v0.2）は OpenAlex API を使う。
+
+- キーは `citation-genealogy/openalex_key.md` に置く（**Git 管理外**。
+  ルートの `.gitignore` で除外済み。コミット禁止）。
+- 書式は次の2行を含めばよい: `api_key: <キー>` / `mailto: <メールアドレス>`
+- セッションのコンテナは使い捨てなので、新しいセッションでは
+  キーファイルを再アップロードして同じ場所に置き直す。
+- 取得は `python3 fetch_openalex.py --test`（接続確認）→
+  `python3 fetch_openalex.py`（全件取得、`data/openalex/` に保存）。
+- **注意**: キーだけでは足りない。実行環境のネットワーク許可に
+  `api.openalex.org` が追加されている必要がある（claude.ai/code の
+  環境設定 → ネットワークアクセス）。
+
 ## 次に決めること（ユーザーと相談）
 
 - 全世界の被引用数・著者・abstract の取得経路
