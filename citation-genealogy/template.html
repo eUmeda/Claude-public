@@ -1,0 +1,665 @@
+<title>引用地層図</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3;
+  --surface: #fcfcfb;
+  --panel: #ffffff;
+  --ink: #17191c;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --line-a: #2a78d6;   /* 系譜A: 確率場・中立景観 */
+  --line-b: #1baf7a;   /* 系譜B: 森林・林冠光環境 */
+  --bridge: #eb6834;   /* 両系譜から引用される祖先 */
+  --edge: #898781;
+  --hit: #eb6834;
+  --font-ui: "Zen Kaku Gothic New", system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --panel: #202020;
+    --ink: #f2f2ef;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --line-a: #3987e5;
+    --line-b: #199e70;
+    --bridge: #d95926;
+    --edge: #898781;
+    --hit: #d95926;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --surface: #1a1a19;
+  --panel: #202020;
+  --ink: #f2f2ef;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255,255,255,0.10);
+  --line-a: #3987e5;
+  --line-b: #199e70;
+  --bridge: #d95926;
+  --edge: #898781;
+  --hit: #d95926;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+}
+#app { height: 100%; display: flex; flex-direction: column; }
+
+/* ---- header ---- */
+#top {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px 18px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: 0.04em; }
+.brand .sub { font-size: 11px; color: var(--ink-2); }
+#stats { font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+#stats b { color: var(--ink); font-weight: 700; }
+.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-left: auto; font-size: 12px; }
+.controls label { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.controls input[type="checkbox"] { accent-color: var(--line-a); }
+#search {
+  font: inherit; font-size: 12px; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 9px; width: 170px;
+}
+#search:focus { outline: 2px solid var(--line-a); outline-offset: 1px; }
+#reset-view {
+  font: inherit; font-size: 12px; color: var(--ink-2);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer;
+}
+#reset-view:hover { color: var(--ink); border-color: var(--axis); }
+#reset-view:focus-visible, .controls input:focus-visible { outline: 2px solid var(--line-a); outline-offset: 1px; }
+
+/* ---- main split ---- */
+#main { flex: 1; display: flex; min-height: 0; }
+#graph-wrap { flex: 1; position: relative; overflow: hidden; background: var(--surface); min-width: 0; }
+#graph { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#graph.dragging { cursor: grabbing; }
+.axis-hint {
+  position: absolute; right: 12px; font-size: 10px; color: var(--muted);
+  letter-spacing: 0.12em; pointer-events: none; user-select: none;
+}
+.axis-hint.top { top: 8px; }
+.axis-hint.bottom { bottom: 8px; }
+
+/* ---- svg marks ---- */
+.stratum { fill: var(--grid); fill-opacity: 0.28; }
+.decade-line { stroke: var(--grid); stroke-width: 1; }
+.decade-label { font-family: var(--font-ui); font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.edge { fill: none; stroke: var(--edge); stroke-opacity: 0.16; stroke-width: 1; }
+.edge.fwd { stroke: var(--line-a); stroke-opacity: 0.20; }
+.node { cursor: pointer; }
+.node .core { stroke: var(--surface); stroke-width: 1.4; }
+.node.seed .core { stroke: var(--ink); stroke-width: 1.6; }
+.node.fwd-node .core { fill: var(--surface); stroke: var(--line-a); stroke-width: 1.8; }
+.node.noyear .core { stroke-dasharray: 2 2; }
+.node-label {
+  font-family: var(--font-ui); fill: var(--ink-2); font-size: 10px;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round;
+  pointer-events: none;
+}
+.node-label.seed-label { fill: var(--ink); font-size: 11.5px; font-weight: 700; }
+.node-label.key-label { font-weight: 500; }
+.node-label.minor { display: none; }
+.labels-all .node-label.minor, .zoomed-in .node-label.minor { display: block; }
+/* 選択時の強調・減光 */
+.has-selection .node:not(.related) { opacity: 0.12; }
+.has-selection .edge:not(.related-edge) { stroke-opacity: 0.04; }
+.edge.related-edge { stroke-opacity: 0.85; stroke-width: 1.5; }
+.node.selected .core { stroke: var(--hit); stroke-width: 2.6; }
+.node.search-hit .core { stroke: var(--hit); stroke-width: 2.2; }
+.hidden-layer { display: none; }
+
+/* ---- tooltip / search dropdown ---- */
+#tooltip {
+  position: absolute; z-index: 5; max-width: 300px;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  padding: 8px 11px; font-size: 12px; line-height: 1.45; pointer-events: none;
+}
+#tooltip .tt-title { font-family: var(--font-serif); }
+#tooltip .tt-meta { color: var(--ink-2); font-size: 11px; margin-top: 3px; }
+#search-results {
+  position: absolute; z-index: 6; top: 4px; left: 12px; width: min(340px, 86%);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.16); overflow: hidden;
+}
+#search-results button {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 12px;
+  color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--border);
+  padding: 7px 11px; cursor: pointer;
+}
+#search-results button:last-child { border-bottom: 0; }
+#search-results button:hover, #search-results button:focus-visible { background: var(--bg); outline: none; }
+#search-results .sr-year { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 6px; }
+
+/* ---- side panel ---- */
+#panel {
+  width: 342px; flex: none; overflow-y: auto;
+  border-left: 1px solid var(--border); background: var(--panel);
+  padding: 14px 16px 20px;
+}
+#panel h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; }
+.chip {
+  display: inline-block; font-size: 10.5px; font-weight: 500;
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 1px 8px; margin: 0 4px 4px 0; color: var(--ink-2); background: var(--bg);
+}
+.chip.c-seed { color: var(--ink); border-color: var(--ink); font-weight: 700; }
+.chip.c-a { color: var(--line-a); border-color: var(--line-a); }
+.chip.c-b { color: var(--line-b); border-color: var(--line-b); }
+.chip.c-ab { color: var(--bridge); border-color: var(--bridge); font-weight: 700; }
+#detail .d-title { font-family: var(--font-serif); font-size: 15.5px; line-height: 1.4; margin: 4px 0 2px; }
+#detail .d-meta { font-size: 12px; color: var(--ink-2); }
+#detail .d-note {
+  font-size: 12px; background: var(--bg); border-left: 3px solid var(--axis);
+  padding: 7px 10px; margin: 10px 0; border-radius: 0 6px 6px 0;
+}
+#detail .d-note .n-src { display: block; font-size: 10px; color: var(--muted); margin-top: 3px; }
+#detail a { color: var(--line-a); text-decoration: none; border-bottom: 1px solid transparent; }
+#detail a:hover { border-bottom-color: var(--line-a); }
+.rel-block { margin: 10px 0; }
+.rel-block .rel-head { font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
+.rel-list { list-style: none; margin: 4px 0 0; padding: 0; max-height: 180px; overflow-y: auto; border-top: 1px solid var(--border); }
+.rel-list li { border-bottom: 1px solid var(--border); }
+.rel-list button {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 11.5px;
+  line-height: 1.35; color: var(--ink); background: none; border: 0;
+  padding: 5px 4px; cursor: pointer;
+}
+.rel-list button:hover, .rel-list button:focus-visible { background: var(--bg); outline: none; }
+.rel-list .rl-year { color: var(--muted); font-variant-numeric: tabular-nums; }
+.explored { font-size: 11.5px; color: var(--ink-2); margin: 10px 0; }
+.explored .ex-yes { color: var(--ink); font-weight: 500; }
+.explored .ex-no { color: var(--muted); }
+.placeholder { color: var(--ink-2); font-size: 12.5px; }
+.placeholder .ph-hint { color: var(--muted); font-size: 11.5px; }
+details { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 10px; }
+details summary { font-size: 12px; font-weight: 700; color: var(--ink-2); cursor: pointer; letter-spacing: 0.05em; }
+details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset: 1px; }
+.legend-grid { display: grid; grid-template-columns: 26px 1fr; gap: 6px 8px; align-items: center; font-size: 11.5px; color: var(--ink-2); margin-top: 8px; }
+.legend-grid svg { display: block; }
+.limits-list { font-size: 11.5px; color: var(--ink-2); padding-left: 18px; margin: 8px 0; }
+.limits-list li { margin-bottom: 5px; }
+.covg-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.covg-table td { border-top: 1px solid var(--border); padding: 3px 4px; color: var(--ink-2); }
+.covg-table td:last-child { text-align: right; color: var(--ink); }
+
+/* ---- mobile ---- */
+@media (max-width: 760px) {
+  #main { flex-direction: column; }
+  #graph-wrap { flex: 1; min-height: 52vh; }
+  #panel { width: auto; max-height: 40vh; border-left: 0; border-top: 1px solid var(--border); }
+  .controls { margin-left: 0; }
+  #search { width: 130px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div id="app">
+  <header id="top">
+    <div class="brand">
+      <h1>引用地層図</h1>
+      <span class="sub">引用系譜ビューア 試作 v0.1 ｜ 上=新しい・下=古い</span>
+    </div>
+    <div id="stats"></div>
+    <div class="controls">
+      <input id="search" type="search" placeholder="タイトル・DOI検索" aria-label="文献検索">
+      <label><input type="checkbox" id="toggle-fwd" checked> 後続層</label>
+      <label><input type="checkbox" id="toggle-shared"> 共通祖先のみ</label>
+      <label><input type="checkbox" id="toggle-labels"> 全ラベル</label>
+      <button id="reset-view" type="button">全体表示</button>
+    </div>
+  </header>
+  <div id="main">
+    <div id="graph-wrap">
+      <svg id="graph" role="img" aria-label="引用系譜グラフ。縦軸は年代で上が新しい。"></svg>
+      <div class="axis-hint top">↑ 新しい</div>
+      <div class="axis-hint bottom">↓ 古い</div>
+      <div id="tooltip" hidden></div>
+      <div id="search-results" hidden></div>
+    </div>
+    <aside id="panel">
+      <div id="detail">
+        <div class="placeholder">
+          <h2>文献詳細</h2>
+          ノードをクリックすると、その文献の書誌情報と、この図の中での引用関係（祖先・子孫のハイライト）を表示します。
+          <p class="ph-hint">大きい丸＝起点8文献。橙のひし形＝<b>両方の系譜から引用されている祖先</b>。まずは中央付近の橙をクリックしてみてください。</p>
+        </div>
+      </div>
+      <details id="legend" open>
+        <summary>凡例</summary>
+        <div class="legend-grid">
+          <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="7" fill="var(--line-a)" stroke="var(--ink)" stroke-width="1.5"/></svg>
+          <span>起点文献（8件・ラベル常時表示）</span>
+          <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="5" fill="var(--line-a)"/></svg>
+          <span>確率場・中立景観系の起点が引用する文献</span>
+          <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="5" fill="var(--line-b)"/></svg>
+          <span>森林・光環境系の起点が引用する文献</span>
+          <svg width="26" height="18" viewBox="0 0 26 18"><rect x="8" y="4" width="10" height="10" transform="rotate(45 13 9)" fill="var(--bridge)"/></svg>
+          <span><b>両方の系譜</b>の起点から引用される祖先（ブリッジ）</span>
+          <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="5" fill="var(--surface)" stroke="var(--line-a)" stroke-width="1.8"/></svg>
+          <span>後続文献 — Keitt 2000 を引用（輪郭のみ・サンプル）</span>
+          <svg width="26" height="18" viewBox="0 0 26 18"><path d="M4 14 C 4 9 22 9 22 4" fill="none" stroke="var(--edge)" stroke-width="1.4"/></svg>
+          <span>引用の向き：上（新）の文献が下（古）の文献を引用</span>
+        </div>
+        <div class="legend-grid" style="grid-template-columns: 1fr; margin-top: 10px;">
+          <span>● ノードの大きさ＝<b>この図の中で</b>参照されている数（世界全体の被引用数ではない）</span>
+          <span>● 描かれている辺は「確認できた引用」のみ。辺が無いのは「未探索」であって「引用なし」とは限らない。参照リストを展開済みなのは起点8件（後方）と Keitt 2000（前方サンプル60件）のみ。</span>
+        </div>
+      </details>
+      <details id="limits">
+        <summary>データの範囲と限界</summary>
+        <ul class="limits-list" id="caveats"></ul>
+        <div style="font-size:11.5px;color:var(--ink-2)">起点ごとの参照文献 取得数（DOI解決分）:</div>
+        <table class="covg-table" id="covg"></table>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+"use strict";
+const GRAPH = __GRAPH_DATA__;
+
+/* ================= 基本参照 ================= */
+const nodes = GRAPH.nodes, edges = GRAPH.edges, meta = GRAPH.meta;
+const byId = new Map(nodes.map(n => [n.id, n]));
+const LINEAGE_NAME = { A: "確率場・中立景観系", B: "森林・光環境系", AB: "両系譜", F: "後続（Keitt を引用）" };
+const SEED_HOME = {
+  whittle1954: 0.15, lindgren2011: 0.15, gardner1987: 0.33, keitt2000: 0.33,
+  nicotra1999: 0.60, pacala1996: 0.69, monsi1953: 0.74, canham1990: 0.82,
+};
+
+/* 隣接リスト（out = 引用している側 → 引用される側） */
+const outAdj = new Map(), inAdj = new Map();
+nodes.forEach(n => { outAdj.set(n.id, []); inAdj.set(n.id, []); });
+edges.forEach(e => { outAdj.get(e.s).push(e.t); inAdj.get(e.t).push(e.s); });
+
+/* 決定的な擬似乱数（DOI から） */
+function hash01(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+/* ================= レイアウト ================= */
+const W = 1240;
+const YPX = 13;
+const PAD_TOP = 46, PAD_BOTTOM = 64;
+const years = nodes.filter(n => n.plotYear).map(n => n.plotYear);
+const maxYear = Math.max(...years) + 1;
+const minYear = Math.min(...years) - 1;
+const H = PAD_TOP + (maxYear - minYear) * YPX + PAD_BOTTOM;
+const yOf = y => PAD_TOP + (maxYear - y) * YPX;
+const NOYEAR_Y = H - PAD_BOTTOM / 2;
+
+function radiusOf(n) {
+  if (n.isSeed) return 13;
+  const s = n.seedCiters.length;
+  if (s >= 2) return 6.5 + 1.5 * (s - 2);
+  if (s === 1) return 4.4;
+  return 4.2; // 後続文献
+}
+function homeXOf(n) {
+  if (n.isSeed) return SEED_HOME[n.seedKey] * W;
+  if (n.lineage === "AB") return 0.47 * W;
+  const anchors = (n.seedCiters.length ? n.seedCiters : n.seedRefs).map(k => SEED_HOME[k] || 0.5);
+  const mean = anchors.reduce((a, b) => a + b, 0) / anchors.length;
+  return (mean + (hash01(n.id) - 0.5) * 0.17) * W;
+}
+nodes.forEach(n => {
+  n.r = radiusOf(n);
+  n.homeX = homeXOf(n);
+  n.homeY = n.plotYear ? yOf(n.plotYear) : NOYEAR_Y;
+  n.x = n.homeX; n.y = n.homeY + (hash01(n.id + "y") - 0.5) * 4;
+  if (n.isSeed) { n.fx = n.homeX; n.fy = n.homeY; }
+});
+{
+  const sim = d3.forceSimulation(nodes)
+    .force("x", d3.forceX(d => d.homeX).strength(0.055))
+    .force("y", d3.forceY(d => d.homeY).strength(0.95))
+    .force("collide", d3.forceCollide(d => d.r + 2.4).iterations(2))
+    .stop();
+  for (let i = 0; i < 280; i++) sim.tick();
+  nodes.forEach(n => { n.x = Math.max(16, Math.min(W - 16, n.x)); });
+}
+
+/* ================= SVG 構築 ================= */
+const svg = d3.select("#graph");
+const root = svg.append("g");
+const wrap = document.getElementById("graph-wrap");
+
+/* 年代の地層帯 */
+const strata = root.append("g");
+const dec0 = Math.floor(minYear / 10) * 10;
+for (let d = dec0; d <= maxYear; d += 10) {
+  const y1 = yOf(Math.min(d + 10, maxYear)), y2 = yOf(Math.max(d, minYear));
+  if ((d / 10) % 2 === 0) {
+    strata.append("rect").attr("class", "stratum")
+      .attr("x", 0).attr("y", y1).attr("width", W).attr("height", y2 - y1);
+  }
+  if (d >= minYear && d <= maxYear) {
+    strata.append("line").attr("class", "decade-line")
+      .attr("x1", 0).attr("x2", W).attr("y1", yOf(d)).attr("y2", yOf(d));
+    strata.append("text").attr("class", "decade-label")
+      .attr("x", 6).attr("y", yOf(d) - 4).text(d);
+  }
+}
+strata.append("text").attr("class", "decade-label")
+  .attr("x", 6).attr("y", NOYEAR_Y - 14).text("年不明");
+
+/* 辺 */
+const edgeSel = root.append("g").selectAll("path").data(edges).join("path")
+  .attr("class", e => "edge " + e.kind)
+  .attr("d", e => {
+    const a = byId.get(e.s), b = byId.get(e.t);
+    const my = (a.y + b.y) / 2;
+    return `M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`;
+  });
+
+/* ノード */
+const nodeSel = root.append("g").selectAll("g").data(nodes).join("g")
+  .attr("class", n => {
+    let c = "node";
+    if (n.isSeed) c += " seed";
+    if (n.lineage === "F") c += " fwd-node";
+    if (!n.plotYear) c += " noyear";
+    return c;
+  })
+  .attr("transform", n => `translate(${n.x},${n.y})`)
+  .attr("tabindex", -1);
+
+nodeSel.each(function(n) {
+  const g = d3.select(this);
+  const fillOf = { A: "var(--line-a)", B: "var(--line-b)", AB: "var(--bridge)", F: "var(--surface)" };
+  const fill = fillOf[n.lineage] || "var(--muted)";
+  if (n.lineage === "AB" && !n.isSeed) {
+    const s = n.r * 1.7;
+    g.append("rect").attr("class", "core")
+      .attr("x", -s / 2).attr("y", -s / 2).attr("width", s).attr("height", s)
+      .attr("transform", "rotate(45)").attr("fill", fill);
+  } else {
+    const c = g.append("circle").attr("class", "core").attr("r", n.r).attr("fill", fill);
+    if (n.lineage === "F") c.attr("stroke", "var(--line-a)");
+    else if (!n.isSeed && n.seedCiters.length === 1) c.attr("fill-opacity", 0.62);
+  }
+});
+
+/* ラベル */
+function shortTitle(t, len) { return t.length > len ? t.slice(0, len - 1) + "…" : t; }
+nodeSel.append("text")
+  .attr("class", n => {
+    if (n.isSeed) return "node-label seed-label";
+    if (n.lineage === "AB" || n.seedCiters.length >= 2) return "node-label key-label";
+    return "node-label minor";
+  })
+  .attr("x", n => n.r + 4).attr("y", 3.5)
+  .text(n => {
+    if (n.isSeed) return n.label;
+    const base = shortTitle(n.title, n.lineage === "AB" || n.seedCiters.length >= 2 ? 30 : 26);
+    return base + (n.year ? " (" + n.year + ")" : "");
+  });
+
+/* ================= ズーム ================= */
+const zoom = d3.zoom().scaleExtent([0.3, 7]).on("zoom", ev => {
+  root.attr("transform", ev.transform);
+  svg.classed("zoomed-in", ev.transform.k > 2.1);
+});
+svg.call(zoom)
+  .on("pointerdown.cursor", () => svg.classed("dragging", true))
+  .on("pointerup.cursor", () => svg.classed("dragging", false));
+
+function fitAll(animate) {
+  const bw = wrap.clientWidth, bh = wrap.clientHeight;
+  const k = Math.min(bw / W, bh / H) * 0.97;
+  const t = d3.zoomIdentity.translate((bw - W * k) / 2, (bh - H * k) / 2).scale(k);
+  (animate ? svg.transition().duration(500) : svg).call(zoom.transform, t);
+}
+function panTo(n) {
+  const bw = wrap.clientWidth, bh = wrap.clientHeight;
+  const k = Math.max(d3.zoomTransform(svg.node()).k, 1.4);
+  const t = d3.zoomIdentity.translate(bw / 2 - n.x * k, bh / 2 - n.y * k).scale(k);
+  svg.transition().duration(450).call(zoom.transform, t);
+}
+fitAll(false);
+document.getElementById("reset-view").addEventListener("click", () => { clearSelection(); fitAll(true); });
+
+/* ================= ツールチップ ================= */
+const tt = document.getElementById("tooltip");
+nodeSel.on("pointerenter", (ev, n) => {
+  tt.innerHTML = "";
+  const t1 = document.createElement("div"); t1.className = "tt-title"; t1.textContent = n.title;
+  const t2 = document.createElement("div"); t2.className = "tt-meta";
+  t2.textContent = (n.year || "年不明") + (n.isSeed ? " ｜ 起点" : "") +
+    (n.lineage === "AB" ? " ｜ 両系譜から引用" : "") +
+    (n.lineage === "F" ? " ｜ Keitt 2000 を引用" : "");
+  tt.append(t1, t2);
+  tt.hidden = false;
+  positionTT(ev);
+}).on("pointermove", positionTT)
+  .on("pointerleave", () => { tt.hidden = true; });
+function positionTT(ev) {
+  const r = wrap.getBoundingClientRect();
+  let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 12;
+  x = Math.min(x, r.width - tt.offsetWidth - 8);
+  y = Math.min(y, r.height - tt.offsetHeight - 8);
+  tt.style.left = x + "px"; tt.style.top = y + "px";
+}
+
+/* ================= 選択と系譜ハイライト ================= */
+let selected = null;
+function reach(id, adj) {
+  const seen = new Set([id]), q = [id];
+  while (q.length) {
+    const cur = q.pop();
+    for (const nx of adj.get(cur)) if (!seen.has(nx)) { seen.add(nx); q.push(nx); }
+  }
+  return seen;
+}
+function selectNode(n) {
+  selected = n;
+  const anc = reach(n.id, outAdj);   // この文献が(推移的に)引用する側 = 祖先
+  const desc = reach(n.id, inAdj);   // この文献を(推移的に)引用する側 = 子孫
+  const rel = new Set([...anc, ...desc]);
+  svg.classed("has-selection", true);
+  nodeSel.classed("related", m => rel.has(m.id)).classed("selected", m => m.id === n.id);
+  edgeSel.classed("related-edge", e =>
+    (anc.has(e.s) && anc.has(e.t)) || (desc.has(e.s) && desc.has(e.t)));
+  renderDetail(n);
+}
+function clearSelection() {
+  selected = null;
+  svg.classed("has-selection", false);
+  nodeSel.classed("related", false).classed("selected", false);
+  edgeSel.classed("related-edge", false);
+}
+nodeSel.on("click", (ev, n) => { ev.stopPropagation(); selectNode(n); });
+svg.on("click", () => clearSelection());
+
+/* ================= 詳細パネル ================= */
+const detail = document.getElementById("detail");
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function relList(idList, head) {
+  const blk = el("div", "rel-block");
+  blk.append(el("div", "rel-head", head + "（" + idList.length + "件）"));
+  if (idList.length) {
+    const ul = el("ul", "rel-list");
+    idList
+      .map(id => byId.get(id))
+      .sort((a, b) => (b.plotYear || 0) - (a.plotYear || 0))
+      .forEach(m => {
+        const li = el("li");
+        const b = el("button");
+        b.type = "button";
+        b.append(el("span", "rl-year", (m.plotYear || "—") + "　"), document.createTextNode(shortTitle(m.title, 64)));
+        b.addEventListener("click", () => { selectNode(m); panTo(m); });
+        li.append(b); ul.append(li);
+      });
+    blk.append(ul);
+  }
+  return blk;
+}
+function renderDetail(n) {
+  detail.innerHTML = "";
+  detail.append(el("h2", null, "文献詳細"));
+  const chips = el("div");
+  if (n.isSeed) chips.append(el("span", "chip c-seed", "起点"));
+  if (n.lineage === "A") chips.append(el("span", "chip c-a", LINEAGE_NAME.A));
+  if (n.lineage === "B") chips.append(el("span", "chip c-b", LINEAGE_NAME.B));
+  if (n.lineage === "AB") chips.append(el("span", "chip c-ab", "両系譜から引用（ブリッジ）"));
+  if (n.lineage === "F") chips.append(el("span", "chip", LINEAGE_NAME.F));
+  if (!n.isSeed && n.seedCiters.length >= 2) chips.append(el("span", "chip", "共通祖先：" + n.seedCiters.length + "起点"));
+  detail.append(chips);
+  detail.append(el("div", "d-title", n.title));
+  const meta1 = el("div", "d-meta");
+  meta1.textContent = (n.year || "年不明") + (n.venue ? " ｜ " + n.venue : "");
+  detail.append(meta1);
+  detail.append(el("div", "d-meta", n.authors ? "著者: " + n.authors : "著者: 未取得（今後のメタデータ拡張で対応）"));
+  const doiLine = el("div", "d-meta");
+  const a = el("a", null, "doi.org で開く ↗");
+  a.href = "https://doi.org/" + encodeURIComponent(n.id).replace(/%2F/gi, "/");
+  a.target = "_blank"; a.rel = "noopener";
+  doiLine.append(document.createTextNode("DOI: " + n.id + "　"), a);
+  detail.append(doiLine);
+  if (n.noteJa) {
+    const note = el("div", "d-note", n.noteJa);
+    note.append(el("span", "n-src", "内容注記：Claude 作成（引用関係データとは由来が別）"));
+    detail.append(note);
+  }
+  const ex = el("div", "explored");
+  ex.append(el("div", null, "探索状態"));
+  const back = el("div", n.explored.back === "none" ? "ex-no" : "ex-yes");
+  back.textContent = n.explored.back === "none"
+    ? "後方（参照文献）: 未探索 — 引用なしを意味しない"
+    : "後方（参照文献）: 取得済（DOI 解決分 " + n.outDeg + " 件）";
+  const fwd = el("div", n.explored.fwd === "none" ? "ex-no" : "ex-yes");
+  fwd.textContent = n.explored.fwd === "none"
+    ? "前方（被引用）: 未取得"
+    : "前方（被引用）: サンプル60件を取得（打ち切りあり）";
+  ex.append(back, fwd);
+  detail.append(ex);
+  detail.append(relList(outAdj.get(n.id), "この図の中で引用している文献"));
+  detail.append(relList(inAdj.get(n.id), "この図の中で引用されている文献"));
+}
+
+/* ================= 検索 ================= */
+const searchInput = document.getElementById("search");
+const searchResults = document.getElementById("search-results");
+function runSearch() {
+  const q = searchInput.value.trim().toLowerCase();
+  searchResults.innerHTML = "";
+  nodeSel.classed("search-hit", false);
+  if (q.length < 2) { searchResults.hidden = true; return; }
+  const hits = nodes.filter(n => n.title.toLowerCase().includes(q) || n.id.includes(q)).slice(0, 8);
+  nodeSel.classed("search-hit", n => hits.includes(n));
+  hits.forEach(n => {
+    const b = el("button");
+    b.type = "button";
+    b.append(document.createTextNode(shortTitle(n.title, 52)), el("span", "sr-year", String(n.plotYear || "—")));
+    b.addEventListener("click", () => {
+      searchResults.hidden = true;
+      selectNode(n); panTo(n);
+    });
+    searchResults.append(b);
+  });
+  if (!hits.length) searchResults.append(el("button", null, "該当なし（この図に読み込まれていない可能性）"));
+  searchResults.hidden = false;
+}
+searchInput.addEventListener("input", runSearch);
+searchInput.addEventListener("keydown", ev => {
+  if (ev.key === "Enter") { const b = searchResults.querySelector("button"); if (b) b.click(); }
+  if (ev.key === "Escape") { searchResults.hidden = true; searchInput.blur(); }
+});
+document.addEventListener("click", ev => {
+  if (!searchResults.contains(ev.target) && ev.target !== searchInput) searchResults.hidden = true;
+});
+
+/* ================= トグル ================= */
+const tglFwd = document.getElementById("toggle-fwd");
+const tglShared = document.getElementById("toggle-shared");
+const tglLabels = document.getElementById("toggle-labels");
+function applyFilters() {
+  const showFwd = tglFwd.checked, sharedOnly = tglShared.checked;
+  nodeSel.classed("hidden-layer", n => {
+    if (n.isSeed) return false;
+    if (n.lineage === "F") return !showFwd || sharedOnly;
+    if (sharedOnly) return n.seedCiters.length < 2;
+    return false;
+  });
+  edgeSel.classed("hidden-layer", e => {
+    const a = byId.get(e.s), b = byId.get(e.t);
+    const hid = n => !n.isSeed && (
+      (n.lineage === "F") ? (!showFwd || sharedOnly) : (sharedOnly && n.seedCiters.length < 2));
+    return hid(a) || hid(b);
+  });
+}
+tglFwd.addEventListener("change", applyFilters);
+tglShared.addEventListener("change", applyFilters);
+tglLabels.addEventListener("change", () => svg.classed("labels-all", tglLabels.checked));
+
+/* ================= 統計・注記 ================= */
+{
+  const c = meta.counts;
+  const st = document.getElementById("stats");
+  st.innerHTML = "";
+  [["文献", c.nodes], ["引用辺", c.edges], ["共通祖先", c.shared_ancestors], ["系譜間ブリッジ", c.bridges]]
+    .forEach(([k, v], i) => {
+      if (i) st.append(document.createTextNode(" ・ "));
+      st.append(document.createTextNode(k + " "));
+      st.append(el("b", null, String(v)));
+    });
+  st.append(document.createTextNode("（" + meta.source + "）"));
+  const cav = document.getElementById("caveats");
+  meta.caveats.forEach(t => cav.append(el("li", null, t)));
+  const covg = document.getElementById("covg");
+  Object.entries(meta.coverage.seed_ref_counts).forEach(([doi, cnt]) => {
+    const n = byId.get(doi);
+    const tr = el("tr");
+    tr.append(el("td", null, n ? n.label : doi), el("td", null, cnt + " 件"));
+    covg.append(tr);
+  });
+}
+
+/* 初期表示: ブリッジ文献を選択して見どころを示す */
+{
+  const bridge = nodes.find(n => n.lineage === "AB" && !n.isSeed);
+  if (bridge) selectNode(bridge);
+}
+window.addEventListener("resize", () => { if (!selected) fitAll(false); });
+</script>
