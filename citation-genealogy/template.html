@@ -217,11 +217,12 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
       <label><input type="checkbox" id="toggle-fwd" checked> 後続層</label>
       <label><input type="checkbox" id="toggle-shared"> 共通祖先のみ</label>
       <label>枝の刈り込み
-        <select id="prune" aria-label="図内で引用されている数の下限">
-          <option value="0">なし（全 文献）</option>
-          <option value="2" selected>図内被引用 2 以上</option>
-          <option value="3">3 以上</option>
+        <select id="prune" aria-label="図内で引用されている数の下限（後続文献は引用している起点の数も可）">
+          <option value="0">なし（全文献）</option>
+          <option value="2">図内の接続 2 以上</option>
+          <option value="3" selected>3 以上</option>
           <option value="5">5 以上</option>
+          <option value="8">8 以上</option>
         </select>
       </label>
       <label>ハイライト深さ
@@ -250,7 +251,7 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
         <div class="placeholder">
           <h2>文献詳細</h2>
           ノードをクリックすると、その文献の書誌情報と、この図の中での引用関係（祖先・子孫のハイライト）を表示します。
-          <p class="ph-hint">大きい丸＝起点8文献。橙のひし形＝<b>両方の系譜から引用をたどって到達できる祖先</b>。濃いノードほど世界全体での被引用数が多い。初期状態は「図内で2回以上引用されている文献」だけを描いています（枝の刈り込みを「なし」にすると全文献）。上のキーワード欄に語を入れると、タイトル・要旨が関連する文献だけが浮かび上がります。</p>
+          <p class="ph-hint">大きい丸＝起点8文献。橙のひし形＝<b>両方の系譜から引用をたどって到達できる祖先</b>。濃いノードほど世界全体での被引用数が多い。初期状態は「図内で3回以上引用されている文献（後続文献は起点を3件以上引用するものも）」だけを描いています（枝の刈り込みを「なし」にすると全文献）。上のキーワード欄に語を入れると、タイトル・要旨が関連する文献だけが浮かび上がります。</p>
         </div>
       </div>
       <details id="legend" open>
@@ -348,7 +349,7 @@ function resize() {
 
 /* ================= 表示状態 ================= */
 const state = {
-  hop2: true, fwd: true, sharedOnly: false, prune: 2, labelsAll: false, depth: 2,
+  hop2: true, fwd: true, sharedOnly: false, prune: 3, labelsAll: false, depth: 2,
   selected: null, anc: null, desc: null,      // 選択とその祖先・子孫（Set of id）
   kw: "", kwScore: null,                      // キーワード関連度（Map id -> score）
   hover: null,
@@ -360,7 +361,8 @@ function visible(n) {
   if (n.lineage === "F" && !state.fwd) return false;
   if (state.sharedOnly && n.lineage !== "F" && n.seedAnc.length < 2) return false;
   if (state.sharedOnly && n.lineage === "F") return false;
-  if (state.prune && n.lineage !== "F" && n.inDeg < state.prune) return false;
+  // 枝の刈り込み: 図内で引用されている数（後続文献は「引用している起点の数」も可）が閾値未満なら隠す
+  if (state.prune && Math.max(n.inDeg, n.seedRefs.length) < state.prune) return false;
   return true;
 }
 let visibleNodes = nodes, visibleEdges = edges, quadtree = null;
