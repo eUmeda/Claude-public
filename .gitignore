@@ -14,3 +14,6 @@ citation-genealogy/data/openalex/*.json
 # v0.3 クロールの生データ（fetch_crawl.py で再現可能）。status.json だけ残す
 citation-genealogy/data/crawl/*.json
 !citation-genealogy/data/crawl/status.json
+
+# v0.3 の整形済みデータ（index.html に埋め込み済み・build_finder.py で再現）
+citation-genealogy/data/finder.json
