@@ -85,10 +85,26 @@ citation-genealogy/
   `api.openalex.org` が追加されている必要がある（claude.ai/code の
   環境設定 → ネットワークアクセス）。
 
-## 次に決めること（ユーザーと相談）
+## v0.2 の仕様（2026-09-22 ユーザーと決定済み）
 
-- 全世界の被引用数・著者・abstract の取得経路
-  （本命: 実行環境のネットワーク許可に `api.openalex.org` を追加）
-- 前方（被引用）探索の範囲と後続文献の選定基準
-- 再帰探索の深さ（現状は後方1ホップ）
-- 表示面の改善点（ラベル密度・レイアウト・操作系）
+1. **データ経路**: OpenAlex（`fetch_openalex.py`）。キーは任意（無くても動く）。
+   実行には `api.openalex.org` を許可したカスタム環境が必要。
+2. **前方（被引用）の見せ方**: 被引用数の多さは**ノードの濃さ**で表す。
+   「複数の起点・系譜を引用する文献」は、キーワード未入力時は特別扱いせず
+   等価値。**キーワード入力時は関連する論文を優先表示**（関連度で強調・絞り込み）。
+3. **後方の探索深さ**: **2ホップ全網羅**（起点の参照文献が、さらに参照する文献
+   まですべて取る）。目的は枝と幹が見える「文献の宇宙」の構築。
+   `fetch_openalex.py --depth 2`（既定）で取得。
+4. 表示面: 数千〜数万ノードになるため、SVG から Canvas 描画への移行を検討。
+   幹（多くの経路が通る高被引用の祖先）を濃く、枝を薄く。
+
+## 引き継ぎメモ（新セッション向け）
+
+- ブランチ `claude/citation-genealogy-viewer-5tuoep`、PR #1（draft）。
+  **新しい PR は作らず #1 に積む**。
+- 公開済み Artifact: https://claude.ai/artifact/44wTSdKhvzR7bEBL8VvEFz
+  （更新時は `url` にこれを渡して同じリンクを維持する）
+- 手順: `python3 fetch_openalex.py --test` → `python3 fetch_openalex.py`
+  → `data/openalex/` を読む新しいビルド（build_data.py の OpenAlex 対応）
+  → 上記仕様でビューア更新 → `artifact.html` を再公開 → コミット/プッシュ。
+- v0.1 の Scite データ（`data/*_scite.json`）は比較用に残す。

@@ -17,6 +17,7 @@
 """
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -49,11 +50,22 @@ CITER_FIELDS = ",".join([
     "id", "doi", "title", "publication_year", "cited_by_count",
     "referenced_works", "type",
 ])
+# 2ホップ目（参照文献の参照文献）は件数が多いので abstract を省いた軽量フィールド
+HOP2_FIELDS = ",".join([
+    "id", "doi", "title", "publication_year", "cited_by_count",
+    "authorships", "primary_location", "referenced_works", "type",
+])
 MAX_CITERS_PER_SEED = 10000  # 暴走ガード。超えたら打ち切って truncated を記録
+MAX_HOP2_WORKS = 30000       # 2ホップ目の取得上限（超えたら打ち切って truncated を記録）
 
 
 def load_key():
-    """openalex_key.md から api_key / mailto を読む（Git 管理外ファイル）。"""
+    """api_key / mailto を取得する。優先順:
+    1. openalex_key.md（Git 管理外ファイル）
+    2. 環境変数 OPENALEX_API_KEY / OPENALEX_MAILTO（クラウド環境の環境変数に設定可）
+    3. どちらも無ければキー無しで実行（OpenAlex は無料・認証不要。
+       mailto が無いと polite pool に入らず、レート制限が厳しめになるだけ）
+    """
     for p in (HERE / "openalex_key.md",
               HERE.parent / "openalex_key.md"):
         if p.exists():
@@ -62,7 +74,11 @@ def load_key():
             mail = re.search(r"mailto:\s*(\S+)", text)
             if key:
                 return key.group(1), (mail.group(1) if mail else None)
-    sys.exit("openalex_key.md が見つからないか api_key 行がありません")
+    key = os.environ.get("OPENALEX_API_KEY") or None
+    mail = os.environ.get("OPENALEX_MAILTO") or None
+    if not key:
+        print("注意: API キーが見つかりません。キー無し（無料枠）で実行します。", file=sys.stderr)
+    return key, mail
 
 
 def request(path, params, api_key, mailto, tries=5):
@@ -106,9 +122,29 @@ def slim(work):
     return w
 
 
+def fetch_by_ids(ids, fields, api_key, mailto, label):
+    """OpenAlex ID のリストを 50件ずつバッチ取得する。"""
+    out = []
+    for i in range(0, len(ids), 50):
+        chunk = ids[i:i + 50]
+        short = [rid.rsplit("/", 1)[-1] for rid in chunk]
+        page = request("/works", {
+            "filter": "openalex:" + "|".join(short),
+            "select": fields, "per-page": 50,
+        }, api_key, mailto)
+        out.extend(slim(w) for w in page["results"])
+        if (i // 50) % 10 == 0 or i + 50 >= len(ids):
+            print(f"{label} {min(i + 50, len(ids))}/{len(ids)}")
+        time.sleep(0.15)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--test", action="store_true", help="接続確認のみ（Keitt 2000 を1件取得）")
+    ap.add_argument("--depth", type=int, choices=(1, 2), default=2,
+                    help="後方探索の深さ。1=起点の参照文献まで、2=その参照文献の参照文献まで全網羅（既定）")
+    ap.add_argument("--no-citers", action="store_true", help="前方（被引用）の取得を省略")
     args = ap.parse_args()
     api_key, mailto = load_key()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -129,23 +165,29 @@ def main():
         time.sleep(0.15)
     (OUT / "seeds.json").write_text(json.dumps(seeds, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    # 2. 参照文献メタデータ（重複除去して 50件ずつ）
-    ref_ids = sorted({rid for s in seeds.values() for rid in s["referenced_works"]})
-    refs = []
-    for i in range(0, len(ref_ids), 50):
-        chunk = ref_ids[i:i + 50]
-        short = [rid.rsplit("/", 1)[-1] for rid in chunk]
-        page = request("/works", {
-            "filter": "openalex:" + "|".join(short),
-            "select": WORK_FIELDS, "per-page": 50,
-        }, api_key, mailto)
-        refs.extend(slim(w) for w in page["results"])
-        print(f"refs {i + len(chunk)}/{len(ref_ids)}")
-        time.sleep(0.15)
+    # 2. 参照文献メタデータ（1ホップ目・重複除去して 50件ずつ）
+    seed_ids = {s["id"] for s in seeds.values()}
+    ref_ids = sorted({rid for s in seeds.values() for rid in s["referenced_works"]} - seed_ids)
+    refs = fetch_by_ids(ref_ids, WORK_FIELDS, api_key, mailto, "refs(hop1)")
     (OUT / "refs.json").write_text(json.dumps(refs, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"hop1: {len(refs)} 件")
+
+    # 2b. 2ホップ目: 参照文献がさらに参照している文献をすべて取得（文献の宇宙の幹と枝）
+    if args.depth >= 2:
+        known = seed_ids | set(ref_ids)
+        hop2_ids = sorted({rid for w in refs for rid in w.get("referenced_works", [])} - known)
+        truncated = len(hop2_ids) > MAX_HOP2_WORKS
+        if truncated:
+            print(f"注意: 2ホップ目 {len(hop2_ids)} 件が上限 {MAX_HOP2_WORKS} を超えるため打ち切り")
+            hop2_ids = hop2_ids[:MAX_HOP2_WORKS]
+        refs2 = fetch_by_ids(hop2_ids, HOP2_FIELDS, api_key, mailto, "refs(hop2)")
+        (OUT / "refs_hop2.json").write_text(json.dumps(
+            {"truncated": truncated, "requested": len(hop2_ids), "works": refs2},
+            ensure_ascii=False), encoding="utf-8")
+        print(f"hop2: {len(refs2)} 件 (truncated={truncated})")
 
     # 3. 各起点の被引用文献（全件・cursor paging）
-    for key, s in seeds.items():
+    for key, s in ({} if args.no_citers else seeds).items():
         wid = s["id"].rsplit("/", 1)[-1]
         citers, cursor, truncated = [], "*", False
         while cursor:
