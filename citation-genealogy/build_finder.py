@@ -129,7 +129,7 @@ def main():
         wid = short(s["id"])
         works[wid] = s
         layer[wid] = "known"
-    for name, lay in (("refs.json", "ref"), ("citers.json", "citer"), ("cocited.json", "cocited"), ("related.json", "related")):
+    for name, lay in (("refs.json", "ref"), ("citers.json", "citer"), ("cocited.json", "cocited"), ("cocited1.json", "cocited1"), ("related.json", "related")):
         for w in load(name, []):
             wid = short(w["id"])
             if wid not in works:
@@ -190,8 +190,10 @@ def main():
             cluster_of[wid] = sem.get(wid, {}).get("cluster") or CLUSTER_ORDER[0]
 
     # ---- 辺（既知に触れるもの＋候補どうし。海→候補の大量の辺は件数 ind にだけ反映） ----------
-    ids = list(works)
+    # 拡張プール（cocited1）のうち海に残ったものはページに埋め込まない（判定には使い、描画には出さない）
+    ids = [wid for wid in works if not (layer.get(wid) == "cocited1" and tiers[wid] == 0)]
     index = {wid: i for i, wid in enumerate(ids)}
+    print(f"embedded nodes: {len(ids)} (cocited1 の海 {len(works) - len(ids)} 件は非埋め込み)")
     refs_of = {wid: {short(r) for r in w.get("referenced_works") or []} for wid, w in works.items()}
     in_deg = Counter()
     edges = []
@@ -200,7 +202,7 @@ def main():
             if rs in works and rs != wid:
                 in_deg[rs] += 1
                 # 埋め込む辺: どちらかが既知、または（両方が候補で）どちらかが要確認
-                if tiers[wid] == -1 or tiers[rs] == -1 or (tiers[wid] > 0 and tiers[rs] > 0 and (tiers[wid] == 1 or tiers[rs] == 1)):
+                if wid in index and rs in index and (tiers[wid] == -1 or tiers[rs] == -1 or (tiers[wid] > 0 and tiers[rs] > 0 and (tiers[wid] == 1 or tiers[rs] == 1))):
                     edges.append((index[wid], index[rs]))
     edges = sorted(set(edges))
     print(f"edges embedded: {len(edges)}  (in-set citations total: {sum(in_deg.values())})")
@@ -322,7 +324,7 @@ def main():
                    "citers": (status.get("seeds", {}).get(seed_key[sid], {}) or {}).get("citers"),
                    "node": index[sid]} for sid in seed_ids]
     coverage = {
-        "refs": status.get("refs"), "cocited": status.get("cocited"), "related": status.get("related"),
+        "refs": status.get("refs"), "cocited": status.get("cocited"), "cocited1": status.get("cocited1"), "related": status.get("related"),
         "truncated_citers": status.get("truncated_citers", []), "missing_seeds": status.get("missing_seeds", []),
         "abstracts": kw_stats, "merged": len(merged), "merged_examples": merged[:40],
         "no_abstract_known": [seeds_by_id[s]["note"] for s in seed_ids if not works[s].get("abstract")],
@@ -333,7 +335,8 @@ def main():
         "version": "0.3.1", "generated": "2026-09-22", "source": "OpenAlex (2026-09-22 取得)",
         "clusters": CLUSTER_ORDER, "clusterLabel": CLUSTER_LABEL, "known": known_rows,
         "counts": {"nodes": len(nodes), "edges": len(edges), "known": tier_counts[-1], "t1": tier_counts[1],
-                   "t2": tier_counts[2], "t3": tier_counts[3], "dup": tier_counts[5], "sea": tier_counts[0],
+                   "t2": tier_counts[2], "t3": tier_counts[3], "dup": tier_counts[5],
+                   "sea": sum(1 for n in nodes if n["tier"] == 0),   # 埋め込んだ海だけ数える
                    "max_cited": max((n["c"] or 0) for n in nodes), "max_ind": max(n["ind"] for n in nodes)},
         "coverage": coverage, "holdout": ho,
         "layout": {"W": W, "H": H, "YPX": YPX, "PAD_TOP": PAD_TOP, "PAD_BOTTOM": PAD_BOTTOM, "pitch": pitch,

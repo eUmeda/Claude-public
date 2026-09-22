@@ -195,12 +195,12 @@ def semantic(works, known_ids, known_cluster, topo, cfg=CONFIG):
         if wid in Kset:
             continue
         best, nn = 0.0, None
-        for k, sv in seed_vecs.items():
+        for k, sv in sorted(seed_vecs.items()):      # 順序を固定して同点時の結果を決定的にする
             d = TfIdf.dot(v, sv)
             if d > best:
                 best, nn = d, k
         bc, bcl = 0.0, None
-        for c, cv in cent.items():
+        for c, cv in sorted(cent.items()):
             d = TfIdf.dot(v, cv)
             if d > bc:
                 bc, bcl = d, c

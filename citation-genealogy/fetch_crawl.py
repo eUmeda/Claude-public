@@ -8,6 +8,7 @@
   4. cocite_stats.json  citers の参照リストから数えた共引用統計
                     {work_id: [共引用回数, 一緒に引用された既知文献の種類数]}
   5. cocited.json   共引用で候補に上がった文献の本体（既知 2 件以上と共引用されたもの、上限あり）
+  5b. cocited1.json  --extend-pool: 既知 1 件とだけ共引用された文献の本体（回数順、上限あり）
   6. related.json   OpenAlex が各既知文献の related_works として返す文献の本体（意味ベースの保険）
   7. status.json    件数・打ち切りの記録
 
@@ -42,6 +43,8 @@ WORK_FIELDS = ",".join(BASE_FIELDS)
 MAX_CITERS_PER_SEED = 10000
 MAX_COCITED = 6000          # 共引用候補の本体取得上限
 MIN_COCITE_DISTINCT = 2     # 既知文献の何種類と一緒に引用されていれば候補にするか
+EXTEND_POOL = 4000          # --extend-pool: 既知 1 件とだけ共引用された文献の本体を、共引用回数順にこの件数まで追加取得
+EXTEND_MIN_COUNT = 5        # その最低共引用回数
 
 
 def load_key():
@@ -151,10 +154,14 @@ def main():
     ap.add_argument("--list", default=str(HERE / "data" / "known_list.csv"))
     ap.add_argument("--out", default=str(HERE / "data" / "crawl"))
     ap.add_argument("--no-citers", action="store_true")
+    ap.add_argument("--extend-pool", type=int, nargs="?", const=EXTEND_POOL, default=0,
+                    help="既存のクロール結果に、既知 1 件とだけ共引用された文献の本体を追加取得する（他の段階は走らせない）")
     args = ap.parse_args()
     api_key, mailto = load_key()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    if args.extend_pool:
+        return extend_pool(out, args.extend_pool, api_key, mailto)
     status = {"list": args.list, "seeds": {}, "truncated_citers": [], "missing_seeds": []}
 
     # 1. 既知リスト
@@ -250,6 +257,33 @@ def main():
 
     (out / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
     print("done:", out)
+
+
+def extend_pool(out, limit, api_key, mailto):
+    """ホールドアウトで見えた取りこぼし対策。既知 1 件とだけ共引用された文献は本体を取っていなかったので、
+    共引用回数が EXTEND_MIN_COUNT 以上のものを回数順に limit 件まで取得し cocited1.json に書く。"""
+    stats = json.loads((out / "cocite_stats.json").read_text(encoding="utf-8"))
+    status = json.loads((out / "status.json").read_text(encoding="utf-8"))
+    fetched_ids = set()
+    for name in ("seeds.json", "refs.json", "citers.json", "cocited.json", "related.json", "cocited1.json"):
+        p = out / name
+        if not p.exists():
+            continue
+        data = json.loads(p.read_text(encoding="utf-8"))
+        items = data.values() if isinstance(data, dict) else data
+        fetched_ids |= {short(w["id"]) for w in items}
+    cand = [r for r, (n, d) in stats.items() if d == 1 and n >= EXTEND_MIN_COUNT and r not in fetched_ids]
+    cand.sort(key=lambda r: (-stats[r][0], r))
+    status["cocited1"] = {"eligible": len(cand), "fetched": min(len(cand), limit), "truncated": len(cand) > limit,
+                          "min_count": EXTEND_MIN_COUNT}
+    cand = cand[:limit]
+    got = fetch_by_ids(["https://openalex.org/" + r for r in cand], WORK_FIELDS, api_key, mailto, "cocited1")
+    prev = json.loads((out / "cocited1.json").read_text(encoding="utf-8")) if (out / "cocited1.json").exists() else []
+    seen = {short(w["id"]) for w in prev}
+    merged = prev + [w for w in got if short(w["id"]) not in seen]
+    (out / "cocited1.json").write_text(json.dumps(merged, ensure_ascii=False), encoding="utf-8")
+    (out / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"cocited1: {len(got)} 件取得（候補 {status['cocited1']['eligible']} 件、打ち切り={status['cocited1']['truncated']}）→ 合計 {len(merged)} 件")
 
 
 if __name__ == "__main__":

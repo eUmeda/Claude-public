@@ -176,5 +176,11 @@
  "related": {
   "requested": 309,
   "fetched": 296
+ },
+ "cocited1": {
+  "eligible": 8066,
+  "fetched": 4000,
+  "truncated": true,
+  "min_count": 5
  }
 }

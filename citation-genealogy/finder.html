@@ -289,7 +289,7 @@ edges.forEach(e => {
 });
 const TIER_NAME = { "-1": "既知リスト", 1: "要確認", 2: "関連の可能性", 3: "意味ベースの保険", 5: "既知の別版", 0: "海（つながりが薄い）" };
 const TIER_SHORT = { 1: "要確認", 2: "関連", 3: "◆意味", 5: "◎別版", 0: "海" };
-const LAYER_NAME = { known: "既知", ref: "既知が引用", citer: "既知を引用", cocited: "共引用で浮上", related: "OpenAlex 関連" };
+const LAYER_NAME = { known: "既知", ref: "既知が引用", citer: "既知を引用", cocited: "共引用で浮上", cocited1: "共引用で浮上（既知 1 件・拡張）", related: "OpenAlex 関連" };
 const logMaxCited = Math.log1p(meta.counts.max_cited || 1);
 nodes.forEach(n => {
   n.dark = n.c == null ? 0.3 : 0.3 + 0.7 * Math.log1p(n.c) / logMaxCited;
