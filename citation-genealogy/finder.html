@@ -42,7 +42,7 @@ button, input, select { font: inherit; }
 #stage.dragging { cursor: grabbing; }
 #stage.over { cursor: pointer; }
 #loading { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink-2); background: var(--surface); pointer-events: none; }
-#err { position: fixed; z-index: 60; top: env(safe-area-inset-top, 0px); left: 0; right: 0; background: #b3261e; color: #fff; padding: 8px 14px; font-size: 12.5px; overflow-wrap: anywhere; }
+#err { position: fixed; z-index: 60; white-space: pre-wrap; top: env(safe-area-inset-top, 0px); left: 0; right: 0; background: #b3261e; color: #fff; padding: 8px 14px; font-size: 12.5px; overflow-wrap: anywhere; }
 
 #topbar {
   position: fixed; z-index: 20; top: env(safe-area-inset-top, 0px); left: 0; right: 0;
@@ -155,12 +155,22 @@ button, input, select { font: inherit; }
 
 <div id="err" hidden role="alert"></div>
 <script>
-window.addEventListener("error", function (ev) {
+// エラー表示。iOS Safari は sandbox 内のインラインスクリプトの例外を "Script error." に伏せるため、
+// 実際の例外は各スクリプト末尾の try/catch と段階マーカー（__viewerStage）で拾う
+window.__viewerStage = "html";
+window.__report = function (where, e) {
   var el = document.getElementById("err"); if (!el) return;
-  el.textContent = "スクリプトエラー: " + (ev.message || "不明") + (ev.lineno ? "（行 " + ev.lineno + "）" : "") + "　この文面を Claude に伝えてください。";
+  var msg = e && e.message ? (e.name || "Error") + ": " + e.message : String(e || "不明");
+  var st = e && e.stack ? String(e.stack).split("\n").slice(0, 4).join(" | ") : "";
+  el.textContent = "スクリプトエラー（" + where + "）: " + msg + (st ? "\n" + st : "") + "\n端末: " + navigator.userAgent + "\nこの文面を Claude に伝えてください。";
   el.hidden = false;
   var ld = document.getElementById("loading"); if (ld) ld.hidden = true;
+};
+window.addEventListener("error", function (ev) {
+  var el = document.getElementById("err"); if (!el || !el.hidden) return;
+  window.__report("段階 " + window.__viewerStage + (ev.lineno ? "・行 " + ev.lineno + ":" + (ev.colno || 0) : ""), ev.error || { message: ev.message });
 });
+window.addEventListener("unhandledrejection", function (ev) { window.__report("promise", ev.reason); });
 </script>
 
 <canvas id="stage" role="img" aria-label="引用系譜の全画面図。縦軸は年代で上が新しい。横はクラスタ。"></canvas>
@@ -252,11 +262,21 @@ window.addEventListener("error", function (ev) {
   <button class="btn" id="zout" type="button" aria-label="縮小">−</button>
 </div>
 
+<script id="graph-data" type="application/json">__GRAPH_DATA__</script>
 <script>
 "use strict";
-const GRAPH = __GRAPH_DATA__;
+// データは JS リテラルではなく JSON 文字列として持ち、JSON.parse で展開する
+//（15 MB のリテラルは JavaScriptCore でバイトコード化の負荷が大きく、モバイル Safari で落ちる）
+let GRAPH = null;
+try { GRAPH = JSON.parse(document.getElementById("graph-data").textContent); window.__viewerStage = "data"; }
+catch (e) { window.__report("データ展開", e); }
+</script>
+<script>
+"use strict";
+if (GRAPH) try {
 
 /* ================= 基本参照 ================= */
+window.__viewerStage = "basics";
 const nodes = GRAPH.nodes, meta = GRAPH.meta, L = meta.layout, CL = meta.clusters;
 nodes.forEach((n, i) => { n.idx = i; });
 const known = meta.known.map(k => ({ ...k, n: nodes[k.node] }));
@@ -286,6 +306,7 @@ function setMark(id, v) {
 }
 
 /* ================= キャンバス・テーマ ================= */
+window.__viewerStage = "canvas";
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 let dpr = window.devicePixelRatio || 1, bw = 0, bh = 0;
@@ -373,6 +394,7 @@ function resize() {
 }
 
 /* ================= 表示状態 ================= */
+window.__viewerStage = "state";
 const state = {
   tiers: new Set([1, 2, 3, 5]), clusters: new Set(CL), sea: true, hideDone: false, genericLast: true, sort: "sc",
   selected: null, kwScore: null, hover: null, interacting: false, listLimit: 150,
@@ -759,6 +781,7 @@ function renderCard(n) {
 }
 
 /* ================= キーワード ================= */
+window.__viewerStage = "kw";
 const KW = GRAPH.kw || { vocab: [], off: [0], blob: "" };
 const kwBytes = (() => { const bin = atob(KW.blob); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; })();
 const kwCache = new Map();
@@ -938,6 +961,7 @@ const onThemeChange = () => { readTheme(); clusterChips.querySelectorAll(".chip"
 if (mq) { if (mq.addEventListener) mq.addEventListener("change", onThemeChange); else if (mq.addListener) mq.addListener(onThemeChange); }
 new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleDraw);
+window.__viewerStage = "init";
 syncStateFromControls();
 document.getElementById("btn-drawer").classList.add("on"); document.getElementById("btn-sea").classList.add("on");
 if (window.innerWidth <= 760) { drawer.hidden = true; document.getElementById("btn-drawer").classList.remove("on"); }
@@ -946,4 +970,16 @@ refreshVisible();
 fitAll(false);
 renderDrawer(); updateMarkSummary();
 if (kwInput.value.trim()) runKeyword();
+window.__viewerStage = "ready";
+// 検証スクリプト用の窓口（let 変数は関数経由で現在値を返す）
+window.__dbg = () => ({ z, kx, ky, tx, ty, Z_A, Z_B, S_0, S_MAX, Z_MIN, Z_MAX, state, listed, known, anim, L, edges, nodes, visibleNodes, drawQueued, LOW_POWER, marks,
+  zoomLevel, fitAll, draw, animateTo, setMark, runKeyword, selectNode, zoomAt, visible, refreshVisible });
+} catch (e) { window.__report("段階 " + window.__viewerStage, e); }
+</script>
+<script>
+// 構文エラーなどで上のスクリプト全体が実行されなかった場合の最後の砦
+if (window.__viewerStage !== "ready") {
+  var __el = document.getElementById("err");
+  if (__el && __el.hidden) window.__report("実行されず・段階 " + window.__viewerStage, { name: "Error", message: "スクリプトが途中で止まりました（構文非対応かメモリ不足の可能性）" });
+}
 </script>

@@ -362,7 +362,11 @@ def main():
     # ---- HTML -----------------------------------------------------------------------
     tpl = (HERE / "finder.html").read_text(encoding="utf-8")
     assert "__GRAPH_DATA__" in tpl
-    payload = json.dumps(graph, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace("\ufffd", "\\ufffd")
+    # JSON 文字列として <script type="application/json"> に埋める。< は \u003c に逃がし（</script> 対策）、
+    # U+FFFD は Artifact 公開が拒むので \ufffd に逃がす。NaN/Infinity は JSON.parse できないので禁止
+    payload = json.dumps(graph, ensure_ascii=False, separators=(",", ":"), allow_nan=False).replace("<", "\\u003c").replace("\ufffd", "\\ufffd")
+    json.loads(payload)   # 埋め込み前に妥当な JSON であることを確認
+    assert "</" not in payload and "<" not in payload
     frag = tpl.replace("__GRAPH_DATA__", payload)
     (HERE / "artifact.html").write_text(frag, encoding="utf-8")
     m = re.search(r"<title>.*?</title>\n?", frag)
