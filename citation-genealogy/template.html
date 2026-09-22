@@ -114,6 +114,17 @@ body {
   font-variant-numeric: tabular-nums; pointer-events: none; user-select: none;
 }
 
+/* ---- error banner / loading ---- */
+#err {
+  position: fixed; z-index: 50; top: env(safe-area-inset-top, 0px); left: 0; right: 0;
+  background: #b3261e; color: #fff; padding: 8px 14px; font-size: 12.5px; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#loading {
+  position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--ink-2); background: var(--surface); pointer-events: none;
+}
+
 /* ---- tooltip ---- */
 #tooltip {
   position: absolute; z-index: 5; max-width: 320px;
@@ -204,6 +215,21 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
 }
 </style>
 
+<div id="err" hidden role="alert"></div>
+<script>
+/* 本体スクリプトより前に登録: 読み込み・実行の失敗を画面に出す（真っ白のまま原因不明にならないように） */
+window.addEventListener("error", function (ev) {
+  var el = document.getElementById("err"); if (!el) return;
+  el.textContent = "スクリプトエラー: " + (ev.message || "不明") + (ev.lineno ? "（行 " + ev.lineno + "）" : "") + "　この文面を Claude に伝えてください。";
+  el.hidden = false;
+  var ld = document.getElementById("loading"); if (ld) ld.hidden = true;
+});
+window.addEventListener("unhandledrejection", function (ev) {
+  var el = document.getElementById("err"); if (!el) return;
+  el.textContent = "スクリプトエラー（非同期）: " + (ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason));
+  el.hidden = false;
+});
+</script>
 <div id="app">
   <header id="top">
     <div class="brand">
@@ -243,6 +269,7 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
       <div class="axis-hint top">↑ 新しい</div>
       <div class="axis-hint bottom">↓ 古い</div>
       <div id="visible-count"></div>
+      <div id="loading">読み込み中… 文献データを展開しています</div>
       <div id="tooltip" hidden></div>
     </div>
     <aside id="panel">
@@ -289,9 +316,9 @@ details summary:focus-visible { outline: 2px solid var(--line-a); outline-offset
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 "use strict";
+/* 外部ライブラリ不要（ズーム・ヒットテストは自前実装。CDN 遮断や読み込み失敗で真っ白になるのを避ける） */
 const GRAPH = __GRAPH_DATA__;
 
 /* ================= 基本参照 ================= */
@@ -328,7 +355,8 @@ const ctx = canvas.getContext("2d");
 const wrap = document.getElementById("graph-wrap");
 let dpr = window.devicePixelRatio || 1;
 let bw = 0, bh = 0;
-let transform = d3.zoomIdentity;
+let transform = { k: 1, x: 0, y: 0 };
+const LOW_POWER = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
 let theme = {};
 function readTheme() {
   const cs = getComputedStyle(document.documentElement);
@@ -365,12 +393,25 @@ function visible(n) {
   if (state.prune && Math.max(n.inDeg, n.seedRefs.length) < state.prune) return false;
   return true;
 }
-let visibleNodes = nodes, visibleEdges = edges, quadtree = null;
+let visibleNodes = nodes, visibleEdges = edges;
+/* ヒットテスト用のグリッド（ワールド座標を CELL px 角のセルに分ける） */
+const CELL = 24;
+let grid = new Map();
+const cellKey = (cx, cy) => cx * 100003 + cy;
+function rebuildGrid() {
+  grid = new Map();
+  for (const n of visibleNodes) {
+    const key = cellKey(Math.floor(n.x / CELL), Math.floor(n.y / CELL));
+    let a = grid.get(key);
+    if (!a) { a = []; grid.set(key, a); }
+    a.push(n);
+  }
+}
 function refreshVisible() {
   visibleNodes = nodes.filter(visible);
   const vis = new Set(visibleNodes.map(n => n.id));
   visibleEdges = edges.filter(e => vis.has(e.s.id) && vis.has(e.t.id));
-  quadtree = d3.quadtree().x(n => n.x).y(n => n.y).addAll(visibleNodes);
+  rebuildGrid();
   document.getElementById("visible-count").textContent =
     `表示中 ${visibleNodes.length.toLocaleString()} 文献 / ${visibleEdges.length.toLocaleString()} 辺`;
   scheduleDraw();
@@ -465,7 +506,7 @@ function draw() {
     }
     ctx.stroke();
   };
-  layers.forEach((list, i) => { if (i === 0 && state.interacting && list.length > 20000) return; drawEdges(list, edgeAlpha[i], edgeWidth[i], theme.edge, false); });
+  layers.forEach((list, i) => { if (i === 0 && (state.interacting || LOW_POWER) && list.length > 20000) return; drawEdges(list, edgeAlpha[i], edgeWidth[i], theme.edge, false); });
   // 強調辺は件数が多いほど薄く（数百件の子孫を持つ文献で黒く潰れないように）
   const sAlpha = strong.length > 3000 ? 0.10 : strong.length > 800 ? 0.22 : strong.length > 200 ? 0.45 : 0.8;
   drawEdges(strong, sAlpha, strong.length > 800 ? 1.0 : 1.4, theme.ink, strong.length <= 800);
@@ -547,30 +588,60 @@ function draw() {
   }
   const noy = L.noYearY * k + ty;
   if (noy > 0 && noy < bh && nodes.some(n => !n.plotYear)) ctx.fillText("年不明", 8, noy - 14);
+  const ld = document.getElementById("loading");
+  if (ld && !ld.hidden) ld.hidden = true;
 }
 const FONT_UI = '"Zen Kaku Gothic New", system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif';
 function shortTitle(t, len) { return t.length > len ? t.slice(0, len - 1) + "…" : t; }
 
-/* ================= ズーム ================= */
-const zoom = d3.zoom().scaleExtent([0.2, 9])
-  .on("start", () => { state.interacting = true; })
-  .on("zoom", ev => { transform = ev.transform; scheduleDraw(); })
-  .on("end", () => { state.interacting = false; scheduleDraw(); });
-const sel = d3.select(canvas);
-sel.call(zoom)
-  .on("pointerdown.cursor", () => canvas.classList.add("dragging"))
-  .on("pointerup.cursor", () => canvas.classList.remove("dragging"));
+/* ================= ズーム（自前実装: ホイール・ドラッグ・2本指ピンチ） ================= */
+let minK = 0.2;
+const MAX_K = 9;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function setTransform(k, x, y) { transform = { k, x, y }; scheduleDraw(); }
+function zoomAt(px, py, factor) {
+  const k2 = clamp(transform.k * factor, minK, MAX_K);
+  const f = k2 / transform.k;
+  setTransform(k2, px - (px - transform.x) * f, py - (py - transform.y) * f);
+}
+let anim = null;
+function animateTo(target, ms) {
+  if (anim) { cancelAnimationFrame(anim.raf); anim = null; }
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!ms || reduce) { setTransform(target.k, target.x, target.y); return; }
+  const from = { k: transform.k, x: transform.x, y: transform.y };
+  let t0 = null;
+  const step = ts => {
+    if (t0 === null) t0 = ts;
+    const p = Math.min(1, (ts - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    setTransform(from.k + (target.k - from.k) * e, from.x + (target.x - from.x) * e, from.y + (target.y - from.y) * e);
+    if (p < 1) anim.raf = requestAnimationFrame(step); else anim = null;
+  };
+  anim = { raf: requestAnimationFrame(step) };
+}
 function fitAll(animate) {
   const k = Math.min(bw / L.W, bh / L.H) * 0.97;
-  zoom.scaleExtent([Math.min(0.2, k), 9]);
-  const t = d3.zoomIdentity.translate((bw - L.W * k) / 2, (bh - L.H * k) / 2).scale(k);
-  (animate ? sel.transition().duration(500) : sel).call(zoom.transform, t);
+  minK = Math.min(0.2, k);   // 小さい画面ではフィット倍率が下限を下回るので下限を合わせる
+  animateTo({ k, x: (bw - L.W * k) / 2, y: (bh - L.H * k) / 2 }, animate ? 500 : 0);
 }
 function panTo(n) {
   const k = Math.max(transform.k, 1.8);
-  const t = d3.zoomIdentity.translate(bw / 2 - n.x * k, bh / 2 - n.y * k).scale(k);
-  sel.transition().duration(450).call(zoom.transform, t);
+  animateTo({ k, x: bw / 2 - n.x * k, y: bh / 2 - n.y * k }, 450);
 }
+let interactTimer = null;
+function markInteracting() {
+  state.interacting = true;
+  clearTimeout(interactTimer);
+  interactTimer = setTimeout(() => { state.interacting = false; scheduleDraw(); }, 160);
+}
+canvas.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const d = ev.deltaMode === 1 ? ev.deltaY * 20 : ev.deltaMode === 2 ? ev.deltaY * 400 : ev.deltaY;
+  markInteracting();
+  // Ctrl+ホイールはトラックパッドのピンチ（変化量が小さい）
+  zoomAt(ev.clientX - r.left, ev.clientY - r.top, Math.exp(-d * (ev.ctrlKey ? 0.01 : 0.0015)));
+}, { passive: false });
 document.getElementById("reset-view").addEventListener("click", () => { clearSelection(); fitAll(true); });
 
 /* ================= ヒットテスト・ツールチップ ================= */
@@ -580,44 +651,81 @@ function nodeAt(clientX, clientY) {
   const wx = (clientX - rect.left - transform.x) / transform.k;
   const wy = (clientY - rect.top - transform.y) / transform.k;
   const rad = Math.max(6 / transform.k, 4);
+  const R = rad + 14;
   let best = null, bestD = Infinity;
-  quadtree.visit((q, x0, y0, x1, y1) => {
-    if (x0 > wx + rad + 12 || x1 < wx - rad - 12 || y0 > wy + rad + 12 || y1 < wy - rad - 12) return true;
-    if (!q.length) {
-      do {
-        const n = q.data;
-        const d = Math.hypot(n.x - wx, n.y - wy) - n.r;
-        if (d < rad && d < bestD && emphasis(n) >= 0.5) { best = n; bestD = d; }
-      } while ((q = q.next));
+  const cx0 = Math.floor((wx - R) / CELL), cx1 = Math.floor((wx + R) / CELL);
+  const cy0 = Math.floor((wy - R) / CELL), cy1 = Math.floor((wy + R) / CELL);
+  for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+    const a = grid.get(cellKey(cx, cy));
+    if (!a) continue;
+    for (const n of a) {
+      const d = Math.hypot(n.x - wx, n.y - wy) - n.r;
+      if (d < rad && d < bestD && emphasis(n) >= 0.5) { best = n; bestD = d; }
     }
-    return false;
-  });
+  }
   return best;
 }
 let dragMoved = false, downPos = null;
-canvas.addEventListener("pointerdown", ev => { downPos = [ev.clientX, ev.clientY]; dragMoved = false; });
+const pointers = new Map();   // pointerId -> {x, y}
+let pinch = null;
+function showTooltip(ev, n) {
+  tt.innerHTML = "";
+  const t1 = document.createElement("div"); t1.className = "tt-title"; t1.textContent = n.title;
+  const t2 = document.createElement("div"); t2.className = "tt-meta";
+  t2.textContent = (n.year || "年不明") + (n.isSeed ? " ｜ 起点" : "") +
+    (n.lineage === "AB" ? (n.isDirectBridge ? " ｜ 両系譜が直接引用" : " ｜ 両系譜から到達") : "") +
+    (n.lineage === "F" ? " ｜ 起点を引用" : "") +
+    (n.cited != null ? " ｜ 被引用 " + n.cited.toLocaleString() : "") +
+    " ｜ 図内被引用 " + n.inDeg;
+  tt.append(t1, t2);
+  tt.hidden = false;
+  const r = wrap.getBoundingClientRect();
+  let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 12;
+  x = Math.min(x, r.width - tt.offsetWidth - 8); y = Math.min(y, r.height - tt.offsetHeight - 8);
+  tt.style.left = x + "px"; tt.style.top = y + "px";
+}
+canvas.addEventListener("pointerdown", ev => {
+  if (canvas.setPointerCapture) { try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* 一部環境で不可 */ } }
+  pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  downPos = [ev.clientX, ev.clientY]; dragMoved = false;
+  canvas.classList.add("dragging");
+  tt.hidden = true;
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+});
 canvas.addEventListener("pointermove", ev => {
-  if (downPos && Math.hypot(ev.clientX - downPos[0], ev.clientY - downPos[1]) > 4) dragMoved = true;
+  if (pointers.has(ev.pointerId)) {
+    const prev = pointers.get(ev.pointerId);
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (downPos && Math.hypot(ev.clientX - downPos[0], ev.clientY - downPos[1]) > 4) dragMoved = true;
+    markInteracting();
+    if (pointers.size === 1) {
+      setTransform(transform.k, transform.x + ev.clientX - prev.x, transform.y + ev.clientY - prev.y);
+    } else if (pinch) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const r = canvas.getBoundingClientRect();
+      if (pinch.d > 0) zoomAt(mx - r.left, my - r.top, d / pinch.d);
+      transform = { k: transform.k, x: transform.x + mx - pinch.mx, y: transform.y + my - pinch.my };
+      pinch = { d, mx, my };
+      scheduleDraw();
+    }
+    return;
+  }
   const n = nodeAt(ev.clientX, ev.clientY);
   canvas.classList.toggle("over", !!n);
   if (n !== state.hover) { state.hover = n; scheduleDraw(); }
-  if (n) {
-    tt.innerHTML = "";
-    const t1 = document.createElement("div"); t1.className = "tt-title"; t1.textContent = n.title;
-    const t2 = document.createElement("div"); t2.className = "tt-meta";
-    t2.textContent = (n.year || "年不明") + (n.isSeed ? " ｜ 起点" : "") +
-      (n.lineage === "AB" ? (n.isDirectBridge ? " ｜ 両系譜が直接引用" : " ｜ 両系譜から到達") : "") +
-      (n.lineage === "F" ? " ｜ 起点を引用" : "") +
-      (n.cited != null ? " ｜ 被引用 " + n.cited.toLocaleString() : "") +
-      " ｜ 図内被引用 " + n.inDeg;
-    tt.append(t1, t2);
-    tt.hidden = false;
-    const r = wrap.getBoundingClientRect();
-    let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 12;
-    x = Math.min(x, r.width - tt.offsetWidth - 8); y = Math.min(y, r.height - tt.offsetHeight - 8);
-    tt.style.left = x + "px"; tt.style.top = y + "px";
-  } else tt.hidden = true;
+  if (n) showTooltip(ev, n); else tt.hidden = true;
 });
+const endPointer = ev => {
+  pointers.delete(ev.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (!pointers.size) { canvas.classList.remove("dragging"); downPos = null; }
+};
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
 canvas.addEventListener("pointerleave", () => { tt.hidden = true; if (state.hover) { state.hover = null; scheduleDraw(); } });
 canvas.addEventListener("click", ev => {
   if (dragMoved) return;
@@ -882,13 +990,29 @@ document.getElementById("toggle-labels").addEventListener("change", e => { state
 }
 
 /* ================= 起動 ================= */
-new ResizeObserver(() => { resize(); if (!state.selected) fitAll(false); }).observe(wrap);
-const mq = window.matchMedia("(prefers-color-scheme: dark)");
-mq.addEventListener("change", () => { readTheme(); scheduleDraw(); });
-new MutationObserver(() => { readTheme(); scheduleDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-document.fonts && document.fonts.ready.then(scheduleDraw);
+function syncStateFromControls() {
+  // 再公開時にプラットフォームがフォーム値を復元することがあるので、内部状態を画面の値に合わせる
+  state.hop2 = document.getElementById("toggle-hop2").checked;
+  state.fwd = document.getElementById("toggle-fwd").checked;
+  state.sharedOnly = document.getElementById("toggle-shared").checked;
+  state.prune = +document.getElementById("prune").value || 0;
+  state.depth = +document.getElementById("depth").value || 0;
+  state.labelsAll = document.getElementById("toggle-labels").checked;
+}
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => { resize(); if (!state.selected) fitAll(false); }).observe(wrap);
+} else {
+  window.addEventListener("resize", () => { resize(); if (!state.selected) fitAll(false); });
+}
+const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+const onThemeChange = () => { readTheme(); scheduleDraw(); };
+if (mq) { if (mq.addEventListener) mq.addEventListener("change", onThemeChange); else if (mq.addListener) mq.addListener(onThemeChange); }
+new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleDraw);
+syncStateFromControls();
 resize();
 refreshVisible();
 fitAll(false);
+if (kwInput.value.trim()) runKeyword();
 /* 初期表示は選択なしの全体図（枝の刈り込み 2 以上）。「なし」にすると全文献を描く */
 </script>
