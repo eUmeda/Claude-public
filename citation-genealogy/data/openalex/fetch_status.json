@@ -1,0 +1,5 @@
+{
+ "backward_mode": "single",
+ "citers": {},
+ "citers_skipped_reason": "cites: フィルタ（一覧クエリ）の無料予算が枯渇。API キーを openalex_key.md に置くか、UTC 深夜のリセット後に再実行してください。"
+}

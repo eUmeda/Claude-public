@@ -14,7 +14,16 @@
 使い方:
   python3 fetch_openalex.py --test   # 接続確認（1件だけ取得）
   python3 fetch_openalex.py          # 全件取得
+
+料金体系の注意（2026-09 時点）:
+  - 単一レコード取得 /works/W... は無料（予算消費ゼロ）。
+  - 一覧クエリ /works?filter=... は 1 リクエスト 1 クレジット。キー無しだと
+    「送信元 IP ごとの無料日次予算」から引かれるため、共有 IP の環境では
+    すぐ枯渇する。枯渇時は後方探索を単一レコード取得（並列）へ自動で
+    切り替え、前方（被引用）取得は cites: フィルタ＝一覧クエリが必須なので
+    打ち切って fetch_status.json に記録する。
 """
+import concurrent.futures
 import argparse
 import json
 import os
@@ -48,7 +57,7 @@ WORK_FIELDS = ",".join([
 ])
 CITER_FIELDS = ",".join([
     "id", "doi", "title", "publication_year", "cited_by_count",
-    "referenced_works", "type",
+    "authorships", "primary_location", "referenced_works", "type",
 ])
 # 2ホップ目（参照文献の参照文献）は件数が多いので abstract を省いた軽量フィールド
 HOP2_FIELDS = ",".join([
@@ -81,6 +90,10 @@ def load_key():
     return key, mail
 
 
+class BudgetExhausted(Exception):
+    """キー無し・共有 IP の無料日次予算が尽きた（一覧クエリのみ影響）"""
+
+
 def request(path, params, api_key, mailto, tries=5):
     q = dict(params)
     if mailto:
@@ -95,6 +108,9 @@ def request(path, params, api_key, mailto, tries=5):
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
+            if e.code == 429 and e.headers.get("x-ratelimit-remaining-usd") == "0" \
+                    and e.headers.get("x-ratelimit-cost-required-usd") not in (None, "0"):
+                raise BudgetExhausted(e.read()[:300].decode("utf-8", "replace"))
             if e.code in (429, 500, 502, 503) and i < tries - 1:
                 wait = int(e.headers.get("Retry-After", delay))
                 time.sleep(max(wait, delay)); delay *= 2
@@ -116,26 +132,70 @@ def reconstruct_abstract(inv):
 
 
 def slim(work):
-    """保存前に abstract_inverted_index を平文へ置き換える。"""
+    """保存前に abstract_inverted_index を平文へ置き換え、著者・掲載誌を必要最小限に縮める
+    （所属機関などを落とす。2ホップで数千件になるためファイルサイズ対策）。"""
     w = dict(work)
-    w["abstract"] = reconstruct_abstract(w.pop("abstract_inverted_index", None))
+    if "abstract_inverted_index" in w or "abstract" not in w:
+        w["abstract"] = reconstruct_abstract(w.pop("abstract_inverted_index", None))
+    if "authorships" in w:
+        w["authorships"] = [{"author": {"display_name": (a.get("author") or {}).get("display_name")}}
+                            for a in (w.get("authorships") or [])]
+    if "primary_location" in w:
+        loc = w.get("primary_location") or {}
+        src = loc.get("source") or {}
+        w["primary_location"] = {"source": {"display_name": src.get("display_name")} if src else None,
+                                 "raw_source_name": loc.get("raw_source_name")}
     return w
 
 
+MODE = {"single": False}   # True になると以降は単一レコード取得のみ使う
+WORKERS = 8                # 単一取得の並列数（公式目安 10 req/s を超えない）
+
+
+def fetch_one(wid, fields, api_key, mailto):
+    """単一レコード取得（無料）。存在しない ID は None。"""
+    try:
+        return slim(request(f"/works/{wid}", {"select": fields}, api_key, mailto))
+    except SystemExit as e:
+        if "HTTP 404" in str(e):
+            return None
+        raise
+
+
 def fetch_by_ids(ids, fields, api_key, mailto, label):
-    """OpenAlex ID のリストを 50件ずつバッチ取得する。"""
+    """OpenAlex ID のリストを取得する。
+    既定は 50件ずつのバッチ（一覧クエリ・1クレジット/回）。予算切れを検知したら
+    単一レコード取得（無料）を並列で回す方式に切り替える。"""
     out = []
-    for i in range(0, len(ids), 50):
+    i = 0
+    while i < len(ids) and not MODE["single"]:
         chunk = ids[i:i + 50]
         short = [rid.rsplit("/", 1)[-1] for rid in chunk]
-        page = request("/works", {
-            "filter": "openalex:" + "|".join(short),
-            "select": fields, "per-page": 50,
-        }, api_key, mailto)
+        try:
+            page = request("/works", {
+                "filter": "openalex:" + "|".join(short),
+                "select": fields, "per-page": 50,
+            }, api_key, mailto)
+        except BudgetExhausted:
+            print(f"{label}: 一覧クエリの無料予算が枯渇。単一レコード取得（並列 {WORKERS}）へ切替",
+                  file=sys.stderr)
+            MODE["single"] = True
+            break
         out.extend(slim(w) for w in page["results"])
-        if (i // 50) % 10 == 0 or i + 50 >= len(ids):
-            print(f"{label} {min(i + 50, len(ids))}/{len(ids)}")
+        i += 50
+        if (i // 50) % 10 == 0 or i >= len(ids):
+            print(f"{label} {min(i, len(ids))}/{len(ids)}")
         time.sleep(0.15)
+    if i < len(ids):
+        rest = [rid.rsplit("/", 1)[-1] for rid in ids[i:]]
+        done = 0
+        with concurrent.futures.ThreadPoolExecutor(WORKERS) as ex:
+            for w in ex.map(lambda wid: fetch_one(wid, fields, api_key, mailto), rest):
+                if w is not None:
+                    out.append(w)
+                done += 1
+                if done % 500 == 0 or done == len(rest):
+                    print(f"{label} {i + done}/{len(ids)} (single)", flush=True)
     return out
 
 
@@ -145,6 +205,7 @@ def main():
     ap.add_argument("--depth", type=int, choices=(1, 2), default=2,
                     help="後方探索の深さ。1=起点の参照文献まで、2=その参照文献の参照文献まで全網羅（既定）")
     ap.add_argument("--no-citers", action="store_true", help="前方（被引用）の取得を省略")
+    ap.add_argument("--refresh", action="store_true", help="既存の seeds.json を無視して再取得")
     args = ap.parse_args()
     api_key, mailto = load_key()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -157,7 +218,12 @@ def main():
 
     # 1. 起点 work レコード
     seeds = {}
+    if (OUT / "seeds.json").exists() and not args.refresh:
+        seeds = json.loads((OUT / "seeds.json").read_text(encoding="utf-8"))
+        print("seeds.json を再利用（--refresh で再取得）")
     for key, doi in SEED_DOIS.items():
+        if key in seeds:
+            continue
         w = request(f"/works/doi:{urllib.parse.quote(doi, safe='')}",
                     {"select": WORK_FIELDS}, api_key, mailto)
         seeds[key] = slim(w)
@@ -186,25 +252,37 @@ def main():
             ensure_ascii=False), encoding="utf-8")
         print(f"hop2: {len(refs2)} 件 (truncated={truncated})")
 
-    # 3. 各起点の被引用文献（全件・cursor paging）
+    # 3. 各起点の被引用文献（全件・cursor paging）。cites: フィルタは一覧クエリ
+    #    なので予算切れなら打ち切り、状態を fetch_status.json に残す。
+    status = {"backward_mode": "single" if MODE["single"] else "batch",
+              "citers": {}, "citers_skipped_reason": None}
     for key, s in ({} if args.no_citers else seeds).items():
         wid = s["id"].rsplit("/", 1)[-1]
         citers, cursor, truncated = [], "*", False
-        while cursor:
-            page = request("/works", {
-                "filter": f"cites:{wid}", "select": CITER_FIELDS,
-                "per-page": 200, "cursor": cursor,
-            }, api_key, mailto)
-            citers.extend(slim(w) for w in page["results"])
-            cursor = page["meta"].get("next_cursor")
-            if len(citers) >= MAX_CITERS_PER_SEED:
-                truncated = True
-                break
-            time.sleep(0.15)
+        try:
+            while cursor:
+                page = request("/works", {
+                    "filter": f"cites:{wid}", "select": CITER_FIELDS,
+                    "per-page": 200, "cursor": cursor,
+                }, api_key, mailto)
+                citers.extend(slim(w) for w in page["results"])
+                cursor = page["meta"].get("next_cursor")
+                if len(citers) >= MAX_CITERS_PER_SEED:
+                    truncated = True
+                    break
+                time.sleep(0.15)
+        except BudgetExhausted as e:
+            status["citers_skipped_reason"] = (
+                "cites: フィルタ（一覧クエリ）の無料予算が枯渇。API キーを openalex_key.md に置くか、"
+                "UTC 深夜のリセット後に再実行してください。")
+            print("citers: 予算枯渇のため打ち切り:", str(e)[:200], file=sys.stderr)
+            break
         (OUT / f"citers_{key}.json").write_text(json.dumps(
             {"seed": key, "seed_openalex_id": s["id"], "truncated": truncated, "citers": citers},
             ensure_ascii=False), encoding="utf-8")
+        status["citers"][key] = {"count": len(citers), "truncated": truncated}
         print(f"citers {key}: {len(citers)} 件 (truncated={truncated})")
+    (OUT / "fetch_status.json").write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print("done. 出力:", OUT)
 
