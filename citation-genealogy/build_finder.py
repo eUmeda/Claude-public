@@ -304,13 +304,12 @@ def main():
 
     # ---- 密度（俯瞰用: 年 × クラスタ の件数と候補件数） ----------------------------------
     ci = {c: i for i, c in enumerate(CLUSTER_ORDER)}
-    density = defaultdict(lambda: [[0] * len(CLUSTER_ORDER), [0] * len(CLUSTER_ORDER)])
+    # 深さ（rank）別: 1 既知 / 2 要確認 / 3 関連 / 4 意味・別版 / 5 海。ビューアは深さ以下を合算して帯にする
+    RANK = {-1: 0, 1: 1, 2: 2, 3: 3, 5: 3, 0: 4}
+    density = defaultdict(lambda: [[0] * len(CLUSTER_ORDER) for _ in range(5)])
     for n in nodes:
         if n["y"]:
-            d = density[max(n["y"], floor_year)]
-            d[0][ci[n["cl"]]] += 1
-            if n["tier"] in (1, 2, 3):
-                d[1][ci[n["cl"]]] += 1
+            density[max(n["y"], floor_year)][RANK[n["tier"]]][ci[n["cl"]]] += 1
     density = {str(y): v for y, v in sorted(density.items())}
 
     # ---- 索引 ----------------------------------------------------------------------

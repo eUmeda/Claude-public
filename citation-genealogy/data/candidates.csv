@@ -9788,7 +9788,7 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.1073/pnas.72.1.143,evo,4,A theory of group selection.,1975,3,1.369,0.369,0,0,0.22,Hastings 1983,0,https://openalex.org/W2087169316
 10.1093/notesj/32.3.377-a,field,4,Chapman and Hall,1985,3,1.352,0.352,0,0,0.301,Whittle 1954,0,https://openalex.org/W2767905780
 10.1093/biomet/48.3-4.419,stat,4,Computing the distribution of quadratic forms in normal variables,1961,3,1.351,0.351,0,0,0.315,Whittle 1954,0,https://openalex.org/W2016886155
-10.1093/biomet/52.3-4.591,stat,4,An analysis of variance test for normality (complete samples),1965,3,1.321,0.321,0,0,0.26,Whittle 1954,0,https://openalex.org/W2168745915
+10.1093/biomet/52.3-4.591,field,4,An analysis of variance test for normality (complete samples),1965,3,1.321,0.321,0,0,0.26,Whittle 1954,0,https://openalex.org/W2168745915
 10.1371/journal.pone.0029469,forest,4,Local-Scale Drivers of Tree Survival in a Temperate Forest,2012,3,1.307,0.307,0,0,0.265,Liu 2018,0,https://openalex.org/W2055885140
 10.1093/biomet/51.3-4.299,field,4,The spectral analysis of two-dimensional point processes,1964,3,1.305,0.305,0,0,0.391,Whittle 1954,0,https://openalex.org/W4252987875
 10.2307/2226151,field,4,Mathematical Methods of Statistics.,1947,3,1.305,0.305,0,0,0.316,Whittle 1954,0,https://openalex.org/W4255783720
@@ -9803,10 +9803,10 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.1111/j.1558-5646.1967.tb03420.x,light,4,LIGHT AS AN ECOLOGICAL FACTOR,1967,3,1.0,0.0,0,0,0.366,Whittle 1954,0,https://openalex.org/W2329398539
 10.1126/science.1105034,light,4,Genetic Consequences of Tropical Second-Growth Forest Regeneration,2005,3,1.0,0.0,0,0,0.253,Montgomery & Chazdon 2001,0,https://openalex.org/W2132027097
 10.1080/01431160701736489,lai,4,Review of methods of small‐footprint airborne laser scanning for extracting forest inventory data in,2008,3,1.0,0.0,0,0,0.234,Leblanc 2005,0,https://openalex.org/W2133160971
-10.1093/biomet/30.1-2.180,field,4,A GENERALIZATION OF FISHER'S z TEST,1938,3,1.0,0.0,0,0,0.373,Whittle 1954,0,https://openalex.org/W1978235841
-10.1093/biomet/47.1-2.87,field,4,More significance tests on the sphere,1960,3,1.0,0.0,0,0,0.334,Whittle 1954,0,https://openalex.org/W1979767886
+10.1093/biomet/30.1-2.180,evo,4,A GENERALIZATION OF FISHER'S z TEST,1938,3,1.0,0.0,0,0,0.373,Whittle 1954,0,https://openalex.org/W1978235841
+10.1093/biomet/47.1-2.87,evo,4,More significance tests on the sphere,1960,3,1.0,0.0,0,0,0.334,Whittle 1954,0,https://openalex.org/W1979767886
 10.1093/biomet/51.1-2.175,field,4,Hazard analysis. I,1964,3,1.0,0.0,0,0,0.405,Whittle 1954,0,https://openalex.org/W2026126531
-10.1093/biomet/52.1-2.193,field,4,Equatorial distributions on a sphere,1965,3,1.0,0.0,0,0,0.383,Whittle 1954,0,https://openalex.org/W2015952588
+10.1093/biomet/52.1-2.193,evo,4,Equatorial distributions on a sphere,1965,3,1.0,0.0,0,0,0.383,Whittle 1954,0,https://openalex.org/W2015952588
 10.1093/biomet/25.3-4.353,field,4,METHODS OF STATISTICAL ANALYSIS APPROPRIATE FOR k SAMPLES OF TWO VARIABLES,1933,3,1.0,0.0,0,0,0.222,Whittle 1954,0,https://openalex.org/W2022761426
 10.1093/biomet/31.3-4.221,field,4,ON GENERALIZED ANALYSIS OF VARIANCE. (I),1940,3,1.0,0.0,0,0,0.612,Whittle 1954,0,https://openalex.org/W2072639741
 10.1093/biomet/40.3-4.458,field,4,A note on the evaluation of the multivariate normal integral,1953,3,1.0,0.0,0,0,0.55,Whittle 1954,0,https://openalex.org/W2004097187
@@ -9818,7 +9818,7 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.1093/biomet/36.3-4.458,field,4,A historical note on the method of least squares,1949,3,1.0,0.0,0,0,0.615,Whittle 1954,0,https://openalex.org/W4297704396
 10.1093/biomet/23.3-4.416,evo,4,(i) Historical Note on the Distribution of the Standard Deviations of Samples of any Size drawn from,1931,3,1.0,0.0,0,0,0.384,Whittle 1954,0,https://openalex.org/W4252962889
 10.1093/biomet/39.1-2.151,field,4,EXPERIMENTAL DESIGNS FOR SERIALLY CORRELATED OBSERVATIONS,1952,3,1.0,0.0,0,0,0.443,Whittle 1954,0,https://openalex.org/W2083226887
-10.1007/978-94-011-4645-6_3,ms,4,Nitrogen stable isotopic composition of leaves and soil: Tropical versus temperate forests,1999,3,1.0,0.0,0,0,0.225,Hamilton & May 1977,0,https://openalex.org/W2046653260
+10.1007/978-94-011-4645-6_3,forest,4,Nitrogen stable isotopic composition of leaves and soil: Tropical versus temperate forests,1999,3,1.0,0.0,0,0,0.225,Hamilton & May 1977,0,https://openalex.org/W2046653260
 10.1016/s0378-1127(01)00480-7,light,4,Densities of large living and dead trees in old-growth temperate and boreal forests,2002,3,1.0,0.0,0,0,0.26,Liu 2018,0,https://openalex.org/W2029285931
 10.1111/grs.12078,stat,4,Determining spatial heterogeneity in species richness of plant community,2015,3,1.0,0.0,0,0,0.215,Helbach 2022,0,https://openalex.org/W2085187175
 10.1007/s11515-008-0008-z,nlm,4,Neutral theory in community ecology,2007,3,1.0,0.0,0,0,0.404,Keitt 2000 spectral NLM,0,https://openalex.org/W2189915420
@@ -9826,12 +9826,12 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.4238/2013.september.19.5,light,4,Influences of species mixture on biomass of Masson pine (Pinus massoniana Lamb) forests,2013,3,1.0,0.0,0,0,0.322,Jin 2024,0,https://openalex.org/W2163517638
 ,stat,4,Compilation and application of normal bamboo table of Phyllostachys pubescens stump diameter.,2009,3,1.0,0.0,0,0,0.245,Inoue 2014 bamboo LAI,0,https://openalex.org/W2168482951
 ,light,4,Research on the standing bamboo density in Phyllostachys pubescens forest,2012,3,1.0,0.0,0,0,0.391,Inoue 2014 bamboo LAI,0,https://openalex.org/W2355239357
-,stat,4,Study on drying technology of Phyllostachys pubescens tubes,2010,3,1.0,0.0,0,0,0.264,Inoue 2014 bamboo LAI,0,https://openalex.org/W2361991225
+,ms,4,Study on drying technology of Phyllostachys pubescens tubes,2010,3,1.0,0.0,0,0,0.264,Inoue 2014 bamboo LAI,0,https://openalex.org/W2361991225
 10.1038/srep10994,forest,4,The mechanism for exclusion of Pinus massoniana during the succession in subtropical forest ecosyste,2015,3,1.0,0.0,0,0,0.251,Jin 2024,0,https://openalex.org/W2408973828
 ,light,4,The Trend of Growth Characteristics of Moso bamboo (Phyllostachys pubescens) Forests under an unmana,2016,3,1.0,0.0,0,0,0.344,Inoue 2014 bamboo LAI,0,https://openalex.org/W2540686476
-10.1016/b978-0-444-63998-1.00006-9,light,4,Temperate forests and soils,2019,3,1.0,0.0,0,0,0.268,Helbach 2022,0,https://openalex.org/W2991187149
+10.1016/b978-0-444-63998-1.00006-9,forest,4,Temperate forests and soils,2019,3,1.0,0.0,0,0,0.268,Helbach 2022,0,https://openalex.org/W2991187149
 10.17521/cjpe.2015.0096,light,4,Quantitative classification of the subtropical evergreen-deciduous broadleaved mixed forest and the ,2015,3,1.0,0.0,0,0,0.215,Zhu 2016,0,https://openalex.org/W3085546967
-10.5658/wood.2018.46.1.29,stat,4,Anatomical Characteristics of Three Korean Bamboo Species,2018,3,1.0,0.0,0,0,0.254,Inoue 2014 bamboo LAI,0,https://openalex.org/W2811308331
+10.5658/wood.2018.46.1.29,forest,4,Anatomical Characteristics of Three Korean Bamboo Species,2018,3,1.0,0.0,0,0,0.254,Inoue 2014 bamboo LAI,0,https://openalex.org/W2811308331
 10.17521/cjpe.2019.0189,forest,4,Variations in the first-order root diameter in 89 woody species in a subtropical evergreen broadleav,2019,3,1.0,0.0,0,0,0.258,Zhu 2016,0,https://openalex.org/W3017259083
 10.1016/j.heliyon.2022.e11393,light,4,Selective and clear-cut logging have varied imprints on tree community structure in a moist semi-dec,2022,3,1.0,0.0,0,0,0.224,Nicotra 1999,0,https://openalex.org/W4308374997
 10.3389/fenvs.2023.1148986,forest,4,"Response of leaf and soil C, N and P stoichiometry in different Pinus massoniana forest types to slo",2023,3,1.0,0.0,0,0,0.22,Jin 2024,0,https://openalex.org/W4376610920
@@ -9855,7 +9855,7 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 ,lai,4,[Progress in leaf area index retrieval based on hyperspectral remote sensing and retrieval models].,2012,3,0.759,0.0,0,0,0.181,Fang 2019 LAI review,0,https://openalex.org/W2362061927
 ,forest,4,"Bamboo Resource and Its Exploitation and Utilization in Jiufu Mountain Nature Reserve,Fujian Provinc",2011,3,0.759,0.0,0,0,0.181,Inoue 2014 bamboo LAI,0,https://openalex.org/W2391170475
 10.1038/s41598-018-34896-5,forest,4,Functional recovery of a subtropical evergreen-deciduous broadleaved mixed forest following clear cu,2018,3,0.759,0.0,0,0,0.181,Zhu 2016,0,https://openalex.org/W2899419991
-10.1016/j.foreco.2018.02.033,light,4,"Very large trees in a lowland old-growth beech (Fagus sylvatica L.) forest: Density, size, growth an",2018,3,0.747,0.236,0,0,0.147,Liu 2018,0,https://openalex.org/W2793472096
+10.1016/j.foreco.2018.02.033,stat,4,"Very large trees in a lowland old-growth beech (Fagus sylvatica L.) forest: Density, size, growth an",2018,3,0.747,0.236,0,0,0.147,Liu 2018,0,https://openalex.org/W2793472096
 10.1016/j.foreco.2004.06.024,light,4,Regeneration of timber trees in a logged tropical forest in North Bolivia,2004,3,0.745,0.0,0,0,0.179,Nicotra 1999,0,https://openalex.org/W2037754886
 10.3390/f13081227,forest,4,Negative Density Restricts the Coexistence and Spatial Distribution of Dominant Species in Subtropic,2022,3,0.745,0.0,0,0,0.179,Zhu 2016,0,https://openalex.org/W4289524282
 ,forest,4,Functional ecology of secondary forests in South Mexico. Tropical rainforest secondary succession th,2008,3,0.737,0.0,0,0,0.178,Matsuo 2021,0,https://openalex.org/W2469108777
@@ -9865,7 +9865,7 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.1016/b978-0-12-424156-5.50010-x,light,4,TROPICAL AND SUBTROPICAL FORESTS AND WOODLANDS,1981,3,0.665,0.132,0,0,0.15,Zhu 2016,0,https://openalex.org/W2897193897
 10.1029/2008eo320009,lai,4,Earth Observation of Global Change: The Role of Satellite Remote Sensing in Monitoring the Global En,2008,3,0.657,0.0,0,0,0.167,Fang 2019 LAI review,0,https://openalex.org/W1972577911
 10.1016/0034-4257(84)90008-7,ms,4,Intercepted photosynthetically active radiation estimated by spectral reflectance,1984,3,0.65,0.0,0,0,0.166,Keitt 2000 spectral NLM,0,https://openalex.org/W2072456441
-,nlm,4,NEUTRAL THEORY IN COMMUNITY ECOLOGY,2006,3,0.65,0.0,0,0,0.166,Caswell 1976,0,https://openalex.org/W3152247056
+,evo,4,NEUTRAL THEORY IN COMMUNITY ECOLOGY,2006,3,0.65,0.0,0,0,0.166,Caswell 1976,0,https://openalex.org/W3152247056
 10.1117/12.815860,lai,4,Leaf area index measurements at the middle reaches of Heihe River forest sites,2008,3,0.642,0.0,0,0,0.165,Chianucci 2019,0,https://openalex.org/W2054907416
 10.1016/s1007-0214(07)70062-7,nlm,4,"Vegetation spatial heterogeneity of different soil regions in inner mongolia, China",2007,3,0.62,0.0,0,0,0.162,Liu 2018,0,https://openalex.org/W1975384095
 10.1002/ecs2.3871,forest,4,Intermediate disturbances drive long‐term fluctuation in old‐growth forest biomass: an 84‐yr tempera,2022,3,0.613,0.0,0,0,0.161,Runkle 1982,0,https://openalex.org/W4206623202
@@ -9884,7 +9884,7 @@ doi,cluster,phase,note,year,tier,score,S_topo,N_link,direct,sim,nearest_known,ge
 10.1016/0168-1923(84)90015-7,ms,4,Crop productivity in relation to interception of photosynthetically active radiation,1984,3,0.54,0.0,0,0,0.151,Canham 1990,0,https://openalex.org/W2014460334
 10.1016/j.foreco.2022.120692,light,4,How do understory trees deal with small canopy openings? The case of release in growth following dro,2022,3,0.54,0.0,0,0,0.151,Tang & Dubayah 2017,0,https://openalex.org/W4310860653
 10.1109/igarss.2016.7730643,lai,4,Monitoring leaf area index after heading stage using hyperspectral remote sensing data in rice,2016,3,0.526,0.0,0,0,0.149,Demarez 2008,0,https://openalex.org/W2549050738
-10.1071/wr96040,stat,4,Patterns of Mammalian Species Richness in the Australian Tropical Rainforests: Are Extinctions durin,1997,3,0.518,0.0,0,0,0.148,Denslow 1987,0,https://openalex.org/W2013012139
+10.1071/wr96040,forest,4,Patterns of Mammalian Species Richness in the Australian Tropical Rainforests: Are Extinctions durin,1997,3,0.518,0.0,0,0,0.148,Denslow 1987,0,https://openalex.org/W2013012139
 10.1109/icisce.2017.163,stat,4,Two Approaches to Blending Spatial Weights and Temporal Weights in Calculating Spatiotemporal Autoco,2017,3,0.518,0.0,0,0,0.148,Legendre 1993,0,https://openalex.org/W2769759987
 ,stat,4,Analysis on spatial distribution pattern and variation characteristics of mountain grassland resourc,2020,3,0.518,0.0,0,0,0.148,Zhang 2004,0,https://openalex.org/W3033246532
 ,field,4,Covariance functions for Gaussian Process Models,2009,3,0.511,0.0,0,0,0.147,Wood & Chan 1994,0,https://openalex.org/W143964308

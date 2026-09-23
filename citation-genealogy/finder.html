@@ -54,6 +54,8 @@ button, input, select { font: inherit; }
 #topbar .sub { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
 #topbar .grow { flex: 1; }
 .tb { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+#depth { width: 96px; accent-color: var(--ink); margin: 0; }
+#depth-name { font-size: 11px; min-width: 7em; }
 .btn { font-size: 12px; color: var(--ink-2); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
 .btn:hover { color: var(--ink); border-color: var(--axis); }
 .btn.on { color: var(--ink); border-color: var(--ink); font-weight: 700; }
@@ -186,7 +188,7 @@ window.addEventListener("unhandledrejection", function (ev) { window.__report("p
   <input id="keyword" type="search" placeholder="キーワード（英語。タイトル・要旨）" aria-label="キーワードで関連文献を強調">
   <label class="tb">年へ <input id="year-jump" type="number" min="1850" max="2030" placeholder="1990" aria-label="年へ移動"></label>
   <button class="btn" id="btn-drawer" type="button" aria-pressed="true">候補リスト</button>
-  <button class="btn" id="btn-sea" type="button" aria-pressed="true">海を表示</button>
+  <label class="tb" id="depth-box" title="描く文献の深さ。浅いほど俯瞰が見やすく、最深で全部（海まで）">深さ <input id="depth" type="range" min="1" max="5" step="1" value="1" aria-label="表示する深さ"><span id="depth-name"></span></label>
   <button class="btn" id="btn-legend" type="button">凡例・検証</button>
   <button class="btn" id="btn-fit" type="button">全体表示</button>
   <span id="level"></span>
@@ -223,7 +225,7 @@ window.addEventListener("unhandledrejection", function (ev) { window.__report("p
     <button class="btn" id="btn-export" type="button">追加候補を書き出し</button>
   </div>
 </aside>
-<div id="keys">j/k 次・前 ｜ d 済 ・ a 追加 ・ x 除外 ｜ 1〜4 ズーム段階 ｜ f 全体 ｜ / 検索 ｜ Esc 閉じる</div>
+<div id="keys">j/k 次・前 ｜ d 済 ・ a 追加 ・ x 除外 ｜ 1〜4 ズーム段階 ｜ [ ] 深さ ｜ f 全体 ｜ / 検索 ｜ Esc 閉じる</div>
 
 <section id="card" hidden aria-live="polite"></section>
 <section id="legend" hidden>
@@ -244,7 +246,8 @@ window.addEventListener("unhandledrejection", function (ev) { window.__report("p
   <h3>ズーム</h3>
   <ul>
     <li>拡大すると縦（年）方向が先に伸びる。最大ズームでは 1 年が画面の高さいっぱい、1 クラスタ列が画面の幅いっぱいになる</li>
-    <li>俯瞰: 年×クラスタの密度帯（濃い部分は候補）と既知・要確認 ／ 中間: 全候補と海の点 ／ 接近: 全文献にラベルと年ごとの目盛</li>
+    <li>深さ（上部バーのスライダー、キー [ ]）: 1 既知だけ → 2 ＋要確認 → 3 ＋関連の可能性 → 4 ＋意味・別版 → 5 ＋海。俯瞰は浅く、詳しく見るときに深くする。選択中の文献とその隣接、キーワード一致は深さに関係なく描く</li>
+    <li>俯瞰: 年×クラスタの密度帯（薄い帯は全件、濃い帯はいまの深さまで） ／ 中間: 深さまでの点と既知に触れる辺 ／ 接近: ラベルと年ごとの目盛</li>
   </ul>
   <h3>検証（既知の一部を隠して当てられるか）</h3>
   <div id="holdout"></div>
@@ -396,15 +399,20 @@ function resize() {
 /* ================= 表示状態 ================= */
 window.__viewerStage = "state";
 const state = {
-  tiers: new Set([1, 2, 3, 5]), clusters: new Set(CL), sea: true, hideDone: false, genericLast: true, sort: "sc",
+  tiers: new Set([1, 2, 3, 5]), clusters: new Set(CL), depth: 1, hideDone: false, genericLast: true, sort: "sc",
   selected: null, kwScore: null, hover: null, interacting: false, listLimit: 150,
 };
 const clusterOn = n => state.clusters.has(n.cl);
+// 深さ: 1 既知だけ / 2 ＋要確認 / 3 ＋関連の可能性 / 4 ＋意味ベース・別版 / 5 ＋海（すべて）
+const RANK = { "-1": 1, 1: 2, 2: 3, 3: 4, 5: 4, 0: 5 };
+const DEPTH_NAME = ["", "既知だけ", "＋要確認", "＋関連の可能性", "＋意味・別版", "＋海（すべて）"];
 function visible(n) {
   if (n.tier === -1) return true;
   if (!clusterOn(n)) return false;
-  if (n.tier === 0) return state.sea;
-  return state.tiers.has(n.tier);
+  // 選択中の文献とその隣接、キーワード一致は深さに関係なく描く
+  if (state.selected && (n === state.selected || (state.selected.nb && state.selected.nb.has(n.idx)))) return true;
+  if (state.kwScore && state.kwScore.has(n.idx)) return true;
+  return RANK[n.tier] <= state.depth;
 }
 let visibleNodes = nodes;
 const CELL = 24;
@@ -469,19 +477,21 @@ function draw() {
   }
   ctx.stroke();
 
-  /* 俯瞰: 年 × クラスタ の密度帯（外側=全件、内側=候補） */
+  /* 俯瞰: 年 × クラスタ の密度帯。外側=全件（地層の文脈）、内側=いまの深さまでの件数 */
   if (lvl === 0) {
-    for (const [ys, cnts] of Object.entries(GRAPH.density)) {
+    for (const [ys, ranks] of Object.entries(GRAPH.density)) {
       const yy = yOf(+ys); if (yy < vy0 || yy > vy1) continue;
       const hgt = Math.max(1.5, ppy - 3);
-      cnts[0].forEach((cnt, i) => {
-        if (!cnt || !state.clusters.has(CL[i])) return;
-        const w = Math.min(0.9 * L.pitch * kx, 4 + 2.6 * Math.sqrt(cnt) * Math.sqrt(kx / 0.15));
-        const cx = X(L.home[CL[i]]), cy = Y(yy);
+      for (let i = 0; i < CL.length; i++) {
+        if (!state.clusters.has(CL[i])) continue;
+        let all = 0, deep = 0;
+        for (let r = 0; r < ranks.length; r++) { const c = ranks[r][i]; all += c; if (r + 1 <= state.depth) deep += c; }
+        if (!all) continue;
+        const wOf = c => Math.min(0.9 * L.pitch * kx, 4 + 2.6 * Math.sqrt(c) * Math.sqrt(kx / 0.15));
+        const cx = X(L.home[CL[i]]), cy = Y(yy), w = wOf(all);
         ctx.fillStyle = hexToRgba(theme.c[CL[i]], 0.2); ctx.fillRect(cx - w / 2, cy - hgt / 2, w, hgt);
-        const cc = cnts[1][i];
-        if (cc) { const w2 = Math.min(w, 4 + 2.6 * Math.sqrt(cc) * Math.sqrt(kx / 0.15)); ctx.fillStyle = hexToRgba(theme.c[CL[i]], 0.6); ctx.fillRect(cx - w2 / 2, cy - hgt / 2, w2, hgt); }
-      });
+        if (deep > 0 && state.depth > 1) { const w2 = Math.min(w, wOf(deep)); ctx.fillStyle = hexToRgba(theme.c[CL[i]], 0.6); ctx.fillRect(cx - w2 / 2, cy - hgt / 2, w2, hgt); }
+      }
     }
   }
 
@@ -523,7 +533,6 @@ function draw() {
     if (!inView(n)) continue;
     const t = n.tier;
     if (busy && (t === 0 || (LOW_POWER && t !== -1 && t !== 1))) continue;
-    if (lvl === 0 && t !== -1 && t !== 1) continue;
     if (lvl === 1 && t === 0 && ppy < 32 && !(state.kwScore && state.kwScore.has(n.idx))) continue;
     const f = emphasis(n);
     const col = theme.c[n.cl] || theme.muted;
@@ -686,9 +695,9 @@ function selectNode(n, pan) {
   state.selected = n; n.nb = n.nb || neighbors(n);
   renderCard(n); renderDrawerSelection(); legend.hidden = true;
   if (pan) panTo(n);
-  scheduleDraw();
+  refreshVisible();
 }
-function clearSelection() { state.selected = null; card.hidden = true; renderDrawerSelection(); scheduleDraw(); }
+function clearSelection() { state.selected = null; card.hidden = true; renderDrawerSelection(); refreshVisible(); }
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function knownChip(i) {
   const kr = known[i]; const b = el("button", "lnk", kr.note); b.type = "button";
@@ -811,7 +820,7 @@ let kwTimer = null;
 function runKeyword() {
   const q = kwInput.value.trim().toLowerCase();
   const terms = q.split(/[\s,、　]+/).filter(t => t.length >= 2);
-  if (!terms.length) { state.kwScore = null; renderDrawer(); scheduleDraw(); return; }
+  if (!terms.length) { state.kwScore = null; renderDrawer(); refreshVisible(); return; }
   const sc = new Map();
   const add = (i, v) => sc.set(i, (sc.get(i) || 0) + v);
   for (const raw of terms) {
@@ -821,7 +830,7 @@ function runKeyword() {
     for (const vi of vocabPrefix(t)) for (const idx of postingsOf(vi)) hit.add(idx);
     for (const idx of hit) add(idx, 1);
   }
-  state.kwScore = sc; renderDrawer(); scheduleDraw();
+  state.kwScore = sc; renderDrawer(); refreshVisible();
 }
 kwInput.addEventListener("input", () => { clearTimeout(kwTimer); kwTimer = setTimeout(runKeyword, 180); });
 kwInput.addEventListener("keydown", ev => { if (ev.key === "Escape") { kwInput.value = ""; runKeyword(); kwInput.blur(); } });
@@ -837,7 +846,7 @@ CL.forEach(c => {
 });
 document.querySelectorAll("#tier-chips .chip").forEach(s => s.addEventListener("click", () => {
   const t = +s.dataset.tier; if (state.tiers.has(t)) state.tiers.delete(t); else state.tiers.add(t);
-  s.classList.toggle("on", state.tiers.has(t)); refreshVisible(); renderDrawer();
+  s.classList.toggle("on", state.tiers.has(t)); renderDrawer();
 }));
 document.getElementById("sort").addEventListener("change", ev => { state.sort = ev.target.value; renderDrawer(); });
 document.getElementById("hide-done").addEventListener("change", ev => { state.hideDone = ev.target.checked; renderDrawer(); });
@@ -887,7 +896,14 @@ function updateMarkSummary() {
   document.getElementById("dmarks").textContent = `済 ${c.done} ・ 追加 ${c.add} ・ 除外 ${c.reject}`;
 }
 document.getElementById("btn-drawer").addEventListener("click", ev => { drawer.hidden = !drawer.hidden; ev.currentTarget.classList.toggle("on", !drawer.hidden); ev.currentTarget.setAttribute("aria-pressed", String(!drawer.hidden)); recalcZoomRange(); if (!state.selected) fitAll(true); else scheduleDraw(); });
-document.getElementById("btn-sea").addEventListener("click", ev => { state.sea = !state.sea; ev.currentTarget.classList.toggle("on", state.sea); ev.currentTarget.setAttribute("aria-pressed", String(state.sea)); refreshVisible(); });
+const depthInput = document.getElementById("depth");
+function setDepth(d, save) {
+  state.depth = clamp(Math.round(d), 1, 5); depthInput.value = String(state.depth);
+  document.getElementById("depth-name").textContent = state.depth + " " + DEPTH_NAME[state.depth];
+  if (save) { try { localStorage.setItem("citation-finder-depth", String(state.depth)); } catch (e) { /* 保存不可 */ } }
+  refreshVisible();
+}
+depthInput.addEventListener("input", () => setDepth(+depthInput.value, true));
 const legend = document.getElementById("legend");
 document.getElementById("btn-legend").addEventListener("click", () => { legend.hidden = !legend.hidden; if (!legend.hidden) card.hidden = true; });
 legend.querySelector(".close").addEventListener("click", () => { legend.hidden = true; });
@@ -912,6 +928,8 @@ document.addEventListener("keydown", ev => {
     case "d": case "a": case "x": if (state.selected && state.selected.tier !== -1) { const v = { d: "done", a: "add", x: "reject" }[ev.key]; setMark(state.selected.id, marks[state.selected.id] === v ? null : v); renderCard(state.selected); scheduleDraw(); } break;
     case "1": case "2": case "3": case "4": zoomLevel(+ev.key); break;
     case "f": clearSelection(); fitAll(true); break;
+    case "[": setDepth(state.depth - 1, true); break;
+    case "]": setDepth(state.depth + 1, true); break;
     case "/": kwInput.focus(); ev.preventDefault(); break;
     case "+": case "=": { const c = viewCenter(); zoomAt(c.x, c.y, 1.6); break; }
     case "-": { const c = viewCenter(); zoomAt(c.x, c.y, 1 / 1.6); break; }
@@ -954,6 +972,9 @@ function syncStateFromControls() {
   state.sort = document.getElementById("sort").value || "sc";
   state.hideDone = document.getElementById("hide-done").checked;
   state.genericLast = document.getElementById("hide-generic").checked;
+  let d = +depthInput.value || 1;
+  try { const sv = localStorage.getItem("citation-finder-depth"); if (sv) d = +sv; } catch (e) { /* 読めない */ }
+  setDepth(d, false);
 }
 window.addEventListener("resize", () => { resize(); });
 const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -963,7 +984,7 @@ new MutationObserver(onThemeChange).observe(document.documentElement, { attribut
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleDraw);
 window.__viewerStage = "init";
 syncStateFromControls();
-document.getElementById("btn-drawer").classList.add("on"); document.getElementById("btn-sea").classList.add("on");
+document.getElementById("btn-drawer").classList.add("on");
 if (window.innerWidth <= 760) { drawer.hidden = true; document.getElementById("btn-drawer").classList.remove("on"); }
 resize();
 refreshVisible();
@@ -972,7 +993,7 @@ renderDrawer(); updateMarkSummary();
 if (kwInput.value.trim()) runKeyword();
 window.__viewerStage = "ready";
 // 検証スクリプト用の窓口（let 変数は関数経由で現在値を返す）
-window.__dbg = () => ({ z, kx, ky, tx, ty, Z_A, Z_B, S_0, S_MAX, Z_MIN, Z_MAX, state, listed, known, anim, L, edges, nodes, visibleNodes, drawQueued, LOW_POWER, marks,
+window.__dbg = () => ({ z, kx, ky, tx, ty, setDepth, Z_A, Z_B, S_0, S_MAX, Z_MIN, Z_MAX, state, listed, known, anim, L, edges, nodes, visibleNodes, drawQueued, LOW_POWER, marks,
   zoomLevel, fitAll, draw, animateTo, setMark, runKeyword, selectNode, zoomAt, visible, refreshVisible });
 } catch (e) { window.__report("段階 " + window.__viewerStage, e); }
 </script>
