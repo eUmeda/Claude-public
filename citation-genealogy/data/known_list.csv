@@ -1,0 +1,41 @@
+doi,cluster,phase,note
+10.1023/A:1008193015770,nlm,0,Keitt 2000 spectral NLM
+10.1093/biomet/41.3-4.434,field,1,Whittle 1954
+10.1890/0012-9658(1999)080[1908:SHOLAW]2.0.CO;2,light,1,Nicotra 1999
+10.1111/j.1467-9868.2011.00777.x,field,2,Lindgren 2011 SPDE
+10.1093/aob/mci052,ms,2,Monsi & Saeki 1953/2005
+10.1007/BF02275262,nlm,2,Gardner 1987 NLM
+10.2307/2963479,forest,2,Pacala 1996 SORTIE
+10.1139/x90-084,light,2,Canham 1990
+10.2307/2333459,field,3,Whittle 1955 corrigenda
+10.2307/2258570,forest,3,Botkin 1972 JABOWA
+10.2307/1942257,nlm,3,Caswell 1976
+10.1038/269578a0,evo,3,Hamilton & May 1977
+10.2307/1938878,forest,3,Runkle 1982
+10.1016/0040-5809(83)90027-8,evo,3,Hastings 1983
+10.1146/annurev.es.18.110187.002243,forest,3,Denslow 1987
+10.2307/1939924,stat,3,Legendre 1993
+10.1139/x94-046,light,3,Canham 1994
+10.2307/1390903,field,3,Wood & Chan 1994
+10.1137/S1064827592240555,field,3,Dietrich & Newsam 1997
+10.1006/tpbi.1997.1331,evo,3,Bolker & Pacala 1997
+10.1086/303199,evo,3,Bolker & Pacala 1999
+10.1890/0012-9658(2001)082[2707:FSCAAL]2.0.CO;2,light,3,Montgomery & Chazdon 2001
+10.1198/016214504000000241,field,3,Zhang 2004
+10.1093/aob/mci047,ms,3,Hirose 2005
+10.1111/j.1461-0248.2005.00746.x,forest,3,Stephenson 2005
+10.1016/j.agrformet.2004.09.006,lai,3,Leblanc 2005
+10.1051/forest:2006056,light,3,Valladares 2006
+10.1093/biomet/93.4.989,field,3,Guttorp & Gneiting 2006
+10.1016/j.agrformet.2007.11.015,lai,3,Demarez 2008
+10.20659/jfp.19.2_53,lai,3,Inoue 2014 bamboo LAI
+10.5194/bg-13-3819-2016,light,3,Zhu 2016
+10.1073/pnas.1616943114,forest,3,Tang & Dubayah 2017
+10.1016/j.scitotenv.2018.03.333,light,3,Liu 2018
+10.1111/oik.04686,forest,3,Piper 2018
+10.1029/2018RG000608,lai,3,Fang 2019 LAI review
+10.1139/cjfr-2018-0213,lai,3,Chianucci 2019
+10.1111/1365-2745.13680,light,3,Matsuo 2021
+10.1038/s41467-020-20767-z,forest,3,Ehbrecht 2021
+10.1002/ece3.8534,light,3,Helbach 2022
+10.7717/peerj.17067,light,3,Jin 2024

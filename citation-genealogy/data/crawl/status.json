@@ -1,0 +1,186 @@
+{
+ "list": "/home/user/Claude-public/citation-genealogy/data/known_list.csv",
+ "seeds": {
+  "keitt2000": {
+   "citers": 142,
+   "truncated": false
+  },
+  "whittle1954": {
+   "citers": 1507,
+   "truncated": false
+  },
+  "nicotra1999": {
+   "citers": 397,
+   "truncated": false
+  },
+  "lindgren2011": {
+   "citers": 2787,
+   "truncated": false
+  },
+  "monsi1953": {
+   "citers": 682,
+   "truncated": false
+  },
+  "gardner1987": {
+   "citers": 818,
+   "truncated": false
+  },
+  "pacala1996": {
+   "citers": 1217,
+   "truncated": false
+  },
+  "canham1990": {
+   "citers": 974,
+   "truncated": false
+  },
+  "whittle1955": {
+   "citers": 0,
+   "truncated": false
+  },
+  "botkin1972": {
+   "citers": 1351,
+   "truncated": false
+  },
+  "caswell1976": {
+   "citers": 554,
+   "truncated": false
+  },
+  "hamilton1977": {
+   "citers": 1328,
+   "truncated": false
+  },
+  "runkle1982": {
+   "citers": 967,
+   "truncated": false
+  },
+  "hastings1983": {
+   "citers": 531,
+   "truncated": false
+  },
+  "denslow1987": {
+   "citers": 1275,
+   "truncated": false
+  },
+  "legendre1993": {
+   "citers": 3747,
+   "truncated": false
+  },
+  "canham1994": {
+   "citers": 749,
+   "truncated": false
+  },
+  "wood1994": {
+   "citers": 254,
+   "truncated": false
+  },
+  "dietrich1997": {
+   "citers": 542,
+   "truncated": false
+  },
+  "bolker1997": {
+   "citers": 492,
+   "truncated": false
+  },
+  "bolker1999": {
+   "citers": 620,
+   "truncated": false
+  },
+  "montgomery2001": {
+   "citers": 338,
+   "truncated": false
+  },
+  "zhang2004": {
+   "citers": 608,
+   "truncated": false
+  },
+  "hirose2005": {
+   "citers": 288,
+   "truncated": false
+  },
+  "stephenson2005": {
+   "citers": 210,
+   "truncated": false
+  },
+  "leblanc2005": {
+   "citers": 439,
+   "truncated": false
+  },
+  "valladares2006": {
+   "citers": 91,
+   "truncated": false
+  },
+  "guttorp2006": {
+   "citers": 284,
+   "truncated": false
+  },
+  "demarez2008": {
+   "citers": 247,
+   "truncated": false
+  },
+  "inoue2014": {
+   "citers": 0,
+   "truncated": false
+  },
+  "zhu2016": {
+   "citers": 40,
+   "truncated": false
+  },
+  "tang2017": {
+   "citers": 168,
+   "truncated": false
+  },
+  "liu2018": {
+   "citers": 30,
+   "truncated": false
+  },
+  "piper2018": {
+   "citers": 19,
+   "truncated": false
+  },
+  "fang2019": {
+   "citers": 962,
+   "truncated": false
+  },
+  "chianucci2019": {
+   "citers": 23,
+   "truncated": false
+  },
+  "matsuo2021": {
+   "citers": 180,
+   "truncated": false
+  },
+  "ehbrecht2021": {
+   "citers": 372,
+   "truncated": false
+  },
+  "helbach2022": {
+   "citers": 98,
+   "truncated": false
+  },
+  "jin2024": {
+   "citers": 13,
+   "truncated": false
+  }
+ },
+ "truncated_citers": [],
+ "missing_seeds": [],
+ "refs": {
+  "requested": 2474,
+  "fetched": 2428
+ },
+ "cocited": {
+  "eligible": 156476,
+  "fetched": 6000,
+  "truncated": true
+ },
+ "related": {
+  "requested": 309,
+  "fetched": 296
+ },
+ "cocited1": {
+  "eligible": 8066,
+  "fetched": 4000,
+  "truncated": true,
+  "min_count": 5
+ }
+}

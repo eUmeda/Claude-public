@@ -1,0 +1,1006 @@
+<title>引用地層図</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3; --surface: #fcfcfb; --panel: #ffffff; --panel-t: rgba(255,255,255,0.92);
+  --ink: #17191c; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --edge: #6f6d67; --hit: #b3261e; --known: #17191c;
+  /* 8 クラスタの配色（列の並び順で隣接ペアの CVD 距離・コントラストを検証済み） */
+  --c-nlm: #2a78d6; --c-field: #4a3aa7; --c-light: #eb6834; --c-ms: #575e07;
+  --c-forest: #239a19; --c-evo: #cb397c; --c-stat: #bf6feb; --c-lai: #17a09d;
+  --font-ui: "Zen Kaku Gothic New", system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d; --surface: #1a1a19; --panel: #202020; --panel-t: rgba(32,32,32,0.92);
+    --ink: #f2f2ef; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --edge: #a09e97; --hit: #ff7b6b; --known: #f2f2ef;
+    --c-nlm: #0667c6; --c-field: #887dfd; --c-light: #c24707; --c-ms: #909c10;
+    --c-forest: #107906; --c-evo: #e04e8e; --c-stat: #9343bc; --c-lai: #159693;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d; --surface: #1a1a19; --panel: #202020; --panel-t: rgba(32,32,32,0.92);
+  --ink: #f2f2ef; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --edge: #a09e97; --hit: #ff7b6b; --known: #f2f2ef;
+  --c-nlm: #0667c6; --c-field: #887dfd; --c-light: #c24707; --c-ms: #909c10;
+  --c-forest: #107906; --c-evo: #e04e8e; --c-stat: #9343bc; --c-lai: #159693;
+}
+[hidden] { display: none !important; }   /* 単体 HTML でも hidden 属性が必ず効くように */
+html, body { height: 100%; }
+body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.55; overflow: hidden; }
+button, input, select { font: inherit; }
+
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; background: var(--surface); }
+#stage.dragging { cursor: grabbing; }
+#stage.over { cursor: pointer; }
+#loading { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink-2); background: var(--surface); pointer-events: none; }
+#err { position: fixed; z-index: 60; white-space: pre-wrap; top: env(safe-area-inset-top, 0px); left: 0; right: 0; background: #b3261e; color: #fff; padding: 8px 14px; font-size: 12.5px; overflow-wrap: anywhere; }
+
+#topbar {
+  position: fixed; z-index: 20; top: env(safe-area-inset-top, 0px); left: 0; right: 0;
+  display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap;
+  padding: 6px 12px; background: var(--panel-t); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+#topbar h1 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: 0.04em; white-space: nowrap; }
+#topbar .sub { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+#topbar .grow { flex: 1; }
+.tb { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+#depth { width: 96px; accent-color: var(--ink); margin: 0; }
+#depth-name { font-size: 11px; min-width: 7em; }
+.btn { font-size: 12px; color: var(--ink-2); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+.btn:hover { color: var(--ink); border-color: var(--axis); }
+.btn.on { color: var(--ink); border-color: var(--ink); font-weight: 700; }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--c-nlm); outline-offset: 1px; }
+#keyword { width: 220px; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px; font-size: 12px; }
+#year-jump { width: 64px; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; font-size: 12px; font-variant-numeric: tabular-nums; }
+#level { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.axis-hint { position: fixed; right: 12px; z-index: 10; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; pointer-events: none; user-select: none; }
+.axis-hint.top { top: calc(env(safe-area-inset-top, 0px) + 96px); }
+.axis-hint.bottom { bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+#zoombar { position: fixed; z-index: 10; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); display: flex; flex-direction: column; gap: 4px; }
+#zoombar .btn { width: 34px; height: 34px; padding: 0; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+
+#drawer {
+  position: fixed; z-index: 15; left: 0; top: calc(env(safe-area-inset-top, 0px) + 92px); bottom: 0; width: 380px; max-width: 100%;
+  display: flex; flex-direction: column; background: var(--panel-t); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-right: 1px solid var(--border);
+}
+#drawer .dh { padding: 8px 12px 6px; border-bottom: 1px solid var(--border); }
+#drawer h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.chip { font-size: 10.5px; font-weight: 500; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; color: var(--ink-2); background: var(--bg); cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px; }
+.chip.on { color: var(--ink); border-color: var(--ink); }
+.chip .sw { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.chip.static { cursor: default; }
+#drawer .dsort { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-2); margin-top: 4px; flex-wrap: wrap; }
+#drawer select { font-size: 11.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+#dcount { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+#dlist { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+#dlist li { border-bottom: 1px solid var(--border); padding: 6px 10px 6px 12px; cursor: pointer; }
+#dlist li:hover, #dlist li.sel { background: var(--bg); }
+#dlist .rt { font-size: 12px; line-height: 1.35; color: var(--ink); }
+#dlist .rm { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+#dlist .rm .sw { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+#dlist li.m-done .rt { color: var(--muted); text-decoration: line-through; }
+#dlist li.m-add .rt::before { content: "＋ "; color: var(--c-forest); font-weight: 700; }
+#dlist li.m-reject .rt { color: var(--muted); }
+#dmore { display: block; width: 100%; text-align: center; padding: 8px; border: 0; background: none; color: var(--ink-2); cursor: pointer; font-size: 12px; }
+#dfoot { padding: 6px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+#card {
+  position: fixed; z-index: 25; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 100px); width: 420px; max-width: calc(100% - 24px);
+  max-height: calc(100% - 140px); overflow-y: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.22); padding: 12px 14px 14px; overflow-wrap: break-word;
+}
+#card .chead { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+#card .chead .btn { padding: 1px 8px; font-size: 12px; }
+#card .close { margin-left: auto; border: 0; background: none; font-size: 18px; color: var(--muted); cursor: pointer; line-height: 1; padding: 2px 6px; }
+#card .close:hover { color: var(--ink); }
+#card .d-title { font-family: var(--font-serif); font-size: 15.5px; line-height: 1.4; margin: 4px 0 2px; }
+#card .d-meta { font-size: 12px; color: var(--ink-2); }
+#card .d-meta b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+#card a { color: var(--c-nlm); text-decoration: none; border-bottom: 1px solid transparent; }
+#card a:hover { border-bottom-color: var(--c-nlm); }
+#card h3 { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-2); margin: 10px 0 4px; }
+#card .why { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+#card .why li { padding: 3px 0; border-top: 1px solid var(--border); }
+#card .why li b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+#card .why .weak { color: var(--muted); }
+#card .lnk { display: inline-block; font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 0 7px; margin: 2px 3px 2px 0; cursor: pointer; background: var(--bg); color: var(--ink); }
+#card .lnk:hover { border-color: var(--ink); }
+#card .marks { display: flex; gap: 6px; margin-top: 10px; }
+#card .marks .btn.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+#card details { margin-top: 8px; }
+#card details summary { font-size: 11.5px; color: var(--ink-2); cursor: pointer; }
+#card details p { font-size: 12px; color: var(--ink-2); margin: 4px 0 0; line-height: 1.5; }
+#card .note { font-size: 12px; background: var(--bg); border-left: 3px solid var(--axis); padding: 6px 10px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+
+#legend { position: fixed; z-index: 24; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 100px); width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 140px); overflow-y: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.22); padding: 12px 14px; font-size: 11.5px; color: var(--ink-2); }
+#legend h3 { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-2); margin: 8px 0 4px; }
+#legend .lg { display: grid; grid-template-columns: 26px 1fr; gap: 5px 8px; align-items: center; }
+#legend svg { display: block; }
+#legend ul { padding-left: 16px; margin: 4px 0; }
+#legend li { margin-bottom: 3px; }
+#legend .close { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 18px; color: var(--muted); cursor: pointer; }
+#legend table { border-collapse: collapse; font-size: 11px; width: 100%; margin-top: 4px; font-variant-numeric: tabular-nums; }
+#legend td, #legend th { border-top: 1px solid var(--border); padding: 2px 4px; text-align: left; }
+
+#tooltip { position: fixed; z-index: 22; max-width: 320px; background: var(--panel); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.14); padding: 7px 10px; font-size: 12px; line-height: 1.4; pointer-events: none; }
+#tooltip .tt-title { font-family: var(--font-serif); }
+#tooltip .tt-meta { color: var(--ink-2); font-size: 11px; margin-top: 2px; }
+#export { position: fixed; z-index: 26; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 24px)); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.22); padding: 12px 14px; }
+#export textarea { width: 100%; height: 220px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+#keys { position: fixed; z-index: 10; left: 392px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); font-size: 10.5px; color: var(--muted); pointer-events: none; }
+
+@media (max-width: 760px) {
+  #topbar { padding: 6px 10px; gap: 6px 8px; }
+  #topbar .sub, #keys { display: none; }
+  #keyword { width: 150px; }
+  #drawer { top: auto; bottom: 0; width: 100%; height: 46vh; border-right: 0; border-top: 1px solid var(--border); }
+  #card { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: 100%; max-height: 60vh; border-radius: 12px 12px 0 0; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  #legend { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: 100%; max-height: 60vh; border-radius: 12px 12px 0 0; }
+  #zoombar { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
+  .axis-hint.bottom { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div id="err" hidden role="alert"></div>
+<script>
+// エラー表示。iOS Safari は sandbox 内のインラインスクリプトの例外を "Script error." に伏せるため、
+// 実際の例外は各スクリプト末尾の try/catch と段階マーカー（__viewerStage）で拾う
+window.__viewerStage = "html";
+window.__report = function (where, e) {
+  var el = document.getElementById("err"); if (!el) return;
+  var msg = e && e.message ? (e.name || "Error") + ": " + e.message : String(e || "不明");
+  var st = e && e.stack ? String(e.stack).split("\n").slice(0, 4).join(" | ") : "";
+  el.textContent = "スクリプトエラー（" + where + "）: " + msg + (st ? "\n" + st : "") + "\n端末: " + navigator.userAgent + "\nこの文面を Claude に伝えてください。";
+  el.hidden = false;
+  var ld = document.getElementById("loading"); if (ld) ld.hidden = true;
+};
+window.addEventListener("error", function (ev) {
+  var el = document.getElementById("err"); if (!el || !el.hidden) return;
+  window.__report("段階 " + window.__viewerStage + (ev.lineno ? "・行 " + ev.lineno + ":" + (ev.colno || 0) : ""), ev.error || { message: ev.message });
+});
+window.addEventListener("unhandledrejection", function (ev) { window.__report("promise", ev.reason); });
+</script>
+
+<canvas id="stage" role="img" aria-label="引用系譜の全画面図。縦軸は年代で上が新しい。横はクラスタ。"></canvas>
+<div id="loading">読み込み中… 文献データを展開しています</div>
+<div class="axis-hint top">↑ 新しい</div>
+<div class="axis-hint bottom">↓ 古い</div>
+
+<header id="topbar">
+  <h1>引用地層図</h1>
+  <span class="sub">見落とし検出 v0.3.1 ｜ 上=新しい・下=古い ｜ 横=クラスタ</span>
+  <span id="stats" class="sub"></span>
+  <span class="grow"></span>
+  <input id="keyword" type="search" placeholder="キーワード（英語。タイトル・要旨）" aria-label="キーワードで関連文献を強調">
+  <label class="tb">年へ <input id="year-jump" type="number" min="1850" max="2030" placeholder="1990" aria-label="年へ移動"></label>
+  <button class="btn" id="btn-drawer" type="button" aria-pressed="true">候補リスト</button>
+  <label class="tb" id="depth-box" title="描く文献の深さ。浅いほど俯瞰が見やすく、最深で全部（海まで）">深さ <input id="depth" type="range" min="1" max="5" step="1" value="1" aria-label="表示する深さ"><span id="depth-name"></span></label>
+  <button class="btn" id="btn-legend" type="button">凡例・検証</button>
+  <button class="btn" id="btn-fit" type="button">全体表示</button>
+  <span id="level"></span>
+</header>
+
+<aside id="drawer" aria-label="見落とし候補">
+  <div class="dh">
+    <h2>見落とし候補 <span id="dcount"></span></h2>
+    <div class="chips" id="tier-chips">
+      <span class="chip on" data-tier="1" title="既知リストの2件以上と直接の引用関係"><span class="sw" style="background:var(--ink)"></span>要確認</span>
+      <span class="chip on" data-tier="2" title="確かなつながり（直接／共引用の割合／参照共有）が2本以上"><span class="sw" style="background:var(--axis)"></span>関連の可能性</span>
+      <span class="chip on" data-tier="3" title="引用ではつながらないが語彙が近い、または OpenAlex の関連文献">◆ 意味ベースの保険</span>
+      <span class="chip on" data-tier="5" title="既知文献と同じ論文の別レコード">◎ 既知の別版</span>
+    </div>
+    <div class="chips" id="cluster-chips"></div>
+    <div class="dsort">
+      並べ替え <select id="sort" aria-label="並べ替え">
+        <option value="sc">総合スコア</option>
+        <option value="S">つながりの強さ（S）</option>
+        <option value="N">確かなつながりの本数</option>
+        <option value="links">直接の接続数</option>
+        <option value="ss">語彙の類似度</option>
+        <option value="c">世界の被引用数</option>
+        <option value="y">年（新しい順）</option>
+        <option value="yo">年（古い順）</option>
+      </select>
+      <label class="tb"><input type="checkbox" id="hide-done"> 済・除外を隠す</label>
+      <label class="tb"><input type="checkbox" id="hide-generic" checked> 汎用文献を後ろへ</label>
+    </div>
+  </div>
+  <ul id="dlist"></ul>
+  <div id="dfoot">
+    <span id="dmarks"></span>
+    <button class="btn" id="btn-export" type="button">追加候補を書き出し</button>
+  </div>
+</aside>
+<div id="keys">j/k 次・前 ｜ d 済 ・ a 追加 ・ x 除外 ｜ 1〜4 ズーム段階 ｜ [ ] 深さ ｜ f 全体 ｜ / 検索 ｜ Esc 閉じる</div>
+
+<section id="card" hidden aria-live="polite"></section>
+<section id="legend" hidden>
+  <button class="close" type="button" aria-label="閉じる">×</button>
+  <h3>色＝クラスタ（既知リストの分類。横位置もクラスタ順）</h3>
+  <div class="lg" id="legend-clusters"></div>
+  <h3>形・大きさ</h3>
+  <div class="lg">
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="7" fill="var(--c-nlm)" stroke="var(--known)" stroke-width="2"/></svg><span>既知リストの文献（ラベル常時表示。輪郭が太い）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="5" fill="var(--c-nlm)"/></svg><span>要確認（既知2件以上と直接の引用関係）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="3.5" fill="var(--c-nlm)" fill-opacity="0.7"/></svg><span>関連の可能性（確かなつながり2本以上）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><rect x="8.5" y="4.5" width="9" height="9" transform="rotate(45 13 9)" fill="var(--c-nlm)"/></svg><span>意味ベースの保険（ひし形。引用ではつながらない）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="4" fill="none" stroke="var(--c-nlm)" stroke-width="2"/></svg><span>既知の別版（同じ論文の別レコード）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="13" cy="9" r="1.8" fill="var(--c-nlm)" fill-opacity="0.5"/></svg><span>海（既知1件だけとつながる文献など。位置だけ描く）</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><circle cx="6" cy="9" r="4" fill="var(--c-nlm)" fill-opacity="0.25"/><circle cx="20" cy="9" r="4" fill="var(--c-nlm)"/></svg><span>濃さ＝世界全体の被引用数（OpenAlex・対数）。質ではない</span>
+    <svg width="26" height="18" viewBox="0 0 26 18"><path d="M4 14 L22 4" stroke="var(--edge)" stroke-width="1.4"/></svg><span>辺＝上（新）が下（古）を引用。既知に触れる辺と要確認に触れる候補間の辺のみ埋め込み</span>
+  </div>
+  <h3>ズーム</h3>
+  <ul>
+    <li>拡大すると縦（年）方向が先に伸びる。最大ズームでは 1 年が画面の高さいっぱい、1 クラスタ列が画面の幅いっぱいになる</li>
+    <li>深さ（上部バーのスライダー、キー [ ]）: 1 既知だけ → 2 ＋要確認 → 3 ＋関連の可能性 → 4 ＋意味・別版 → 5 ＋海。俯瞰は浅く、詳しく見るときに深くする。選択中の文献とその隣接、キーワード一致は深さに関係なく描く</li>
+    <li>俯瞰: 年×クラスタの密度帯（薄い帯は全件、濃い帯はいまの深さまで） ／ 中間: 深さまでの点と既知に触れる辺 ／ 接近: ラベルと年ごとの目盛</li>
+  </ul>
+  <h3>検証（既知の一部を隠して当てられるか）</h3>
+  <div id="holdout"></div>
+  <h3>データの範囲と限界</h3>
+  <ul id="caveats"></ul>
+</section>
+<div id="tooltip" hidden></div>
+<div id="export" hidden>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font-size:12.5px">「追加」に印を付けた文献（DOI 付き、CSV）</b><span style="flex:1"></span><button class="btn" id="export-close" type="button">閉じる</button></div>
+  <textarea id="export-text" readonly aria-label="書き出し内容"></textarea>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">印はこのブラウザにだけ保存されます（localStorage）。コピーして known_list.csv に追記してください。</div>
+</div>
+<div id="zoombar">
+  <button class="btn" id="zin" type="button" aria-label="拡大">＋</button>
+  <button class="btn" id="zout" type="button" aria-label="縮小">−</button>
+</div>
+
+<script id="graph-data" type="application/json">__GRAPH_DATA__</script>
+<script>
+"use strict";
+// データは JS リテラルではなく JSON 文字列として持ち、JSON.parse で展開する
+//（15 MB のリテラルは JavaScriptCore でバイトコード化の負荷が大きく、モバイル Safari で落ちる）
+let GRAPH = null;
+try { GRAPH = JSON.parse(document.getElementById("graph-data").textContent); window.__viewerStage = "data"; }
+catch (e) { window.__report("データ展開", e); }
+</script>
+<script>
+"use strict";
+if (GRAPH) try {
+
+/* ================= 基本参照 ================= */
+window.__viewerStage = "basics";
+const nodes = GRAPH.nodes, meta = GRAPH.meta, L = meta.layout, CL = meta.clusters;
+nodes.forEach((n, i) => { n.idx = i; });
+const known = meta.known.map(k => ({ ...k, n: nodes[k.node] }));
+const edges = GRAPH.edges.map(([s, t]) => ({ s: nodes[s], t: nodes[t] }));
+const outAdj = new Map(), inAdj = new Map();
+edges.forEach(e => {
+  if (!outAdj.has(e.s.idx)) outAdj.set(e.s.idx, []);
+  if (!inAdj.has(e.t.idx)) inAdj.set(e.t.idx, []);
+  outAdj.get(e.s.idx).push(e.t); inAdj.get(e.t.idx).push(e.s);
+});
+const TIER_NAME = { "-1": "既知リスト", 1: "要確認", 2: "関連の可能性", 3: "意味ベースの保険", 5: "既知の別版", 0: "海（つながりが薄い）" };
+const TIER_SHORT = { 1: "要確認", 2: "関連", 3: "◆意味", 5: "◎別版", 0: "海" };
+const LAYER_NAME = { known: "既知", ref: "既知が引用", citer: "既知を引用", cocited: "共引用で浮上", cocited1: "共引用で浮上（既知 1 件・拡張）", related: "OpenAlex 関連" };
+const logMaxCited = Math.log1p(meta.counts.max_cited || 1);
+nodes.forEach(n => {
+  n.dark = n.c == null ? 0.3 : 0.3 + 0.7 * Math.log1p(n.c) / logMaxCited;
+  n.links = new Set([...(n.dc || []), ...(n.db || [])]).size;
+  n.tl = (n.t || "").toLowerCase();
+});
+const MARK_KEY = "citation-finder-marks-v03";
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(MARK_KEY) || "{}") || {}; } catch (e) { marks = {}; }
+function setMark(id, v) {
+  if (v) marks[id] = v; else delete marks[id];
+  try { localStorage.setItem(MARK_KEY, JSON.stringify(marks)); } catch (e) { /* 保存不可 */ }
+  renderDrawer(); updateMarkSummary();
+}
+
+/* ================= キャンバス・テーマ ================= */
+window.__viewerStage = "canvas";
+const canvas = document.getElementById("stage");
+const ctx = canvas.getContext("2d");
+let dpr = window.devicePixelRatio || 1, bw = 0, bh = 0;
+const LOW_POWER = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+let theme = {};
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = k => cs.getPropertyValue(k).trim();
+  theme = { surface: v("--surface"), ink: v("--ink"), ink2: v("--ink-2"), muted: v("--muted"), grid: v("--grid"), axis: v("--axis"),
+            edge: v("--edge"), hit: v("--hit"), known: v("--known"), c: {} };
+  CL.forEach(c => { theme.c[c] = v("--c-" + c) || "#888888"; });
+}
+readTheme();
+function hexToRgba(hex, a) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/* ================= 座標系（縦方向を先に伸ばすズーム） =================
+   画面座標: sx = x·kx + tx, sy = yy·ky + ty。kx = z、ky = z·s(z)。
+   z が Z_A を超えると縦だけ S_MAX 倍まで伸び、Z_B で「1 列が画面幅」「1 年が画面高」になる。 */
+let z = 1, tx = 0, ty = 0, kx = 1, ky = 1;
+let Z_A = 0.5, Z_B = 1.3, S_0 = 1, S_MAX = 12, Z_MIN = 0.05, Z_MAX = 3;
+function viewPad() {
+  const top = document.getElementById("topbar").getBoundingClientRect().bottom;
+  const dr = document.getElementById("drawer");
+  const left = (!dr.hidden && window.innerWidth > 760) ? dr.getBoundingClientRect().right : 0;
+  return { top: Math.max(0, top), left: Math.max(0, left) };
+}
+function avail() { const p = viewPad(); return { w: Math.max(200, bw - p.left - 16), h: Math.max(200, bh - p.top - 16), p }; }
+function recalcZoomRange() {
+  // Z_MIN: 全体が収まる等方倍率。S_0: 俯瞰での縦伸ばし（縦長画面では年軸を伸ばして画面を埋める）。
+  // Z_A〜Z_B の間で縦伸ばしを S_0 → S_MAX へ幾何補間し、Z_B で 1 年が画面の高さになる。
+  const a = avail();
+  Z_B = clamp(a.w / L.pitch, 0.5, 2.5);
+  Z_MIN = 0.97 * Math.min((a.w - (bw > 760 ? 150 : 0)) / L.W, a.h / L.H);
+  Z_A = Math.max(Z_MIN * 1.5, Z_B / 2.75);
+  if (Z_A >= Z_B) Z_A = Z_B / 1.5;
+  S_0 = clamp(0.97 * a.h / (L.H * Z_MIN), 1, 6);
+  S_MAX = Math.max(S_0, clamp(a.h / (L.YPX * Z_B), 1, 40));
+  Z_MAX = 2 * Z_B;
+}
+function stretch(zz) {
+  if (zz <= Z_A) return S_0;
+  if (zz >= Z_B) return S_MAX;
+  return S_0 * Math.pow(S_MAX / S_0, (Math.log(zz) - Math.log(Z_A)) / (Math.log(Z_B) - Math.log(Z_A)));
+}
+function applyZ(zz) { z = zz; kx = z; ky = z * stretch(z); }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function stopAnim() { if (anim) { cancelAnimationFrame(anim.raf); anim = null; } }
+function zoomAt(px, py, factor) {
+  stopAnim();   // 利用者の操作はアニメーションより優先
+  const z2 = clamp(z * factor, Z_MIN, Z_MAX);
+  const kx0 = kx, ky0 = ky;
+  applyZ(z2);
+  tx = px - (px - tx) * kx / kx0; ty = py - (py - ty) * ky / ky0;
+  scheduleDraw();
+}
+function viewCenter() { const a = avail(); return { x: a.p.left + a.w / 2, y: a.p.top + a.h / 2 }; }
+function worldCenter() { const c = viewCenter(); return { x: (c.x - tx) / kx, y: (c.y - ty) / ky }; }
+let anim = null;
+function animateTo(target, ms) {   // target: {z, cx, cy}（世界座標の中心）
+  stopAnim();
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const place = (zz, cx, cy) => { applyZ(zz); const c = viewCenter(); tx = c.x - cx * kx; ty = c.y - cy * ky; scheduleDraw(); };
+  if (!ms || reduce) { place(target.z, target.cx, target.cy); return; }
+  const from = { lz: Math.log(z), ...worldCenter() }; const lz1 = Math.log(target.z); let t0 = null;
+  const step = ts => {
+    if (t0 === null) t0 = ts;
+    const p = Math.min(1, (ts - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    place(Math.exp(from.lz + (lz1 - from.lz) * e), from.x + (target.cx - from.x) * e, from.y + (target.cy - from.y) * e);
+    if (p < 1) anim.raf = requestAnimationFrame(step); else anim = null;
+  };
+  anim = { raf: requestAnimationFrame(step) };
+}
+function fitAll(animate) { recalcZoomRange(); animateTo({ z: Z_MIN, cx: L.W / 2, cy: L.H / 2 }, animate ? 500 : 0); }
+function panTo(n, zMin) { animateTo({ z: Math.max(z, zMin || Z_B * 0.6), cx: n.x, cy: n.yy }, 450); }
+function levelOf(kyv) { const ppy = kyv * L.YPX; return ppy < 16 ? 0 : ppy < 64 ? 1 : 2; }
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  bw = window.innerWidth; bh = window.innerHeight;
+  canvas.width = Math.round(bw * dpr); canvas.height = Math.round(bh * dpr);
+  recalcZoomRange(); applyZ(clamp(z, Z_MIN, Z_MAX)); scheduleDraw();
+}
+
+/* ================= 表示状態 ================= */
+window.__viewerStage = "state";
+const state = {
+  tiers: new Set([1, 2, 3, 5]), clusters: new Set(CL), depth: 1, hideDone: false, genericLast: true, sort: "sc",
+  selected: null, kwScore: null, hover: null, interacting: false, listLimit: 150,
+};
+const clusterOn = n => state.clusters.has(n.cl);
+// 深さ: 1 既知だけ / 2 ＋要確認 / 3 ＋関連の可能性 / 4 ＋意味ベース・別版 / 5 ＋海（すべて）
+const RANK = { "-1": 1, 1: 2, 2: 3, 3: 4, 5: 4, 0: 5 };
+const DEPTH_NAME = ["", "既知だけ", "＋要確認", "＋関連の可能性", "＋意味・別版", "＋海（すべて）"];
+function visible(n) {
+  if (n.tier === -1) return true;
+  if (!clusterOn(n)) return false;
+  // 選択中の文献とその隣接、キーワード一致は深さに関係なく描く
+  if (state.selected && (n === state.selected || (state.selected.nb && state.selected.nb.has(n.idx)))) return true;
+  if (state.kwScore && state.kwScore.has(n.idx)) return true;
+  return RANK[n.tier] <= state.depth;
+}
+let visibleNodes = nodes;
+const CELL = 24;
+let grid = new Map();
+const cellKey = (cx, cy) => cx * 100003 + cy;
+function refreshVisible() {
+  visibleNodes = nodes.filter(visible);
+  grid = new Map();
+  for (const n of visibleNodes) {
+    const key = cellKey(Math.floor(n.x / CELL), Math.floor(n.yy / CELL));
+    let a = grid.get(key); if (!a) { a = []; grid.set(key, a); } a.push(n);
+  }
+  scheduleDraw();
+}
+function emphasis(n) {
+  let f = 1;
+  if (state.selected) { const s = state.selected; f *= (n === s || (s.nb && s.nb.has(n.idx))) ? 1 : 0.18; }
+  if (state.kwScore) f *= state.kwScore.has(n.idx) ? 1 : 0.12;
+  return f;
+}
+const RS = { "-1": [5, 16], 1: [2, 11], 2: [1.5, 9], 3: [1.5, 9], 5: [1.5, 9], 0: [1, 5] };
+function screenR(n) { const [lo, hi] = RS[n.tier] || RS[0]; return clamp(n.r * z, lo, hi); }
+
+/* ================= 描画（すべて画面座標） ================= */
+const FONT_UI = '"Zen Kaku Gothic New", system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif';
+const yOf = y => L.PAD_TOP + (L.maxYear - Math.max(y, L.floorYear)) * L.YPX;
+const shortT = (t, len) => t.length > len ? t.slice(0, len - 1) + "…" : t;
+const widthCache = new Map();
+function textWidth(font, text) {   // measureText はフレーム内で数千回呼ぶと重いのでキャッシュ
+  const key = font + "|" + text; let w = widthCache.get(key);
+  if (w === undefined) { w = ctx.measureText(text).width; if (widthCache.size > 60000) widthCache.clear(); widthCache.set(key, w); }
+  return w;
+}
+let drawQueued = false;
+function scheduleDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(draw); } }
+function draw() {
+  drawQueued = false;
+  const lvl = levelOf(ky), ppy = ky * L.YPX;
+  // 動作中（ドラッグ・ピンチ・アニメーション）は描く量を絞る。止まった後の 1 フレームで完全描画に戻る
+  const busy = state.interacting || !!anim;
+  const X = x => x * kx + tx, Y = y => y * ky + ty;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, bw, bh);
+  const vx0 = -tx / kx - 30, vx1 = (bw - tx) / kx + 30, vy0 = -ty / ky - 20, vy1 = (bh - ty) / ky + 20;
+  const inView = n => n.x >= vx0 && n.x <= vx1 && n.yy >= vy0 && n.yy <= vy1;
+
+  /* 地層帯と目盛 */
+  const dec0 = Math.floor(L.minYear / 10) * 10;
+  ctx.fillStyle = hexToRgba(theme.grid, 0.28);
+  for (let d = dec0; d <= L.maxYear; d += 10) {
+    if ((d / 10) % 2 !== 0) continue;
+    const y1 = yOf(Math.min(d + 10, L.maxYear)), y2 = yOf(Math.max(d, L.minYear));
+    if (y2 < vy0 || y1 > vy1) continue;
+    ctx.fillRect(X(0), Y(y1), L.W * kx, (y2 - y1) * ky);
+  }
+  const step = lvl === 2 ? 1 : lvl === 1 ? 5 : 10;
+  ctx.strokeStyle = hexToRgba(theme.grid, 1); ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let d = Math.ceil(L.floorYear / step) * step; d <= L.maxYear; d += step) {
+    const yy = yOf(d); if (yy < vy0 || yy > vy1) continue;
+    ctx.moveTo(X(0), Y(yy)); ctx.lineTo(X(L.W), Y(yy));
+  }
+  ctx.stroke();
+
+  /* 俯瞰: 年 × クラスタ の密度帯。外側=全件（地層の文脈）、内側=いまの深さまでの件数 */
+  if (lvl === 0) {
+    for (const [ys, ranks] of Object.entries(GRAPH.density)) {
+      const yy = yOf(+ys); if (yy < vy0 || yy > vy1) continue;
+      const hgt = Math.max(1.5, ppy - 3);
+      for (let i = 0; i < CL.length; i++) {
+        if (!state.clusters.has(CL[i])) continue;
+        let all = 0, deep = 0;
+        for (let r = 0; r < ranks.length; r++) { const c = ranks[r][i]; all += c; if (r + 1 <= state.depth) deep += c; }
+        if (!all) continue;
+        const wOf = c => Math.min(0.9 * L.pitch * kx, 4 + 2.6 * Math.sqrt(c) * Math.sqrt(kx / 0.15));
+        const cx = X(L.home[CL[i]]), cy = Y(yy), w = wOf(all);
+        ctx.fillStyle = hexToRgba(theme.c[CL[i]], 0.2); ctx.fillRect(cx - w / 2, cy - hgt / 2, w, hgt);
+        if (deep > 0 && state.depth > 1) { const w2 = Math.min(w, wOf(deep)); ctx.fillStyle = hexToRgba(theme.c[CL[i]], 0.6); ctx.fillRect(cx - w2 / 2, cy - hgt / 2, w2, hgt); }
+      }
+    }
+  }
+
+  /* 辺 */
+  const sel = state.selected;
+  const strong = [], faint = [];
+  for (const e of edges) {
+    const a = e.s, b = e.t;
+    if (!visible(a) || !visible(b)) continue;
+    if ((a.yy < vy0 && b.yy < vy0) || (a.yy > vy1 && b.yy > vy1) || (a.x < vx0 && b.x < vx0) || (a.x > vx1 && b.x > vx1)) continue;
+    if (sel && (a === sel || b === sel)) { strong.push(e); continue; }
+    if (lvl === 0) { if ((a.tier === -1 || b.tier === -1) && (a.tier <= 1 && b.tier <= 1)) faint.push(e); continue; }
+    if (lvl === 1) { if (a.tier === -1 || b.tier === -1) faint.push(e); continue; }
+    faint.push(e);
+  }
+  // 薄い辺は本数に予算を設け、超える分は等間隔に間引く（透明度を少し上げて密度感を保つ）。
+  // 端末の GPU が弱い環境では数万本の線が 1 フレームの支配的コストになるため
+  const EDGE_BUDGET = busy ? (LOW_POWER ? 0 : 6000) : (LOW_POWER ? 8000 : 25000);
+  const drawEdges = (list, alpha, w, color, budget) => {
+    if (!list.length || budget === 0) return;
+    const stride = budget && list.length > budget ? Math.ceil(list.length / budget) : 1;
+    ctx.strokeStyle = hexToRgba(color, Math.min(1, alpha * Math.min(stride, 3))); ctx.lineWidth = w;
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i += stride) { const e = list[i]; ctx.moveTo(X(e.s.x), Y(e.s.yy)); ctx.lineTo(X(e.t.x), Y(e.t.yy)); }
+    ctx.stroke();
+  };
+  drawEdges(faint, sel || state.kwScore ? 0.03 : lvl === 2 ? 0.05 : 0.06, 0.8, theme.edge, EDGE_BUDGET);
+  drawEdges(strong, strong.length > 300 ? 0.18 : strong.length > 80 ? 0.4 : 0.85, strong.length > 300 ? 1.0 : 1.6, theme.ink);
+  /* 意味リンク（選択が意味ベース・別版のときは最近傍の既知へ破線） */
+  if (sel && (sel.tier === 3 || sel.tier === 5) && sel.ssi != null) {
+    const k = known[sel.ssi].n;
+    ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = hexToRgba(theme.c[sel.cl], 0.8); ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(X(sel.x), Y(sel.yy)); ctx.lineTo(X(k.x), Y(k.yy)); ctx.stroke(); ctx.restore();
+  }
+
+  /* ノード */
+  const labels = [];
+  for (const n of visibleNodes) {
+    if (!inView(n)) continue;
+    const t = n.tier;
+    if (busy && (t === 0 || (LOW_POWER && t !== -1 && t !== 1))) continue;
+    if (lvl === 1 && t === 0 && ppy < 32 && !(state.kwScore && state.kwScore.has(n.idx))) continue;
+    const f = emphasis(n);
+    const col = theme.c[n.cl] || theme.muted;
+    const alpha = Math.min(1, (t === 0 ? 0.45 : n.dark) * f + (t === -1 ? 0.3 : 0));
+    const r = screenR(n), sx = X(n.x), sy = Y(n.yy);
+    ctx.beginPath();
+    if (t === 3) { const s = r * 1.35; ctx.moveTo(sx, sy - s); ctx.lineTo(sx + s, sy); ctx.lineTo(sx, sy + s); ctx.lineTo(sx - s, sy); ctx.closePath(); }
+    else ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    if (t === 5) { ctx.strokeStyle = hexToRgba(col, alpha); ctx.lineWidth = 2; ctx.stroke(); }
+    else { ctx.fillStyle = hexToRgba(col, alpha); ctx.fill(); }
+    if (t === -1) { ctx.strokeStyle = hexToRgba(theme.known, f); ctx.lineWidth = 2.2; ctx.stroke(); }
+    else if (t === 1 && r > 4) { ctx.strokeStyle = hexToRgba(theme.surface, 0.9 * f); ctx.lineWidth = 0.8; ctx.stroke(); }
+    if (sel === n) { ctx.strokeStyle = theme.hit; ctx.lineWidth = 2.6; ctx.stroke(); }
+    else if (state.kwScore && state.kwScore.has(n.idx) && t !== 0) { ctx.strokeStyle = hexToRgba(theme.hit, 0.9); ctx.lineWidth = 1.5; ctx.stroke(); }
+    else if (state.hover === n) { ctx.strokeStyle = theme.ink; ctx.lineWidth = 1.5; ctx.stroke(); }
+    const m = marks[n.id];
+    if (m && t !== 0) { ctx.fillStyle = m === "add" ? theme.c.forest : m === "reject" ? theme.hit : theme.muted; ctx.beginPath(); ctx.arc(sx + r * 0.9, sy - r * 0.9, 2.4, 0, Math.PI * 2); ctx.fill(); }
+    if (f < 0.5 && t !== -1) continue;
+    if (t === -1 || (lvl >= 1 && t === 1 && (ppy >= 30 || n.sc >= 6)) || lvl === 2 || (sel && sel.nb && sel.nb.has(n.idx) && ppy >= 24) || (state.kwScore && state.kwScore.has(n.idx) && ppy >= 24 && t !== 0)) labels.push(n);
+  }
+
+  /* ラベル（衝突回避） */
+  labels.sort((a, b) => (a.tier === -1 ? 0 : 1) - (b.tier === -1 ? 0 : 1) || (a.phase ?? 9) - (b.phase ?? 9) || (b.sc || 0) - (a.sc || 0) || (b.c || 0) - (a.c || 0));
+  // 動作中は候補と上限を絞り、1 フレームの計測・衝突判定を抑える
+  const maxLabels = busy ? 120 : LOW_POWER ? 200 : 500;
+  if (labels.length > maxLabels * 3) labels.length = maxLabels * 3;
+  const placed = []; let count = 0;
+  ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+  for (const n of labels) {
+    if (count >= maxLabels) break;
+    const kn = n.tier === -1;
+    const font = kn ? (lvl === 0 ? "700 11px " : "700 12px ") + FONT_UI : (n.tier === 1 ? "500 10.5px " : "400 10px ") + FONT_UI;
+    ctx.font = font;
+    const text = kn ? n.note : shortT(n.t, lvl === 2 && ppy > 150 ? 80 : n.tier === 1 ? 36 : 30) + (n.y ? " (" + n.y + ")" : "");
+    const sx = X(n.x) + screenR(n) + 4, sy = Y(n.yy);
+    const wdt = textWidth(font, text), hgt = 13, box = [sx - 2, sy - hgt / 2, sx + wdt + 2, sy + hgt / 2];
+    let hit = false;
+    for (let i = placed.length - 1; i >= 0; i--) { const p = placed[i]; if (!(box[2] < p[0] || box[0] > p[2] || box[3] < p[1] || box[1] > p[3])) { hit = true; break; } }
+    if (hit) continue;
+    placed.push(box); count++;
+    ctx.strokeStyle = hexToRgba(theme.surface, 0.9); ctx.lineWidth = 3; ctx.strokeText(text, sx, sy);
+    ctx.fillStyle = hexToRgba(kn ? theme.ink : theme.ink2, kn ? Math.max(0.7, emphasis(n)) : Math.max(0.4, emphasis(n)));
+    ctx.fillText(text, sx, sy);
+  }
+
+  /* 年ラベル（左端固定） */
+  ctx.font = "400 11px " + FONT_UI; ctx.textBaseline = "alphabetic"; ctx.fillStyle = theme.muted;
+  const lstep = lvl === 2 ? 1 : lvl === 1 ? 5 : 10;
+  const lx = viewPad().left + 8;
+  for (let d = Math.ceil(L.floorYear / lstep) * lstep; d <= L.maxYear; d += lstep) {
+    const sy = Y(yOf(d)); if (sy < 0 || sy > bh) continue;
+    ctx.fillText(String(d), lx, sy - 3);
+  }
+  const fy = Y(yOf(L.floorYear));
+  if (L.olderFolded && fy > 0 && fy < bh) ctx.fillText("〜" + L.floorYear + "（それ以前 " + L.olderFolded + " 件を含む）", lx, fy + 12);
+  const noy = Y(L.noYearY);
+  if (noy > 0 && noy < bh && nodes.some(n => !n.y)) ctx.fillText("年不明", lx, noy + 14);
+  /* 段階表示 */
+  const yTop = Math.floor(L.maxYear - (Math.max(0, viewPad().top) - ty) / ky / L.YPX + 0.5), yBot = Math.ceil(L.maxYear - (bh - ty) / ky / L.YPX - 0.5);
+  const yb = Math.max(L.floorYear, yBot), ytp = Math.min(L.maxYear - 1, yTop);
+  document.getElementById("level").textContent = ["俯瞰", "中間", "接近"][lvl] + " ｜ " + yb + "–" + ytp + "（" + Math.max(1, ytp - yb + 1) + "年）";
+  const ld = document.getElementById("loading"); if (ld && !ld.hidden) ld.hidden = true;
+}
+
+/* ================= 操作: ホイール・ドラッグ・ピンチ・ボタン ================= */
+let interactTimer = null;
+function markInteracting() { state.interacting = true; clearTimeout(interactTimer); interactTimer = setTimeout(() => { state.interacting = false; scheduleDraw(); }, 160); }
+canvas.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  const d = ev.deltaMode === 1 ? ev.deltaY * 20 : ev.deltaMode === 2 ? ev.deltaY * 400 : ev.deltaY;
+  markInteracting();
+  zoomAt(ev.clientX, ev.clientY, Math.exp(-d * (ev.ctrlKey ? 0.01 : 0.0015)));
+}, { passive: false });
+document.getElementById("zin").addEventListener("click", () => { const c = viewCenter(); zoomAt(c.x, c.y, 1.6); });
+document.getElementById("zout").addEventListener("click", () => { const c = viewCenter(); zoomAt(c.x, c.y, 1 / 1.6); });
+document.getElementById("btn-fit").addEventListener("click", () => { clearSelection(); fitAll(true); });
+function zoomLevel(i) {   // 1 俯瞰 / 2 中間 / 3 接近 / 4 年間（1 年が画面）
+  const c = state.selected ? { x: state.selected.x, y: state.selected.yy } : worldCenter();
+  let target;
+  if (i === 1) target = Z_MIN; else if (i === 4) target = Z_B; else {
+    const ppy = i === 2 ? 32 : 120;   // ky = ppy/YPX となる z を二分探索
+    let lo = Z_MIN, hi = Z_MAX; for (let k = 0; k < 40; k++) { const mid = Math.sqrt(lo * hi); if (mid * stretch(mid) * L.YPX < ppy) lo = mid; else hi = mid; } target = hi;
+  }
+  animateTo({ z: clamp(target, Z_MIN, Z_MAX), cx: i === 1 ? L.W / 2 : c.x, cy: i === 1 ? L.H / 2 : c.y }, 450);
+}
+
+const tt = document.getElementById("tooltip");
+function nodeAt(cx, cy) {
+  const wx = (cx - tx) / kx, wy = (cy - ty) / ky, lvl = levelOf(ky), ppy = ky * L.YPX;
+  const R = LOW_POWER ? 14 : 8;
+  const rx = R / kx + 16 / kx, ry = R / ky + 16 / ky;
+  let best = null, bestD = Infinity;
+  for (let gx = Math.floor((wx - rx) / CELL); gx <= Math.floor((wx + rx) / CELL); gx++)
+    for (let gy = Math.floor((wy - ry) / CELL); gy <= Math.floor((wy + ry) / CELL); gy++) {
+      const a = grid.get(cellKey(gx, gy)); if (!a) continue;
+      for (const n of a) {
+        if (lvl === 0 && n.tier !== -1 && n.tier !== 1) continue;
+        if (lvl === 1 && n.tier === 0 && ppy < 32) continue;
+        const d = Math.hypot((n.x - wx) * kx, (n.yy - wy) * ky) - screenR(n);
+        if (d < R && d < bestD && emphasis(n) >= 0.5) { best = n; bestD = d; }
+      }
+    }
+  return best;
+}
+let dragMoved = false, downPos = null;
+const pointers = new Map(); let pinch = null;
+function showTooltip(ev, n) {
+  tt.innerHTML = "";
+  const t1 = document.createElement("div"); t1.className = "tt-title"; t1.textContent = n.tier === -1 ? n.note + " — " + n.t : n.t;
+  const t2 = document.createElement("div"); t2.className = "tt-meta";
+  t2.textContent = (n.y || "年不明") + " ｜ " + TIER_NAME[n.tier] + " ｜ " + (meta.clusterLabel[n.cl] || n.cl) +
+    (n.N != null ? " ｜ 確かなつながり " + n.N + "（S " + (n.S || 0).toFixed(1) + "）" : n.links ? " ｜ 直接 " + n.links : "") + (n.c != null ? " ｜ 被引用 " + n.c.toLocaleString() : "");
+  tt.append(t1, t2); tt.hidden = false;
+  let x = ev.clientX + 14, y = ev.clientY + 12;
+  x = Math.min(x, bw - tt.offsetWidth - 8); y = Math.min(y, bh - tt.offsetHeight - 8);
+  tt.style.left = x + "px"; tt.style.top = y + "px";
+}
+canvas.addEventListener("pointerdown", ev => {
+  stopAnim();
+  try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* 不可 */ }
+  pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  downPos = [ev.clientX, ev.clientY]; dragMoved = false; canvas.classList.add("dragging"); tt.hidden = true;
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+});
+canvas.addEventListener("pointermove", ev => {
+  if (pointers.has(ev.pointerId)) {
+    const prev = pointers.get(ev.pointerId);
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (downPos && Math.hypot(ev.clientX - downPos[0], ev.clientY - downPos[1]) > 4) dragMoved = true;
+    markInteracting();
+    if (pointers.size === 1) { tx += ev.clientX - prev.x; ty += ev.clientY - prev.y; scheduleDraw(); }
+    else if (pinch) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      if (pinch.d > 0) zoomAt(mx, my, d / pinch.d);
+      tx += mx - pinch.mx; ty += my - pinch.my; pinch = { d, mx, my }; scheduleDraw();
+    }
+    return;
+  }
+  const n = nodeAt(ev.clientX, ev.clientY);
+  canvas.classList.toggle("over", !!n);
+  if (n !== state.hover) { state.hover = n; scheduleDraw(); }
+  if (n) showTooltip(ev, n); else tt.hidden = true;
+});
+const endPointer = ev => { pointers.delete(ev.pointerId); if (pointers.size < 2) pinch = null; if (!pointers.size) { canvas.classList.remove("dragging"); downPos = null; } };
+canvas.addEventListener("pointerup", endPointer); canvas.addEventListener("pointercancel", endPointer);
+canvas.addEventListener("pointerleave", () => { tt.hidden = true; if (state.hover) { state.hover = null; scheduleDraw(); } });
+canvas.addEventListener("click", ev => { if (dragMoved) return; const n = nodeAt(ev.clientX, ev.clientY); if (n) selectNode(n, false); else clearSelection(); });
+
+/* ================= 選択・詳細カード ================= */
+const card = document.getElementById("card");
+function neighbors(n) {
+  const s = new Set();
+  (outAdj.get(n.idx) || []).forEach(m => s.add(m.idx)); (inAdj.get(n.idx) || []).forEach(m => s.add(m.idx));
+  (n.dc || []).forEach(i => s.add(known[i].node)); (n.db || []).forEach(i => s.add(known[i].node));
+  (n.ev || []).forEach(e => s.add(known[e[0]].node));
+  return s;
+}
+function selectNode(n, pan) {
+  state.selected = n; n.nb = n.nb || neighbors(n);
+  renderCard(n); renderDrawerSelection(); legend.hidden = true;
+  if (pan) panTo(n);
+  refreshVisible();
+}
+function clearSelection() { state.selected = null; card.hidden = true; renderDrawerSelection(); refreshVisible(); }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function knownChip(i) {
+  const kr = known[i]; const b = el("button", "lnk", kr.note); b.type = "button";
+  b.style.borderColor = theme.c[kr.cluster]; b.addEventListener("click", () => selectNode(kr.n, true));
+  return b;
+}
+function pct(v) { return (v * 100).toFixed(v >= 0.1 ? 0 : 1) + "%"; }
+function renderCard(n) {
+  card.innerHTML = "";
+  const head = el("div", "chead");
+  const pos = listed.indexOf(n);
+  if (pos >= 0) {
+    const prev = el("button", "btn", "‹"); prev.type = "button"; prev.title = "前の候補 (k)"; prev.addEventListener("click", () => stepList(-1));
+    const next = el("button", "btn", "›"); next.type = "button"; next.title = "次の候補 (j)"; next.addEventListener("click", () => stepList(1));
+    head.append(prev, next, el("span", null, (pos + 1).toLocaleString() + " / " + listed.length.toLocaleString()));
+  } else head.append(el("span", null, "図から選択"));
+  const cl = el("button", "close", "×"); cl.type = "button"; cl.setAttribute("aria-label", "閉じる"); cl.addEventListener("click", clearSelection); head.append(cl);
+  card.append(head);
+  const chips = el("div", "chips");
+  const tc = el("span", "chip static", TIER_NAME[n.tier]); if (n.tier === -1) tc.style.borderColor = theme.known; chips.append(tc);
+  const cc = el("span", "chip static"); cc.append(el("span", "sw"), document.createTextNode(meta.clusterLabel[n.cl] || n.cl)); cc.firstChild.style.background = theme.c[n.cl]; chips.append(cc);
+  if (n.ly && n.tier !== -1) chips.append(el("span", "chip static", LAYER_NAME[n.ly] || n.ly));
+  if (n.tier === -1) chips.append(el("span", "chip static", "phase " + n.phase));
+  if (n.gen) { const g = el("span", "chip static", "汎用文献（多くの既知と結びつく教科書・ツール類）"); g.style.borderColor = theme.hit; chips.append(g); }
+  card.append(chips);
+  card.append(el("div", "d-title", n.t));
+  card.append(el("div", "d-meta", (n.y || "年不明") + (n.v ? " ｜ " + n.v : "") + (n.tp ? " ｜ " + n.tp : "")));
+  if (n.au) card.append(el("div", "d-meta", "著者: " + n.au));
+  const m1 = el("div", "d-meta"); m1.append(document.createTextNode("世界全体の被引用数: "), el("b", null, n.c != null ? n.c.toLocaleString() : "未取得"), document.createTextNode("　取得集合内で引用されている数: "), el("b", null, String(n.ind))); card.append(m1);
+  const dl = el("div", "d-meta");
+  if (n.doi) { const a = el("a", null, "doi.org ↗"); a.href = "https://doi.org/" + encodeURIComponent(n.doi).replace(/%2F/gi, "/"); a.target = "_blank"; a.rel = "noopener"; dl.append(document.createTextNode("DOI: " + n.doi + "　"), a, document.createTextNode("　")); }
+  if (/^W\d+$/.test(n.id)) { const a2 = el("a", null, "OpenAlex ↗"); a2.href = "https://openalex.org/" + n.id; a2.target = "_blank"; a2.rel = "noopener"; dl.append(a2); }
+  card.append(dl);
+  if (n.tier === -1) card.append(el("div", "note", "既知リストの記載: " + n.note + "（cluster " + n.cluster + ", phase " + n.phase + "）"));
+  if (n.tier === 5 && n.ssi != null) { const d = el("div", "note", "既知文献と同じ論文の別レコードと判定（類似度 " + (n.ss || 0).toFixed(2) + "、年差 1 以内、筆頭著者一致）: "); d.append(knownChip(n.ssi)); card.append(d); }
+  if (n.tier !== -1 && n.tier !== 0) {
+    card.append(el("h3", null, "なぜ浮上したか（信号）"));
+    const ul = el("ul", "why");
+    const s1 = el("li"); s1.append(document.createTextNode("既知文献とのつながり: 確かなもの "), el("b", null, String(n.N || 0)), document.createTextNode(" 本 ・ 強さの合計 S = "), el("b", null, (n.S || 0).toFixed(2)), document.createTextNode("（直接 " + n.links + " 件）")); ul.append(s1);
+    (n.ev || []).forEach(e => {
+      const [ki, bits, s, ccnt, frac, bc] = e;
+      const li = el("li", bits & 32 ? "weak" : null);
+      li.append(knownChip(ki));
+      const parts = [];
+      if (bits & 1) parts.push("この文献が引用");
+      if (bits & 2) parts.push("既知が引用");
+      if (bits & 4 || ccnt >= 2) parts.push("共引用 " + ccnt + " 件（この既知の引用者の " + pct(frac) + " がこれも引用）");
+      if (bits & 8 || bc >= 2) parts.push("参照を " + bc + " 本共有");
+      li.append(document.createTextNode(parts.join(" ・ ") + "　強さ " + s.toFixed(2) + (bits & 32 ? "（弱い）" : "")));
+      ul.append(li);
+    });
+    const li4 = el("li"); li4.append(document.createTextNode("語彙の類似度（TF-IDF コサイン）: "), el("b", null, (n.ss || 0).toFixed(2)));
+    if (n.ssi != null) { li4.append(document.createTextNode(" 最も近い既知文献: ")); li4.append(knownChip(n.ssi)); }
+    if (n.kt && n.kt.length) li4.append(document.createTextNode("　共通語幹: " + n.kt.join(", ")));
+    if (n.scn) li4.append(document.createTextNode("　近いクラスタ: " + (meta.clusterLabel[n.scn] || n.scn) + " (" + (n.scl || 0).toFixed(2) + ")"));
+    ul.append(li4);
+    const li5 = el("li"); li5.append(document.createTextNode("OpenAlex のトピック一致: " + (n.tm ? "あり" : "なし") + "　OpenAlex の関連文献: " + (n.rl ? "あり" : "なし") + "　総合スコア: "), el("b", null, String(n.sc))); ul.append(li5);
+    if (n.tier === 3) ul.append(el("li", null, "この文献は引用ではつながらず、語彙の近さだけで浮上しています（フェイルセーフ）。"));
+    card.append(ul);
+  }
+  if (n.tier === 0) {
+    card.append(el("h3", null, "海の文献"));
+    card.append(el("div", "d-meta", "既知リストとのつながりが薄い文献です。信号の詳細は埋め込んでいません（OpenAlex リンクから確認できます）。"));
+    if (n.dc && n.dc.length) { const d = el("div", "d-meta", "引用している既知文献: "); n.dc.forEach(i => d.append(knownChip(i))); card.append(d); }
+    if (n.db && n.db.length) { const d = el("div", "d-meta", "この文献を引用している既知文献: "); n.db.forEach(i => d.append(knownChip(i))); card.append(d); }
+  }
+  card.append(el("h3", null, "探索状態"));
+  card.append(el("div", "d-meta", (n.nref != null ? "参照リスト（OpenAlex 解決分）: " + n.nref + " 件（取得集合内の辺のみ描画）" : "参照リスト: 未取得") + "　要旨: " + (n.ab ? "取得済（下に表示）" : n.hasAb ? "取得済（索引にのみ使用）" : "OpenAlex に無し")));
+  if (n.ab) { const d = el("details"); d.append(el("summary", null, "要旨（OpenAlex）"), el("p", null, n.ab)); card.append(d); }
+  const nb = [...(n.nb || neighbors(n))].map(i => nodes[i]).filter(m => m !== n);
+  if (nb.length) {
+    const d = el("details"); d.append(el("summary", null, "取得集合内でつながる文献（" + nb.length + " 件）"));
+    const ul = el("ul", "why");
+    nb.sort((a, b) => (b.tier === -1) - (a.tier === -1) || (b.sc || 0) - (a.sc || 0)).slice(0, 60).forEach(m => {
+      const li = el("li"); const b = el("button", "lnk", (m.y || "—") + " " + shortT(m.t, 56)); b.type = "button"; b.addEventListener("click", () => selectNode(m, true)); li.append(b); ul.append(li);
+    });
+    d.append(ul); card.append(d);
+  }
+  if (n.tier !== -1) {
+    card.append(el("h3", null, "判定の記録"));
+    const mk = el("div", "marks");
+    [["done", "済（確認した）d"], ["add", "追加する a"], ["reject", "除外 x"]].forEach(([v, label]) => {
+      const b = el("button", "btn" + (marks[n.id] === v ? " on" : ""), label); b.type = "button";
+      b.addEventListener("click", () => { setMark(n.id, marks[n.id] === v ? null : v); renderCard(n); scheduleDraw(); });
+      mk.append(b);
+    });
+    card.append(mk);
+  }
+  card.hidden = false;
+}
+
+/* ================= キーワード ================= */
+window.__viewerStage = "kw";
+const KW = GRAPH.kw || { vocab: [], off: [0], blob: "" };
+const kwBytes = (() => { const bin = atob(KW.blob); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; })();
+const kwCache = new Map();
+function postingsOf(vi) {
+  if (kwCache.has(vi)) return kwCache.get(vi);
+  let p = KW.off[vi]; const end = KW.off[vi + 1];
+  const read = () => { let v = 0, sh = 0, b; do { b = kwBytes[p++]; v |= (b & 0x7f) << sh; sh += 7; } while (b & 0x80); return v; };
+  const cnt = read(); const out = new Array(cnt); let prev = -1;
+  for (let i = 0; i < cnt && p <= end; i++) { prev = prev + read() + 1; out[i] = prev; }
+  kwCache.set(vi, out); return out;
+}
+function stem(t) {
+  if (t.length > 4 && t.endsWith("ies")) return t.slice(0, -3) + "y";
+  if (t.length > 4 && t.endsWith("es") && !t.endsWith("ss")) return /(shes|ches|xes|zes)$/.test(t) ? t.slice(0, -2) : t.slice(0, -1);
+  if (t.length > 3 && t.endsWith("s") && !t.endsWith("ss")) return t.slice(0, -1);
+  return t;
+}
+function vocabPrefix(term) {
+  let lo = 0, hi = KW.vocab.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (KW.vocab[mid] < term) lo = mid + 1; else hi = mid; }
+  const out = [];
+  for (let i = lo; i < KW.vocab.length && out.length < 12 && KW.vocab[i].startsWith(term); i++) out.push(i);
+  return out;
+}
+const kwInput = document.getElementById("keyword");
+let kwTimer = null;
+function runKeyword() {
+  const q = kwInput.value.trim().toLowerCase();
+  const terms = q.split(/[\s,、　]+/).filter(t => t.length >= 2);
+  if (!terms.length) { state.kwScore = null; renderDrawer(); refreshVisible(); return; }
+  const sc = new Map();
+  const add = (i, v) => sc.set(i, (sc.get(i) || 0) + v);
+  for (const raw of terms) {
+    const t = stem(raw);
+    for (const n of nodes) { if (n.tl.includes(raw) || n.tl.includes(t)) add(n.idx, 3); if (n.doi && n.doi.includes(raw)) add(n.idx, 5); }
+    const hit = new Set();
+    for (const vi of vocabPrefix(t)) for (const idx of postingsOf(vi)) hit.add(idx);
+    for (const idx of hit) add(idx, 1);
+  }
+  state.kwScore = sc; renderDrawer(); refreshVisible();
+}
+kwInput.addEventListener("input", () => { clearTimeout(kwTimer); kwTimer = setTimeout(runKeyword, 180); });
+kwInput.addEventListener("keydown", ev => { if (ev.key === "Escape") { kwInput.value = ""; runKeyword(); kwInput.blur(); } });
+
+/* ================= ドロワー ================= */
+const drawer = document.getElementById("drawer"), dlist = document.getElementById("dlist");
+const clusterChips = document.getElementById("cluster-chips");
+CL.forEach(c => {
+  const s = el("span", "chip on"); s.dataset.cluster = c;
+  const sw = el("span", "sw"); sw.style.background = theme.c[c]; s.append(sw, document.createTextNode(meta.clusterLabel[c] || c));
+  s.title = c; s.addEventListener("click", () => { if (state.clusters.has(c)) state.clusters.delete(c); else state.clusters.add(c); s.classList.toggle("on", state.clusters.has(c)); refreshVisible(); renderDrawer(); });
+  clusterChips.append(s);
+});
+document.querySelectorAll("#tier-chips .chip").forEach(s => s.addEventListener("click", () => {
+  const t = +s.dataset.tier; if (state.tiers.has(t)) state.tiers.delete(t); else state.tiers.add(t);
+  s.classList.toggle("on", state.tiers.has(t)); renderDrawer();
+}));
+document.getElementById("sort").addEventListener("change", ev => { state.sort = ev.target.value; renderDrawer(); });
+document.getElementById("hide-done").addEventListener("change", ev => { state.hideDone = ev.target.checked; renderDrawer(); });
+document.getElementById("hide-generic").addEventListener("change", ev => { state.genericLast = ev.target.checked; renderDrawer(); });
+const SORTS = {
+  sc: (a, b) => (b.sc || 0) - (a.sc || 0), S: (a, b) => (b.S || 0) - (a.S || 0) || (b.sc || 0) - (a.sc || 0),
+  N: (a, b) => (b.N || 0) - (a.N || 0) || (b.sc || 0) - (a.sc || 0), links: (a, b) => b.links - a.links || (b.sc || 0) - (a.sc || 0),
+  ss: (a, b) => (b.ss || 0) - (a.ss || 0), c: (a, b) => (b.c || 0) - (a.c || 0), y: (a, b) => (b.y || 0) - (a.y || 0), yo: (a, b) => (a.y || 9999) - (b.y || 9999),
+};
+let listed = [];
+function renderDrawer() {
+  listed = nodes.filter(n => n.tier > 0 && state.tiers.has(n.tier) && clusterOn(n) && (!state.kwScore || state.kwScore.has(n.idx)) && !(state.hideDone && (marks[n.id] === "done" || marks[n.id] === "reject")));
+  const cmp0 = SORTS[state.sort] || SORTS.sc;
+  const cmp = state.genericLast ? (a, b) => ((a.gen ? 1 : 0) - (b.gen ? 1 : 0)) || cmp0(a, b) : cmp0;
+  if (state.kwScore) listed.sort((a, b) => (state.kwScore.get(b.idx) - state.kwScore.get(a.idx)) || cmp(a, b)); else listed.sort(cmp);
+  document.getElementById("dcount").textContent = listed.length.toLocaleString() + " 件";
+  dlist.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  listed.slice(0, state.listLimit).forEach(n => {
+    const li = el("li"); li.dataset.idx = n.idx;
+    if (marks[n.id]) li.classList.add("m-" + marks[n.id]);
+    if (state.selected === n) li.classList.add("sel");
+    li.append(el("div", "rt", shortT(n.t, 110)));
+    const rm = el("div", "rm");
+    const sw = el("span", "sw"); sw.style.background = theme.c[n.cl];
+    rm.append(sw, document.createTextNode((n.y || "—") + " ・ " + TIER_SHORT[n.tier] + " ・ 確か " + (n.N || 0) + " ・ S " + (n.S || 0).toFixed(1) + " ・ 直接 " + n.links + " ・ 類似 " + (n.ss || 0).toFixed(2) + (n.c != null ? " ・ 被引用 " + n.c.toLocaleString() : "") + (n.gen ? " ・ 汎用" : "")));
+    li.append(rm);
+    li.addEventListener("click", () => selectNode(n, true));
+    frag.append(li);
+  });
+  dlist.append(frag);
+  if (listed.length > state.listLimit) { const b = el("button", null, "さらに表示（残り " + (listed.length - state.listLimit).toLocaleString() + " 件）"); b.id = "dmore"; b.type = "button"; b.addEventListener("click", () => { state.listLimit += 200; renderDrawer(); }); dlist.append(b); }
+}
+function renderDrawerSelection() {
+  dlist.querySelectorAll("li.sel").forEach(li => li.classList.remove("sel"));
+  if (state.selected) { const li = dlist.querySelector('li[data-idx="' + state.selected.idx + '"]'); if (li) { li.classList.add("sel"); li.scrollIntoView({ block: "nearest" }); } }
+}
+function stepList(d) {
+  if (!listed.length) return;
+  let i = state.selected ? listed.indexOf(state.selected) : -1;
+  i = i < 0 ? (d > 0 ? 0 : listed.length - 1) : clamp(i + d, 0, listed.length - 1);
+  if (i >= state.listLimit) { state.listLimit = i + 50; renderDrawer(); }
+  selectNode(listed[i], true);
+}
+function updateMarkSummary() {
+  const c = { done: 0, add: 0, reject: 0 }; Object.values(marks).forEach(v => { if (c[v] != null) c[v]++; });
+  document.getElementById("dmarks").textContent = `済 ${c.done} ・ 追加 ${c.add} ・ 除外 ${c.reject}`;
+}
+document.getElementById("btn-drawer").addEventListener("click", ev => { drawer.hidden = !drawer.hidden; ev.currentTarget.classList.toggle("on", !drawer.hidden); ev.currentTarget.setAttribute("aria-pressed", String(!drawer.hidden)); recalcZoomRange(); if (!state.selected) fitAll(true); else scheduleDraw(); });
+const depthInput = document.getElementById("depth");
+function setDepth(d, save) {
+  state.depth = clamp(Math.round(d), 1, 5); depthInput.value = String(state.depth);
+  document.getElementById("depth-name").textContent = state.depth + " " + DEPTH_NAME[state.depth];
+  if (save) { try { localStorage.setItem("citation-finder-depth", String(state.depth)); } catch (e) { /* 保存不可 */ } }
+  refreshVisible();
+}
+depthInput.addEventListener("input", () => setDepth(+depthInput.value, true));
+const legend = document.getElementById("legend");
+document.getElementById("btn-legend").addEventListener("click", () => { legend.hidden = !legend.hidden; if (!legend.hidden) card.hidden = true; });
+legend.querySelector(".close").addEventListener("click", () => { legend.hidden = true; });
+document.getElementById("year-jump").addEventListener("change", ev => {
+  const y = +ev.target.value; if (!y || y < L.floorYear || y > L.maxYear) return;
+  animateTo({ z: Math.max(z, Z_B * 0.6), cx: worldCenter().x, cy: yOf(y) }, 500);
+});
+document.getElementById("btn-export").addEventListener("click", () => {
+  const rows = nodes.filter(n => marks[n.id] === "add").map(n => [n.doi || "", n.cl, "4", (n.t || "").replace(/,/g, " ") + (n.y ? " " + n.y : "")].join(","));
+  document.getElementById("export-text").value = "doi,cluster,phase,note\n" + rows.join("\n");
+  document.getElementById("export").hidden = false;
+});
+document.getElementById("export-close").addEventListener("click", () => { document.getElementById("export").hidden = true; });
+document.addEventListener("keydown", ev => {
+  const tag = (ev.target && ev.target.tagName) || "";
+  if (ev.isComposing || tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") { if (ev.key === "Escape") ev.target.blur(); return; }
+  if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  switch (ev.key) {
+    case "Escape": if (!document.getElementById("export").hidden) document.getElementById("export").hidden = true; else if (!legend.hidden) legend.hidden = true; else if (state.selected) clearSelection(); break;
+    case "j": case "ArrowDown": stepList(1); ev.preventDefault(); break;
+    case "k": case "ArrowUp": stepList(-1); ev.preventDefault(); break;
+    case "d": case "a": case "x": if (state.selected && state.selected.tier !== -1) { const v = { d: "done", a: "add", x: "reject" }[ev.key]; setMark(state.selected.id, marks[state.selected.id] === v ? null : v); renderCard(state.selected); scheduleDraw(); } break;
+    case "1": case "2": case "3": case "4": zoomLevel(+ev.key); break;
+    case "f": clearSelection(); fitAll(true); break;
+    case "[": setDepth(state.depth - 1, true); break;
+    case "]": setDepth(state.depth + 1, true); break;
+    case "/": kwInput.focus(); ev.preventDefault(); break;
+    case "+": case "=": { const c = viewCenter(); zoomAt(c.x, c.y, 1.6); break; }
+    case "-": { const c = viewCenter(); zoomAt(c.x, c.y, 1 / 1.6); break; }
+  }
+});
+
+/* ================= 凡例・統計・検証 ================= */
+{
+  const lc = document.getElementById("legend-clusters");
+  CL.forEach(c => {
+    const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", "26"); sv.setAttribute("height", "18"); sv.setAttribute("viewBox", "0 0 26 18");
+    const ci = document.createElementNS("http://www.w3.org/2000/svg", "circle"); ci.setAttribute("cx", "13"); ci.setAttribute("cy", "9"); ci.setAttribute("r", "5"); ci.setAttribute("fill", "var(--c-" + c + ")"); sv.append(ci);
+    lc.append(sv, el("span", null, (meta.clusterLabel[c] || c) + "（" + c + "・既知 " + known.filter(k => k.cluster === c).length + " 件）"));
+  });
+  const cv = document.getElementById("caveats"); meta.caveats.forEach(t => cv.append(el("li", null, t)));
+  const cov = meta.coverage || {};
+  if (cov.merged) cv.append(el("li", null, "同じ論文の別レコード " + cov.merged + " 件を統合済み（DOI 一致、またはタイトルと年の一致）。"));
+  if (cov.no_abstract_known && cov.no_abstract_known.length) cv.append(el("li", null, "要旨が OpenAlex に無い既知文献（語彙類似度が低く出る）: " + cov.no_abstract_known.join("、")));
+  const c = meta.counts;
+  document.getElementById("stats").textContent = `文献 ${c.nodes.toLocaleString()} ・ 既知 ${c.known} ・ 要確認 ${c.t1.toLocaleString()} ・ 関連 ${c.t2.toLocaleString()} ・ 意味 ${c.t3} ・ 別版 ${c.dup || 0} ・ 海 ${c.sea.toLocaleString()}`;
+  const ho = meta.holdout;
+  const hd = document.getElementById("holdout");
+  if (ho) {
+    hd.append(el("div", null, `既知リストのうち phase ≤ ${ho.phase_max} の ${ho.known} 件だけを既知にして残り ${ho.hidden} 件を隠し、同じ手順で候補化したとき、隠した文献がどこに来るか（クロール範囲は既知 ${ho.known} 件の参照・引用者に限定、${ho.pool.toLocaleString()} 件）。`));
+    const t = ho.tiers || {};
+    hd.append(el("div", null, `結果: 要確認 ${t["1"] || 0} ・ 関連 ${t["2"] || 0} ・ 意味 ${t["3"] || 0} ・ 海 ${t["0"] || 0}。総合スコア上位 100 内 ${ho.recall.top100} 件、500 内 ${ho.recall.top500} 件、1000 内 ${ho.recall.top1000} 件。`));
+    const tb = el("table"); const th = el("tr"); ["隠した文献", "階層", "順位", "確か", "直接", "類似", "取得内の接続"].forEach(h => th.append(el("th", null, h))); tb.append(th);
+    ho.rows.slice().sort((a, b) => (a.rank || 1e9) - (b.rank || 1e9)).forEach(r => {
+      const tr = el("tr");
+      [r.key, TIER_SHORT[r.tier] || "—", r.rank != null ? r.rank.toLocaleString() : "—", r.N, r.direct, (r.sim || 0).toFixed(2), r.pool_links].forEach(v => tr.append(el("td", null, String(v))));
+      tb.append(tr);
+    });
+    hd.append(tb);
+    hd.append(el("div", null, "海に落ちた文献の多くは取得範囲内の接続が数本しかなく、クロールの範囲（既知 1 件だけと共引用された文献は未取得）の限界を示す。"));
+  }
+}
+
+/* ================= 起動 ================= */
+function syncStateFromControls() {
+  state.sort = document.getElementById("sort").value || "sc";
+  state.hideDone = document.getElementById("hide-done").checked;
+  state.genericLast = document.getElementById("hide-generic").checked;
+  let d = +depthInput.value || 1;
+  try { const sv = localStorage.getItem("citation-finder-depth"); if (sv) d = +sv; } catch (e) { /* 読めない */ }
+  setDepth(d, false);
+}
+window.addEventListener("resize", () => { resize(); });
+const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+const onThemeChange = () => { readTheme(); clusterChips.querySelectorAll(".chip").forEach(s => { s.querySelector(".sw").style.background = theme.c[s.dataset.cluster]; }); renderDrawer(); scheduleDraw(); };
+if (mq) { if (mq.addEventListener) mq.addEventListener("change", onThemeChange); else if (mq.addListener) mq.addListener(onThemeChange); }
+new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleDraw);
+window.__viewerStage = "init";
+syncStateFromControls();
+document.getElementById("btn-drawer").classList.add("on");
+if (window.innerWidth <= 760) { drawer.hidden = true; document.getElementById("btn-drawer").classList.remove("on"); }
+resize();
+refreshVisible();
+fitAll(false);
+renderDrawer(); updateMarkSummary();
+if (kwInput.value.trim()) runKeyword();
+window.__viewerStage = "ready";
+// 検証スクリプト用の窓口（let 変数は関数経由で現在値を返す）
+window.__dbg = () => ({ z, kx, ky, tx, ty, setDepth, Z_A, Z_B, S_0, S_MAX, Z_MIN, Z_MAX, state, listed, known, anim, L, edges, nodes, visibleNodes, drawQueued, LOW_POWER, marks,
+  zoomLevel, fitAll, draw, animateTo, setMark, runKeyword, selectNode, zoomAt, visible, refreshVisible });
+} catch (e) { window.__report("段階 " + window.__viewerStage, e); }
+</script>
+<script>
+// 構文エラーなどで上のスクリプト全体が実行されなかった場合の最後の砦
+if (window.__viewerStage !== "ready") {
+  var __el = document.getElementById("err");
+  if (__el && __el.hidden) window.__report("実行されず・段階 " + window.__viewerStage, { name: "Error", message: "スクリプトが途中で止まりました（構文非対応かメモリ不足の可能性）" });
+}
+</script>
