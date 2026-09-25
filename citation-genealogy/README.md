@@ -8,6 +8,7 @@
 - ビューア本体: `index.html`（自己完結・データ埋め込み済み・外部ライブラリ不要。約 14.9 MB）
 - GitHub Pages: `https://<user>.github.io/Claude-public/citation-genealogy/`
 - 公開済み Artifact: https://claude.ai/artifact/44wTSdKhvzR7bEBL8VvEFz
+- Culm（Cloudflare Pages）: https://cloudflare-git-4l8.pages.dev/citation-genealogy/ 。`make_es5.cjs` で ES5・外部読み込みなしに変換した版を `eUmeda/Cloudflare-git` の `citation-genealogy/index.html` に置く
 - 旧版 v0.2（8 起点・2 ホップ全網羅の地層図）: `v0.2/index.html`
 
 ## 使い方
