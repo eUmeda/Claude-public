@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ヘックス大全</title>
+<meta name="description" content="引き分けのない陣取りゲーム、ヘックス。指南役つきのAIと対局しながら、勝ち方、歴史、数学（戦略泥棒・ブラウワーの不動点定理）、盤を電気回路として読む方法を学べるページ。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root {
+  /* layout: the board comes first; the coach writes beside it in red pen, like margin notes in a teacher's copy */
+  --bg: #e7eaee;
+  --panel: #f4f5f7;
+  --text: #1b1f26;
+  --muted: #586170;
+  --rule: #c8cdd6;
+  --shu: #c63a21;
+  --font-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+  --font-hand: "Klee One", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121418; --panel: #1b1e24; --text: #e6e8ec; --muted: #9ea7b5; --rule: #343a45; --shu: #ff7457;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121418; --panel: #1b1e24; --text: #e6e8ec; --muted: #9ea7b5; --rule: #343a45; --shu: #ff7457;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); }
+body { color: var(--text); font-family: var(--font-ui); font-size: 16px; line-height: 1.65; -webkit-text-size-adjust: 100%; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 14px 16px 64px; }
+
+.masthead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 18px; margin: 4px 0 12px; }
+.masthead h1 { font-family: var(--font-hand); font-weight: 600; font-size: clamp(30px, 7vw, 40px); line-height: 1.15; margin: 0; letter-spacing: .06em; text-wrap: balance; }
+.masthead p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 42em; }
+.k { font-weight: 700; color: var(--text); white-space: nowrap; }
+.k::before { content: ""; display: inline-block; width: .78em; height: .78em; border-radius: 50%; margin-right: .22em; vertical-align: -.04em; }
+.k.s::before { background: radial-gradient(circle at 35% 30%, #4b525e, #1f232a 55%, #0d0f12); box-shadow: 0 0 0 1px rgba(255,255,255,.22); }
+.k.a::before { background: radial-gradient(circle at 35% 30%, #7ea3f2, #2a57bd 55%, #173a8a); }
+.hand { font-family: var(--font-hand); color: var(--shu); font-weight: 600; }
+
+.play { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 900px) {
+  .play { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 24px; }
+  .board-col { position: sticky; top: 12px; }
+}
+.board-card { background: #fbfbf9; color: #1b1f26; border-radius: 12px; padding: 4px 4px 0; box-shadow: 0 1px 2px rgba(15,20,30,.08), 0 14px 30px -20px rgba(15,25,45,.5); }
+.board-card svg { display: block; width: 100%; height: auto; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.hx { fill: #fbfbf9; stroke: #c3c8d0; stroke-width: 1; }
+.playable .hx.e { cursor: pointer; }
+@media (hover: hover) { .playable .hx.e:hover { fill: #e8eef8; } }
+.hx:focus { outline: none; }
+.hx:focus-visible { stroke: #d0401f; stroke-width: 2.5; }
+.lc { font-family: var(--font-num); font-size: 10.5px; fill: #7b8391; }
+.mk { font-family: var(--font-hand); font-weight: 600; fill: #d0401f; }
+.stone.drop { animation: drop .22s ease-out both; transform-box: fill-box; transform-origin: center; }
+@keyframes drop { from { transform: scale(1.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stone.drop { animation: none; } }
+
+.status { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; padding: 7px 8px 10px; font-size: 14.5px; border-top: 1px solid #e4e7eb; margin: 0 4px; }
+.status .l { display: flex; align-items: center; gap: 7px; min-height: 30px; flex-wrap: wrap; }
+.status .sub { color: #6b7380; font-size: 13px; }
+.status .num { font-family: var(--font-num); font-size: 13px; color: #4b5462; font-variant-numeric: tabular-nums; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.s { background: radial-gradient(circle at 35% 30%, #4b525e, #1f232a 55%, #0d0f12); }
+.dot.a { background: radial-gradient(circle at 35% 30%, #7ea3f2, #2a57bd 55%, #173a8a); }
+.meter { display: flex; align-items: center; gap: 6px; }
+.meter .lab { font-size: 13px; color: #6b7380; }
+.meter .bar { width: 88px; height: 8px; border-radius: 4px; background: #2a57bd; overflow: hidden; display: block; }
+.meter .bar i { display: block; height: 100%; background: #1c2027; transition: width .3s; }
+.rv { display: inline-flex; gap: 6px; }
+.rv button { font: inherit; font-size: 13px; padding: 4px 10px; min-height: 32px; border: 1px solid #c3c8d0; border-radius: 6px; background: #fff; color: #1b1f26; cursor: pointer; }
+
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.note { border-left: 3px solid var(--shu); padding: 2px 0 2px 14px; font-family: var(--font-hand); font-size: 17px; line-height: 1.8; min-height: 5.6em; }
+.note .verdict { font-size: 22px; font-weight: 600; color: var(--shu); display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; line-height: 1.4; margin-bottom: 2px; }
+.note .verdict .sym { font-size: 30px; line-height: 1; }
+.note .verdict small { font-size: 14.5px; font-family: var(--font-ui); color: var(--muted); font-weight: 500; }
+.note p { margin: .2em 0; }
+.note b.c { font-family: var(--font-num); font-weight: 700; font-size: .9em; color: var(--shu); white-space: nowrap; }
+.note .dim { color: var(--muted); font-size: 15.5px; }
+.note .alert { display: flex; gap: 8px; align-items: baseline; }
+.note .alert .bang { color: #fff; background: var(--shu); font-family: var(--font-ui); font-weight: 700; font-size: 13px; width: 1.4em; height: 1.4em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; transform: translateY(-1px); }
+.note ol { margin: .3em 0; padding: 0; list-style: none; }
+.note ol li { margin: .15em 0; }
+.note hr { border: 0; border-top: 1px dashed var(--rule); margin: .5em 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 8px 10px; }
+.board-card .btn { color: #1b1f26; border-color: #1b1f26; font-size: 14px; padding: 6px 11px; min-height: 40px; }
+.board-card .btn.shu { color: #c63a21; border-color: #c63a21; }
+.board-card .btn.tg { border-color: #c3c8d0; color: #6b7380; }
+.board-card .btn.tg[aria-pressed="true"] { border-color: #1b1f26; color: #1b1f26; }
+.board-card .btn:focus-visible { outline-color: #c63a21; }
+.btn { font: inherit; font-size: 15px; font-weight: 500; padding: 8px 14px; min-height: 42px; border-radius: 7px; border: 1.5px solid var(--text); background: transparent; color: var(--text); cursor: pointer; }
+.btn.shu { border-color: var(--shu); color: var(--shu); }
+.btn.primary { background: var(--text); color: var(--bg); }
+.btn.tg { border-color: var(--rule); color: var(--muted); }
+.btn.tg[aria-pressed="true"] { border-color: var(--text); color: var(--text); }
+.btn.tg::before { content: "○ "; }
+.btn.tg[aria-pressed="true"]::before { content: "● "; }
+.btn:disabled { opacity: .38; cursor: default; }
+.btn:focus-visible, .seg button:focus-visible, .kifu button:focus-visible, .rv button:focus-visible { outline: 2px solid var(--shu); outline-offset: 2px; }
+
+.settings { display: grid; gap: 10px; padding: 14px; background: var(--panel); border-radius: 10px; }
+.settings .row { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.settings .lbl { width: 2.4em; color: var(--muted); font-size: 14px; flex: none; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1.5px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; padding: 6px 11px; min-height: 38px; border: 0; border-right: 1px solid var(--rule); background: transparent; color: var(--text); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); font-weight: 700; }
+.small { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+.pending { color: var(--shu); }
+
+.record h3, .guide h3.sub { font-size: 14px; font-weight: 700; color: var(--muted); margin: 0 0 6px; letter-spacing: .04em; }
+.chart { display: block; width: 100%; height: auto; max-width: 460px; }
+.chart .ax { stroke: var(--rule); stroke-width: 1; }
+.chart .mid { stroke: var(--rule); stroke-dasharray: 3 3; }
+.chart .tx { fill: var(--muted); font-size: 10px; font-family: var(--font-num); }
+.chart .ln { fill: none; stroke: var(--text); stroke-width: 1.8; stroke-linejoin: round; }
+.chart .pt { fill: var(--text); cursor: pointer; }
+.chart .tp { fill: none; stroke: var(--shu); stroke-width: 2; }
+.chart .tpl { fill: var(--shu); font-family: var(--font-hand); font-weight: 600; font-size: 11px; }
+.kifu { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.kifu button { font-family: var(--font-num); font-size: 13px; padding: 3px 7px; min-height: 30px; border: 1px solid var(--rule); border-radius: 5px; background: transparent; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.kifu button .no { color: var(--muted); font-size: 11px; }
+.kifu button .d { width: 9px; height: 9px; border-radius: 50%; }
+.kifu button .d.s { background: #1c2027; box-shadow: 0 0 0 1px var(--rule); }
+.kifu button .d.a { background: #2a57bd; }
+.kifu button .g { color: var(--shu); font-family: var(--font-hand); font-weight: 600; }
+.kifu button[aria-current="true"] { border-color: var(--shu); box-shadow: inset 0 0 0 1px var(--shu); }
+
+.guide { margin-top: 48px; border-top: 1px solid var(--rule); padding-top: 24px; }
+.guide > h2 { font-family: var(--font-hand); font-weight: 600; font-size: 30px; margin: 0 0 6px; letter-spacing: .04em; }
+.guide .intro { color: var(--muted); max-width: 40em; margin: 0; font-size: 16px; }
+.lesson { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 36px; }
+.lesson h3 { font-family: var(--font-hand); font-weight: 600; font-size: 23px; margin: 0; display: flex; gap: 12px; align-items: baseline; line-height: 1.4; text-wrap: balance; }
+.lesson h3 .n { color: var(--shu); font-size: 26px; }
+.lesson p { margin: 0; font-size: 17.5px; line-height: 1.85; max-width: 38em; }
+.figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 16px 20px; max-width: 46em; }
+figure { margin: 0; }
+figure .mini { display: block; width: 100%; max-width: 330px; height: auto; background: #fbfbf9; border-radius: 8px; }
+figcaption { font-size: 14.5px; color: var(--muted); line-height: 1.65; margin-top: 7px; max-width: 26em; }
+.legend { display: inline-flex; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border: 1px solid #c3c8d0; vertical-align: -1px; margin-right: 4px; }
+.mine { border-left: 3px dashed var(--shu); padding: 2px 0 2px 14px; font-family: var(--font-hand); font-size: 17px; line-height: 1.85; max-width: 38em; }
+.mine .tag { font-family: var(--font-ui); font-size: 12.5px; color: var(--shu); font-weight: 700; letter-spacing: .12em; display: block; }
+.lesson .src { font-size: 13.5px; color: var(--muted); max-width: 44em; }
+.src a, .sources a { color: inherit; text-underline-offset: 2px; }
+table.res { border-collapse: collapse; font-size: 15px; max-width: 34em; width: 100%; }
+table.res th, table.res td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+table.res td.n { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.sources { margin-top: 44px; border-top: 1px solid var(--rule); padding-top: 18px; font-size: 14px; color: var(--muted); max-width: 52em; }
+.sources h2 { font-size: 15px; margin: 0 0 8px; color: var(--text); }
+.sources ol { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
+.sources .depth { font-size: 12.5px; }
+
+/* ---- site additions ---- */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin: 2px 0 6px; }
+.back:hover { color: var(--text); }
+.masthead .lede { font-size: 15.5px; color: var(--text); max-width: 40em; margin-top: 4px; }
+.toc { position: sticky; top: 0; z-index: 5; display: flex; gap: 2px; overflow-x: auto; background: var(--bg); margin: 6px -16px 14px; padding: 6px 12px; border-bottom: 1px solid var(--rule); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.toc::-webkit-scrollbar { display: none; }
+.toc a { flex: none; font-size: 14.5px; color: var(--text); text-decoration: none; padding: 6px 11px; border-radius: 6px; min-height: 36px; display: inline-flex; align-items: center; }
+.toc a:hover, .toc a:focus-visible { background: var(--panel); outline: none; }
+.toc a .n { color: var(--shu); font-family: var(--font-hand); font-weight: 600; margin-right: 3px; }
+section[id], article[id] { scroll-margin-top: 58px; }
+@media (min-width: 900px) { .board-col { top: 58px; } }
+
+.chap { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 26px; }
+.chap > header { display: grid; gap: 4px; margin-bottom: 6px; }
+.chap > header .kick { font-family: var(--font-hand); font-weight: 600; color: var(--shu); font-size: 18px; letter-spacing: .1em; }
+.chap > header h2 { font-family: var(--font-hand); font-weight: 600; font-size: clamp(28px, 6.4vw, 36px); margin: 0; letter-spacing: .04em; line-height: 1.3; text-wrap: balance; }
+.chap > header p { margin: 4px 0 0; color: var(--muted); max-width: 40em; font-size: 16px; }
+.chap .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 22px; }
+.chap .body > h3 { font-family: var(--font-hand); font-weight: 600; font-size: 22px; margin: 22px 0 0; line-height: 1.45; text-wrap: balance; }
+.chap .body > p, .chap .body > ul, .chap .body > ol:not(.tl) { margin: 0; font-size: 17.5px; line-height: 1.85; max-width: 38em; }
+.chap .body > ul { padding-left: 1.2em; }
+.chap .body > ul li { margin: .2em 0; }
+.chap .body .src { font-size: 13.5px; color: var(--muted); max-width: 44em; }
+.math { font-family: "Times New Roman", "Hiragino Mincho ProN", serif; font-style: italic; white-space: nowrap; }
+.eq { font-family: "Times New Roman", "Hiragino Mincho ProN", serif; font-size: 19px; text-align: center; padding: 10px 6px; background: var(--panel); border-radius: 8px; max-width: 32em; overflow-x: auto; }
+.eq i { font-style: italic; }
+
+/* timeline */
+ol.tl { list-style: none; margin: 4px 0 0; padding: 0; max-width: 44em; border-left: 2px solid var(--rule); }
+ol.tl li { position: relative; display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 4px 14px; padding: 10px 0 12px 16px; }
+ol.tl li::before { content: ""; position: absolute; left: -7px; top: 17px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); }
+ol.tl li.hx::before { border-color: var(--shu); background: var(--shu); }
+ol.tl .y { font-family: var(--font-num); font-size: 15px; font-weight: 700; color: var(--text); padding-top: 3px; font-variant-numeric: tabular-nums; }
+ol.tl li.hx .y { color: var(--shu); }
+ol.tl .t { font-size: 16.5px; line-height: 1.8; }
+ol.tl .t b { font-weight: 700; }
+ol.tl .t .s { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-top: 2px; }
+@media (max-width: 460px) { ol.tl li { grid-template-columns: minmax(0, 1fr); } }
+
+/* figures on the page background */
+.fig-wide { max-width: 46em; }
+.fig-wide svg { display: block; width: 100%; max-width: 560px; height: auto; }
+.stream text { font-family: var(--font-ui); fill: var(--text); }
+.stream .yr { font-family: var(--font-num); font-weight: 700; font-size: 12px; }
+.stream .lb { font-size: 12px; }
+.stream .hd { font-size: 13px; font-weight: 700; fill: var(--muted); }
+.stream .bx { fill: var(--panel); stroke: var(--rule); stroke-width: 1.2; }
+.stream .bx.hx { stroke: var(--shu); }
+.stream .bx.fp { fill: none; stroke: var(--shu); stroke-width: 2; stroke-dasharray: 5 4; }
+.stream .ar { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+.stream .ar2 { stroke: var(--shu); stroke-width: 1.6; fill: none; }
+.stream .note { font-size: 11px; fill: var(--shu); font-family: var(--font-hand); font-weight: 600; }
+.stream .same { stroke: var(--muted); stroke-dasharray: 3 3; stroke-width: 1.2; }
+
+.ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; max-width: 44em; }
+.ctrl label { font-size: 14.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+.ctrl input[type=range] { width: 150px; accent-color: var(--shu); }
+.ctrl output { font-family: var(--font-num); font-size: 14px; color: var(--text); min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+.readout { font-size: 15.5px; line-height: 1.8; max-width: 40em; }
+.readout b { font-family: var(--font-num); }
+.moran .bar { fill: var(--text); opacity: .72; }
+.moran .bar.one { fill: var(--shu); opacity: 1; }
+.moran .wire { stroke: var(--muted); stroke-linecap: round; }
+.moran .ax { stroke: var(--rule); }
+.moran .neu { stroke: var(--muted); stroke-dasharray: 4 3; fill: none; }
+.moran text { fill: var(--muted); font-family: var(--font-num); font-size: 11px; }
+.moran .lab { font-family: var(--font-ui); font-size: 11.5px; }
+.board-fig { display: block; width: 100%; max-width: 420px; height: auto; background: #fbfbf9; border-radius: 10px; }
+.btn.small { min-height: 38px; font-size: 14px; padding: 6px 12px; }
+.siteFoot { margin-top: 36px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">← Claude — Research &amp; Education Projects</a>
+  <header class="masthead">
+    <h1>ヘックス大全</h1>
+    <p class="lede">1942年にデンマークで生まれ、数年後にプリンストンでナッシュが考え直した、引き分けのない陣取りゲームです。指南役と対局しながら、勝ち方と、このゲームの裏にある歴史と数学をたどります。</p>
+    <p><span class="k s">墨</span>のあなたは左右の辺を、<span class="k a">藍</span>の相手は上下の辺をつなぎます。<span class="hand">朱書き</span>は指南役のメモです。</p>
+  </header>
+  <nav class="toc" aria-label="目次">
+    <a href="#play">対局</a>
+    <a href="#win"><span class="n">一</span>勝ち方</a>
+    <a href="#history"><span class="n">二</span>歴史</a>
+    <a href="#math"><span class="n">三</span>数学</a>
+    <a href="#electric"><span class="n">四</span>電気</a>
+    <a href="#ai"><span class="n">五</span>AI</a>
+    <a href="#sources">出典</a>
+  </nav>
+
+  <section class="play" id="play" aria-label="対局">
+    <div class="board-col">
+      <div class="board-card">
+        <svg id="board" role="group" aria-label="ヘックスの盤面"></svg>
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="actions">
+          <button class="btn shu" id="bHint" type="button">ヒント</button>
+          <button class="btn" id="bUndo" type="button">待った</button>
+          <button class="btn tg" id="bLinks" type="button" aria-pressed="true">つながり表示</button>
+          <button class="btn tg" id="bCoach" type="button" aria-pressed="true">指南</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="note" id="note" aria-live="polite"></div>
+      <div class="settings">
+        <div class="row"><span class="lbl">先手</span><div class="seg" id="segFirst" role="group" aria-label="先手"></div></div>
+        <div class="row"><span class="lbl">強さ</span><div class="seg" id="segLevel" role="group" aria-label="相手の強さ"></div></div>
+        <div class="row"><span class="lbl">盤</span><div class="seg" id="segSize" role="group" aria-label="盤の大きさ"></div></div>
+        <p class="small" id="setInfo"></p>
+        <div><button class="btn primary" id="bNew" type="button">新しい対局</button></div>
+      </div>
+      <div class="record">
+        <h3>見込みの推移と棋譜</h3>
+        <svg class="chart" id="chart" role="img" aria-label="あなたの見込みの推移"></svg>
+        <div class="kifu" id="kifu"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 一 勝ち方 ============ -->
+  <section class="chap" id="win" aria-labelledby="h-win">
+    <header>
+      <span class="kick">一　指南書</span>
+      <h2 id="h-win">勝ち方</h2>
+      <p>本文は確かめられている知識で、出典を各項の末尾に付けています。朱の点線で囲んだところは私の見立てです。図の向きは対局と同じです（墨は左右、藍は上下）。</p>
+    </header>
+
+    <article class="lesson" id="win-open">
+      <h3><span class="n">1</span>先手が勝つゲーム。7×7は初手の勝ち負けまで分かっている</h3>
+      <p>ヘックスに引き分けはありません（理由は「数学」の章で扱います）。そのうえで、先手に必勝法があることが分かっています。後手に必勝法があると仮定すると、先手は最初の1手をどこかへ打ってから、後手の必勝法をまねできます。余分な石は邪魔にならないので先手が勝ってしまい、矛盾します。この「戦略泥棒」の論法は1940年代にナッシュが考えたものですが、本人は論文にしていません。また、この証明は必勝法の中身を教えてくれません。</p>
+      <p>7×7については、2003年にアルバータ大学のグループが、初手49通りすべての勝ち負けを計算で確かめました。先手が勝てる初手は27通り、負ける初手は22通りで、中央の d4 は勝てる初手です。初手の有利が大きいので、対局では後手が先手の初手を引き取れる「スワップ」という決まりがよく使われます。このページでは使っていません。</p>
+      <div class="figs">
+        <figure>
+          <svg class="mini" id="figOpen" role="img" aria-label="あなたが先手のときの、初手ごとの勝ち負けの図"></svg>
+          <figcaption><span class="legend"><span><i style="background:#9ea4ad"></i>勝てる初手（27）</span><span><i style="background:#fbfbf9"></i>負ける初手（22）</span></span><br>あなた（左右）が先手のときの初手の勝ち負け。解析表は上下側が先手の場合なので、盤を斜めに折り返して当てはめました。表のセル名の読み方は表に書かれておらず、表の対称性とこのページのAIの評価から判断しています。</figcaption>
+        </figure>
+      </div>
+      <p class="src">出典：Hayward ほか（2003）の序論と、同グループの7×7初手一覧表。戦略泥棒の論法は Enderton の Hex FAQ、ナッシュが発表しなかった点は Wikipedia「Strategy-stealing argument」。</p>
+      <div class="mine"><span class="tag">私見</span>迷ったら d4 から。中央の石は左右どちらの辺にも伸ばせます。相手が先手のときは理屈の上では負けですが、このページのAIは読む回数で強さを絞っているので、間違いを待てます。</div>
+    </article>
+
+    <article class="lesson">
+      <h3><span class="n">2</span>ブリッジ。一つ飛ばしで置けば、もうつながっている</h3>
+      <p>斜めに一つ飛ばした2つの石のあいだには、空き升が2つあります。相手が片方に打ったら、もう片方に打てばつながります。だからこの形は、まだ隣り合っていなくても「つながっている」とみなせます。この形をブリッジと呼びます。</p>
+      <div class="figs">
+        <figure>
+          <svg class="mini" id="figBridge" role="img" aria-label="b2 と c3 のブリッジ。間の c2 と b3 が空いている"></svg>
+          <figcaption>b2 と c3 はブリッジ。間の c2・b3 のどちらか一つが残れば、つながります。</figcaption>
+        </figure>
+        <figure>
+          <svg class="mini" id="figBridge2" role="img" aria-label="相手が c2 に割り込んだら b3 に打つ"></svg>
+          <figcaption>相手が c2 に割り込んだら、b3 に打てばつながったまま。対局では、割り込まれたブリッジを朱の輪で示します。</figcaption>
+        </figure>
+      </div>
+      <p>強いヘックスのプログラム MoHex も、盤を最後まで適当に埋めて勝ち負けを数える試行の中で使う知識は、「割り込まれたブリッジは直す」の一つだけです。このページのAIにも同じ規則を入れています。</p>
+      <p class="src">出典：アルバータ大学 Hex 研究グループのページ（MoHex の説明）、Arneson・Hayward・Henderson（2010）。</p>
+      <div class="mine"><span class="tag">私見</span>隣に一つずつ置くより、ブリッジで二歩ずつ伸びるほうが速く、しかも切られません。割り込まれたら、ほとんどの場合すぐ直すのが正解です。</div>
+    </article>
+
+    <article class="lesson">
+      <h3><span class="n">3</span>辺まで並べなくていい。2段目と3段目で届いている</h3>
+      <p>辺から2段目の石は、辺に接する2升のどちらかに打てば辺に届きます。ブリッジと同じ理屈で、すでに辺とつながっています。Seymour の手引きは、辺のすぐ隣に置くより一段離して置くほうがほぼ常に良い、と書いています。3段目の石も、辺の側の決まった8升が空いていればつながっています。この形はジッグラトと呼ばれます。辺までの道が2本あり、2本は升を共有しないので、相手は1手で両方を塞げません。</p>
+      <div class="figs">
+        <figure>
+          <svg class="mini" id="figEdge2" role="img" aria-label="2段目の b3 は a3 か a4 で左の辺に届く"></svg>
+          <figcaption>2段目の b3 は、a3・a4 のどちらかで左の辺に届きます。</figcaption>
+        </figure>
+        <figure>
+          <svg class="mini" id="figZig" role="img" aria-label="3段目の c3 は、薄く塗った8升が空いていれば左の辺に届く"></svg>
+          <figcaption>3段目の c3 も、薄く塗った8升が空いていれば届きます。道は b3 を通る道と、b5 へのブリッジを通る道の2本です。</figcaption>
+        </figure>
+      </div>
+      <p class="src">出典：Seymour『Hex: A Strategy Guide』5章、HexWiki「Ziggurat」。8升の形は、2本の道が升を共有しないことを自分で確かめて描きました。</p>
+      <div class="mine"><span class="tag">私見</span>辺に向かって3段目まで来たら、その方向はもう十分です。残りの手は、反対側の辺へ伸ばすか、相手を受けるのに使えます。</div>
+    </article>
+
+    <article class="lesson">
+      <h3><span class="n">4</span>受けは一歩引いて。隣で塞ぐと回り込まれる</h3>
+      <p>相手の石の前（相手の辺の方向）には、空き升が2つあります。そのすぐ隣に1つ置いて塞いでも、相手はもう1つの升から抜けていきます。Seymour は、隣で塞ぐのは無駄で、一段引いて受けるのが基本だと説明しています。また、引き分けがないので、相手を完全に塞げばその時点で自分はつながっています。受けることと攻めることは同じです。</p>
+      <div class="figs">
+        <figure>
+          <svg class="mini" id="figBlock" role="img" aria-label="藍の c2 を c3 で塞いでも b3 から抜けられる"></svg>
+          <figcaption>藍の c2 の前には b3・c3 の2升があります。墨が c3 で塞いでも、藍は b3 から下へ抜けられます。</figcaption>
+        </figure>
+      </div>
+      <p>辺の近くで押し合いになると、両者が辺に沿って隣り合う手を交互に打ち続ける形になることがあります。これを「はしご（ラダー）」と呼びます。片方はすぐにはつながれないものの、相手に辺沿いの受けを延々と強いることができます。</p>
+      <p class="src">出典：Seymour『Hex: A Strategy Guide』1章、Silverman と Seymour の初心者向け解説（はしごの定義）。</p>
+      <div class="mine"><span class="tag">私見</span>自分がつながる手を探すより、相手の進路を一歩先で断つ手を探すほうが見つけやすいと思います。ヒントの説明にある「相手がつなぐのに要る石が増える」は、その目安です。</div>
+    </article>
+
+    <article class="lesson">
+      <h3><span class="n">5</span>ヒントの手が意外に見えるわけ</h3>
+      <div class="mine"><span class="tag">私見</span>ヒントの手は、人が思いつく形からよく外れます。理由はおそらく三つです。一つ目は、ブリッジや辺への形のように、離れた石どうしがすでに「つながっている」前提で打つので、飛び飛びに見えること。二つ目は、相手が1手で両方を塞げないよう、道を2本残す手を好むので、どちらへ向かう手かが見えにくいこと。三つ目は、引き分けがないので塞ぐ手とつながる手が同じになり、攻めの目で見ると狙いが読めないこと。「つながり表示」をオンにしてヒントの①を打ち、点線がどう伸びたかを見ると、意図がつかみやすくなります。</div>
+    </article>
+  </section>
+
+  <!-- ============ 二 歴史 ============ -->
+  <section class="chap" id="history" aria-labelledby="h-history">
+    <header>
+      <span class="kick">二　歴史</span>
+      <h2 id="h-history">二度発明され、数学者と計算機に育てられたゲーム</h2>
+      <p>朱の丸はヘックスそのものの出来事、灰の丸はまわりの出来事です。各項の末尾に出典を付けています。</p>
+    </header>
+    <div class="body">
+      <ol class="tl">
+        <li><span class="y">1913</span><span class="t">ツェルメロがチェスを題材に、交互に打つ完全情報ゲームについての定理を発表します。ゲーム理論で最初の形式的な定理とされます。<span class="s">Schwalbe・Walker「Zermelo and the Early History of Game Theory」</span></span></li>
+        <li class="hx"><span class="y">1942</span><span class="t">デンマークのピート・ハインが、新聞 Politiken で <b>Polygon</b> として紹介します（12月26日の記事）。盤は11×11で、いまも標準の大きさです。<span class="s">Henderson ほか（2009）の文献表、Hayward・Weninger（2017）</span></span></li>
+        <li class="hx"><span class="y">1948–49</span><span class="t">プリンストン大学の大学院生だったナッシュが、独自に同じゲームを考えます。仲間はこれを「Nash」や「John」と呼びました。先手必勝の「戦略泥棒」の論法もナッシュによるものですが、論文にはしていません。<span class="s">Wikipedia「Hex」「Strategy-stealing argument」（検索結果の抜粋）。Hayward の講演スライドには、ナッシュがゲームをゲールに見せ、ゲールが盤を作ったという趣旨の箇条書きがあります（スライドの断片からの読み取り）。</span></span></li>
+        <li class="hx"><span class="y">1950頃</span><span class="t">シャノンとムーアが、抵抗の網と電球でできたアナログの対局機械を作ります。盤を電位の場に置き換え、決まった鞍点を次の手にしました。そこそこ強かったと伝えられます。<span class="s">Wikipedia「Hex」（検索結果の抜粋）。Hayward のスライドでは1952年。</span></span></li>
+        <li class="hx"><span class="y">1952</span><span class="t">パーカー・ブラザーズが <b>Hex</b> の名で売り出し、いまの名前が定着します。同じ年、ナッシュは RAND 社の社内文書で、先手に必勝法があるのに必勝法の中身が分かっていないゲームと、それを打つ電気式の機械を書きました。<span class="s">MathWorld「Game of Hex」、RAND D-1164 の要旨</span></span></li>
+        <li class="hx"><span class="y">1953</span><span class="t">シャノンが論文「Computers and Automata」でこの機械を紹介し、本来デジタルな問題をアナログの機械で解いた、と振り返ります。<span class="s">Shannon（1953）の引用（二次資料経由）</span></span></li>
+        <li class="hx"><span class="y">1957</span><span class="t">マーティン・ガードナーが Scientific American の「数学ゲーム」欄（7月号）で紹介し、広く知られるようになります。<span class="s">Wikipedia「Hex」（検索結果の抜粋）、cut-the-knot</span></span></li>
+        <li class="hx"><span class="y">1964</span><span class="t">レーマンが、ヘックスは二元マトロイドとして表せないことを示します。似たゲーム（シャノンのスイッチングゲーム）にあるような決まった必勝法は、この方向からは得られません。<span class="s">Wikipedia「Hex」（検索結果の抜粋）</span></span></li>
+        <li class="hx"><span class="y">1979</span><span class="t">ゲールが、ヘックスに引き分けがないことからブラウワーの不動点定理がすぐに出ることを示します（American Mathematical Monthly 86巻）。<span class="s">MAA の紹介ページ</span></span></li>
+        <li class="hx"><span class="y">1981</span><span class="t">ライシュが、任意の局面の勝敗判定は PSPACE完全であることを示します。計算量の上で、とても難しい問題の仲間です。<span class="s">Henderson ほか（2009）</span></span></li>
+        <li class="hx"><span class="y">2000</span><span class="t">アンシェレヴィッチのプログラム Hexy が、ロンドンのコンピュータ・オリンピアードで優勝します。<span class="s">arXiv:2008.06359（二次資料）</span></span></li>
+        <li class="hx"><span class="y">2001–06</span><span class="t">人の手でも解析が進みます。Yang が7×7の初手49通りのうち17通りと、8×8・9×9でも初手の一部について必勝法を書き、Noshita・Mishima らが7×7と8×8で続きました。<span class="s">Pawlewicz・Hayward の講演スライド（2013）</span></span></li>
+        <li class="hx"><span class="y">2003</span><span class="t">アルバータ大学のグループが、7×7の初手49通りすべての勝ち負けを計算で確かめます。<span class="s">Hayward ほか（2003）</span></span></li>
+        <li class="hx"><span class="y">2009</span><span class="t">モンテカルロ木探索のプログラム MoHex がオリンピアードで金メダル。同じ年、8×8の全初手が解析されます。<span class="s">Arneson・Hayward・Henderson（2010）、アルバータ大学グループのページ</span></span></li>
+        <li class="hx"><span class="y">2012</span><span class="t">9×9の全初手の解析が終わります。いちばん難しい初手には111日かかりました。<span class="s">Pawlewicz・Hayward（2013）、アルバータ大学グループのページ</span></span></li>
+        <li class="hx"><span class="y">2013</span><span class="t">10×10の中央の初手が先手の勝ちと分かります（計算に63日）。10×10の初手が解かれたのは初めてです。<span class="s">同上</span></span></li>
+        <li class="hx"><span class="y">2019</span><span class="t">プログラム Mootwo が、オンライン対局場 LittleGolem でレーティング最上位の人間に勝ちます。それまで19×19のような大きな盤では、人のほうが強いとされていました。<span class="s">Wikipedia「Hex」（転載ページの抜粋）</span></span></li>
+      </ol>
+      <div class="mine"><span class="tag">私見</span>このゲームが数学者に好まれ続けた理由は、ルールは3行で済むのに、「引き分けがない」ことの証明が位相幾何の大定理と同じ重さを持つ、という落差にあると思います。計算機の側から見ると、盤の大きさを1つ上げるたびに解析の手間が桁で増えるので、どこまで解けたかが計算技術の進み具合の目盛りになってきました。</div>
+    </div>
+  </section>
+
+  <!-- ============ 三 数学 ============ -->
+  <section class="chap" id="math" aria-labelledby="h-math">
+    <header>
+      <span class="kick">三　数学</span>
+      <h2 id="h-math">引き分けがないこと、先手が勝つこと、それでも勝ち方が分からないこと</h2>
+    </header>
+    <div class="body">
+      <h3>引き分けがない</h3>
+      <p>盤をすべて埋めると、必ずどちらか片方だけがつながっています。墨が左右をつないでいなければ、墨の石のあいだを縫って、藍の道が上から下まで通っています。六角形の盤では1つの頂点に3つの升しか集まらないので、四角い盤のように斜めにすり抜けたり、両方が同時に通ったりすることがありません。下の盤は、毎回でたらめに塗り分けています。何度塗り直しても、つながるのはちょうど片方です。</p>
+      <figure>
+        <svg class="board-fig" id="figFill" role="img" aria-label="でたらめに塗り分けた盤と、つながった側の道"></svg>
+        <figcaption class="readout" id="fillInfo"></figcaption>
+      </figure>
+      <div class="ctrl"><button class="btn small" id="bFill" type="button">塗り直す</button></div>
+      <p>ゲールは1979年に、この「引き分けがない」という事実から、ブラウワーの不動点定理が簡単に導けることを示しました。不動点定理は、円板（や正方形）からそれ自身への連続な写像には必ず動かない点がある、という位相幾何の定理です。逆向きの導き方もあるので、二つは同じ重さの定理だといえます。</p>
+      <p class="src">出典：Gale（1979）の MAA による紹介、arXiv:1409.7890（両方向の証明）。</p>
+
+      <h3>先手が勝つ。でも勝ち方は分からない</h3>
+      <p>引き分けがなく、手数も有限なので、ツェルメロ型の議論から、どちらか一方に必勝法があります。そこに戦略泥棒の論法を重ねると、それは先手の側だと分かります。ナッシュはこの論法を1940年代に考えましたが、論文にはしていません。本人が書いたものとして残っているのは、1952年の RAND 社の社内文書です。証明は「必勝法がある」とだけ言い、どの手がそうなのかは何も言いません。</p>
+      <p class="src">出典：Enderton の Hex FAQ、Wikipedia「Strategy-stealing argument」（検索結果の抜粋）、RAND D-1164 の要旨。</p>
+
+      <h3>どれほど難しいか</h3>
+      <p>1981年、ライシュは任意の局面の勝敗判定が PSPACE完全であることを示しました。盤が大きくなると、計算の手間は手のつけられない速さで増えると考えられています。そのため計算機による解析は、少しずつ盤を大きくしてきました。</p>
+      <table class="res">
+        <thead><tr><th>盤</th><th>全初手の勝ち負けが分かった年</th></tr></thead>
+        <tbody>
+          <tr><td>6×6</td><td>1995（Enderton）、2000（van Rijswijck）</td></tr>
+          <tr><td>7×7</td><td>2003（Hayward ほか）</td></tr>
+          <tr><td>8×8</td><td>2009（Arneson・Hayward・Henderson）</td></tr>
+          <tr><td>9×9</td><td>2012（Pawlewicz・Hayward）</td></tr>
+          <tr><td>10×10</td><td>2013 に中央の初手（初手の一部のみ）</td></tr>
+          <tr><td>11×11（標準）</td><td>私の調べた範囲では未解決</td></tr>
+        </tbody>
+      </table>
+      <p class="src">出典：Pawlewicz・Hayward の講演スライド（2013）、Hayward・Weninger（2017）、Henderson ほか（2009）。11×11の行だけは私の調べた範囲での判断です。</p>
+
+      <h3>ゲーム理論の二つの流れと、ヘックスの位置</h3>
+      <p>ゲーム理論の出発点は、実は盤上ゲームでした。1913年のツェルメロのチェスの定理が、最初の形式的な定理とされています。一方で、1928年のフォン・ノイマンのミニマックス定理、1944年のフォン・ノイマンとモルゲンシュテルンの本、1950年のナッシュ均衡と続く流れは、経済の読み合いを扱い、盤上ゲームとは別に育ちました。進化ゲームや適応動態はこちらの流れの子孫です。</p>
+      <figure class="fig-wide">
+        <svg class="stream" viewBox="0 0 340 600" role="img" aria-label="ゲーム理論の二つの流れ。左は盤上ゲームの流れ、右は読み合いの流れ。中央の不動点定理が、ナッシュ均衡の証明とゲールのヘックスの定理を結んでいる。">
+          <defs>
+            <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+          <text class="hd" x="85" y="22" text-anchor="middle">盤上ゲームの流れ</text>
+          <text class="hd" x="255" y="22" text-anchor="middle">読み合いの流れ</text>
+          <!-- left column -->
+          <g>
+            <rect class="bx" x="10" y="36" width="150" height="46" rx="6"/><text class="yr" x="20" y="54">1913 ツェルメロ</text><text class="lb" x="20" y="73">チェスの定理</text>
+            <rect class="bx hx" x="10" y="106" width="150" height="46" rx="6"/><text class="yr" x="20" y="124">1942 ハイン</text><text class="lb" x="20" y="143">ヘックスを発表</text>
+            <rect class="bx hx" x="10" y="176" width="150" height="46" rx="6"/><text class="yr" x="20" y="194">1948–49 ナッシュ</text><text class="lb" x="20" y="213">戦略泥棒の論法</text>
+            <rect class="bx hx" x="10" y="322" width="150" height="46" rx="6"/><text class="yr" x="20" y="340">1979 ゲール</text><text class="lb" x="20" y="359">引き分けなし⇔不動点</text>
+            <rect class="bx hx" x="10" y="392" width="150" height="46" rx="6"/><text class="yr" x="20" y="410">1981 ライシュ</text><text class="lb" x="20" y="429">判定は PSPACE完全</text>
+            <rect class="bx hx" x="10" y="462" width="150" height="46" rx="6"/><text class="yr" x="20" y="480">2003–13</text><text class="lb" x="20" y="499">7×7〜10×10を解析</text>
+            <rect class="bx hx" x="10" y="532" width="150" height="46" rx="6"/><text class="yr" x="20" y="550">2009〜 MoHex</text><text class="lb" x="20" y="569">木探索と試行で打つ</text>
+            <g style="color: var(--muted)">
+              <line class="ar" x1="85" y1="82" x2="85" y2="104" marker-end="url(#arw)"/>
+              <line class="ar" x1="85" y1="152" x2="85" y2="174" marker-end="url(#arw)"/>
+              <line class="ar" x1="85" y1="222" x2="85" y2="320" marker-end="url(#arw)"/>
+              <line class="ar" x1="85" y1="368" x2="85" y2="390" marker-end="url(#arw)"/>
+              <line class="ar" x1="85" y1="438" x2="85" y2="460" marker-end="url(#arw)"/>
+              <line class="ar" x1="85" y1="508" x2="85" y2="530" marker-end="url(#arw)"/>
+            </g>
+          </g>
+          <!-- right column -->
+          <g>
+            <rect class="bx" x="180" y="36" width="150" height="46" rx="6"/><text class="yr" x="190" y="54">1928 ノイマン</text><text class="lb" x="190" y="73">ミニマックス定理</text>
+            <rect class="bx" x="180" y="106" width="150" height="46" rx="6"/><text class="yr" x="190" y="124">1944</text><text class="lb" x="190" y="143">ゲーム理論の本</text>
+            <rect class="bx" x="180" y="176" width="150" height="46" rx="6"/><text class="yr" x="190" y="194">1950 ナッシュ均衡</text><text class="lb" x="190" y="213">存在を不動点で証明</text>
+            <rect class="bx" x="180" y="392" width="150" height="46" rx="6"/><text class="yr" x="190" y="410">1973 ESS</text><text class="lb" x="190" y="429">メイナード＝スミスら</text>
+            <rect class="bx" x="180" y="462" width="150" height="46" rx="6"/><text class="yr" x="190" y="480">1990年代〜</text><text class="lb" x="190" y="499">適応動態</text>
+            <g style="color: var(--muted)">
+              <line class="ar" x1="255" y1="82" x2="255" y2="104" marker-end="url(#arw)"/>
+              <line class="ar" x1="255" y1="152" x2="255" y2="174" marker-end="url(#arw)"/>
+              <line class="ar" x1="255" y1="222" x2="255" y2="390" marker-end="url(#arw)"/>
+              <line class="ar" x1="255" y1="438" x2="255" y2="460" marker-end="url(#arw)"/>
+            </g>
+          </g>
+          <!-- the same person -->
+          <line class="same" x1="160" y1="199" x2="180" y2="199"/>
+          <text class="note" x="205" y="244" text-anchor="end">どちらもナッシュ</text>
+          <!-- fixed point bridge -->
+          <rect class="bx fp" x="95" y="256" width="150" height="46" rx="6"/>
+          <text class="yr" x="170" y="274" text-anchor="middle">不動点定理</text>
+          <text class="lb" x="170" y="293" text-anchor="middle">ブラウワー・角谷</text>
+          <g style="color: var(--shu)">
+            <line class="ar2" x1="215" y1="256" x2="215" y2="225" marker-end="url(#arw)"/>
+            <line class="ar2" x1="125" y1="302" x2="125" y2="319" marker-start="url(#arw)" marker-end="url(#arw)"/>
+          </g>
+          <text class="note" x="222" y="246">証明に使う</text>
+          <text class="note" x="132" y="315">同値</text>
+        </svg>
+        <figcaption>年と出来事は事実です（1928・1944・1950・1973 は一般的な知識で、今回は原典を確かめていません）。二つの流れに分ける整理と、不動点定理を二つの流れの橋とみる見方は私見です。</figcaption>
+      </figure>
+      <div class="mine"><span class="tag">私見</span>ナッシュは両方の流れにいました。1940年代末にヘックスと戦略泥棒を考え、1950年には不動点定理を使ってナッシュ均衡の存在を示しています。のちにゲールは、ヘックスに引き分けがないことと不動点定理が同じ重さだと示しました。同じ人が同じ頃に、同じ道具のすぐそばで二つの仕事をしていたのは偶然には見えません。ただ、ナッシュ本人が二つを結びつけて考えていたかどうかは確かめられていません。</div>
+      <p class="src">出典：Schwalbe・Walker（2001）、MacQuarrie「Mathematics and Chess」（フォン・ノイマン1928年）、Gale（1979）。</p>
+    </div>
+  </section>
+
+  <!-- ============ 四 電気 ============ -->
+  <section class="chap" id="electric" aria-labelledby="h-electric">
+    <header>
+      <span class="kick">四　電気</span>
+      <h2 id="h-electric">盤を電気回路として読む</h2>
+    </header>
+    <div class="body">
+      <h3>シャノンとムーアの機械</h3>
+      <p>1950年ごろ、シャノンとムーアは、抵抗の網と電球でできたヘックスの対局機械を作りました。盤を2次元の電位の場に置き換え、場の決まった鞍点を次の手として選びます。この機械はそこそこ強かったと伝えられています。シャノンは同じころ、別の接続ゲーム（バードケージ）用にも回路の機械を作っていて、そちらは電流がいちばん多く流れる抵抗を選ぶ仕組みでした。シャノンは後に、本来デジタルな問題をアナログの機械で解いた、と振り返っています。</p>
+      <p>この考え方は、のちの計算機プログラムにも受け継がれました。たとえばアルバータ大学の Wolve は、高度に調整した「抵抗評価」を使っていました。</p>
+      <p class="src">出典：Wikipedia「Hex」（検索結果の抜粋）、Hayward の講演スライド「twist and turn: the story of Hex」（断片）、Shannon（1953）の引用（二次資料経由）、アルバータ大学の Hex の手の予測についての論文（Wolve の抵抗評価。著者名は未確認）。</p>
+
+      <h3>いまの局面の電位図</h3>
+      <p>あなたの石を電線（抵抗ほぼ0）、空き升を1の抵抗、相手の石を断線として、左の辺に1ボルト、右の辺に0ボルトをかけます。相手の回路は、上の辺から下の辺へ同じように作ります。下の図は、対局中の盤面から計算しています（2手目までは例の局面です）。</p>
+      <div class="ctrl"><div class="seg" id="segPot" role="group" aria-label="表示する回路"></div></div>
+      <figure>
+        <svg class="board-fig" id="figPot" role="img" aria-label="いまの局面で、電流が集まる升を濃く塗った盤"></svg>
+        <figcaption class="readout" id="potInfo"></figcaption>
+      </figure>
+      <div class="mine"><span class="tag">私見</span>電流が集まる升は、その回路の道がそこに頼っている升、つまり塞がれると困る升です。自分の回路で濃い升は守りどころ、相手の回路で濃い升は受けどころの候補になります。ただし、この見方は相手が狙って塞いでくることを考えていません。ヒントの読みと食い違ったら、ヒントのほうを信じてください。</div>
+
+      <h3>電気回路とランダムウォーク</h3>
+      <p>回路の電圧は、ランダムウォークの確率と同じものです。電線の通しやすさ（コンダクタンス、抵抗の逆数）に比例した確率で隣へ移る歩き方を考えると、「点 x から歩き出して、B より先に A に着く確率」は、「A を1ボルト、B を0ボルトにしたときの点 x の電圧」と一致します。</p>
+      <ul>
+        <li>確率の側：最初の1歩で場合分けすると、点 x での確率は、行き先の点での確率の重み付き平均になります。</li>
+        <li>電気の側：キルヒホッフの法則（点に入る電流の合計は0）とオームの法則を合わせると、点 x の電圧も、隣の点の電圧の同じ重み付き平均になります。</li>
+        <li>平均になる性質を持つ関数は最大値と最小値を境界でとるので、境界の値（A で1、B で0）が同じなら解は一つしかありません。だから二つは一致します。</li>
+      </ul>
+      <p>上の電位図でいえば、ある升の電圧は「その升から歩き出したとき、左の辺に先に着く確率」です。ほかにも、電流は「線を通る正味の回数の期待値」、合成抵抗は「出発点に戻る前に向こう側に着く確率」と対応します。この対応を使うと、2次元の格子のランダムウォークは必ず出発点に戻り、3次元では戻らないことがある（ポーヤの定理）も見通しよく示せます。</p>
+      <p class="src">出典：Doyle・Snell『Random Walks and Electric Networks』（1984、MAA。arXiv で無料公開）の紹介と要旨、Cornell 大学の講義ノート（電圧＝先に着く確率）。本文は未読です。</p>
+
+      <h3>固定確率も回路で解ける</h3>
+      <p>モラン過程で、突然変異体の数を 0 から N までの一直線を歩くランダムウォークとみます。数が1増える確率と1減る確率の比は、相対適応度 <span class="math">r</span> です。そこで、<span class="math">i</span> と <span class="math">i</span>+1 のあいだのコンダクタンスを <span class="math">r<sup>i</sup></span>（抵抗 <span class="math">r<sup>−i</sup></span>）とおくと、同じ歩き方の回路ができます。N に1ボルト、0 に0ボルトをかけたときの点 <span class="math">i</span> の電圧が、<span class="math">i</span> 個体から固定する確率です。抵抗が直列に並ぶだけなので、分圧の計算で解けます。</p>
+      <div class="eq"><i>v</i>(<i>i</i>) ＝ Σ<sub><i>k</i>&lt;<i>i</i></sub> <i>r</i><sup>−<i>k</i></sup> ／ Σ<sub><i>k</i>&lt;<i>N</i></sub> <i>r</i><sup>−<i>k</i></sup>　　<i>v</i>(1) ＝ (1 − 1/<i>r</i>) ／ (1 − <i>r</i><sup>−<i>N</i></sup>)</div>
+      <div class="ctrl">
+        <label for="rngR"><span class="math">r</span><input type="range" id="rngR" min="0.6" max="2" step="0.02" value="1.1"><output id="outR" for="rngR">1.10</output></label>
+        <label for="rngN"><span class="math">N</span><input type="range" id="rngN" min="3" max="40" step="1" value="20"><output id="outN" for="rngN">20</output></label>
+      </div>
+      <figure>
+        <svg class="moran" id="figMoran" viewBox="0 0 340 200" role="img" aria-label="直列の抵抗と、各点の電圧（固定確率）の棒グラフ" style="display:block;width:100%;max-width:560px;height:auto"></svg>
+        <figcaption class="readout" id="moranInfo"></figcaption>
+      </figure>
+      <p class="src">出典：分圧の式は上の対応から導いた計算です。モラン過程の固定確率の式は集団遺伝学の標準的な結果です。</p>
+      <div class="mine"><span class="tag">私見</span>電位で盤を読むやり方は、統計物理の平均場近似とは数学の中身が違います。電位は線形の式（離散ラプラス方程式）を一度解くだけで決まり、自己無撞着に解き直す手続きはありません。ただ、相手が狙って塞ぐことを無視し、平均的な通りやすさだけで形勢を測る割り切りは、平均場近似が個々の相関を捨てるのとよく似ています。</div>
+    </div>
+  </section>
+
+  <!-- ============ 五 AI ============ -->
+  <section class="chap" id="ai" aria-labelledby="h-ai">
+    <header>
+      <span class="kick">五　AI</span>
+      <h2 id="h-ai">このページの相手のしくみと強さ</h2>
+    </header>
+    <div class="body">
+      <p>相手は、いまの局面から盤を最後まで適当に埋める試行を何百回から何万回も行い、勝った割合が高くなる手を選びます（モンテカルロ木探索）。試行の中で出てきた手の勝ち負けを、打った順番を問わずに共有する RAVE という工夫と、割り込まれたブリッジを直す規則を入れています。強さは、1手に使う試行の回数で変えています。「見込み」は、その局面から試行したときに勝った割合です。本当の勝率ではなく、読みの目安です。</p>
+      <p>MoHex の初期版も、木探索と RAVE を使っていました。MoHex はそれに加えて、仮想的な接続や、打っても意味のない升の分析で候補手を刈り込み、勝ち負けが確定した局面も扱います。このページのAIには、その刈り込みは入っていません。</p>
+      <p>このページのAIどうしを、先手と後手を入れ替えながら7×7で20局ずつ対戦させた結果です。</p>
+      <table class="res">
+        <thead><tr><th>対戦</th><th>強いほうの勝ち</th><th>先手の勝ち</th></tr></thead>
+        <tbody>
+          <tr><td>初級（800回）対 入門（150回）</td><td class="n">15 / 20</td><td class="n">13 / 20</td></tr>
+          <tr><td>中級（4,000回）対 初級</td><td class="n">14 / 20</td><td class="n">16 / 20</td></tr>
+          <tr><td>上級（20,000回）対 中級</td><td class="n">14 / 20</td><td class="n">12 / 20</td></tr>
+        </tbody>
+      </table>
+      <p class="src">出典：アルバータ大学 Hex 研究グループのページ（MoHex の説明）、Arneson・Hayward・Henderson（2010）。対戦結果は、このページのエンジンで計測しました（20局ずつなので誤差は大きめです）。</p>
+      <div class="mine"><span class="tag">私見</span>入門・初級なら、先手 d4 からブリッジで左右へ伸ばし、割り込みを直すだけで勝てることが多いはずです。中級より上では、相手のブリッジの先を一歩引いて断つ受けが要ります。本気（1手約2.5秒）に勝つには、先手でもほとんど間違えられません。</div>
+    </div>
+  </section>
+
+  <footer class="sources" id="sources">
+    <h2>出典と、どこまで確かめたか</h2>
+    <ol>
+      <li>Hayward, R. ほか (2003) <a href="https://staff.ru.is/yngvi/pdf/HaywardBJKPR03.pdf">Solving 7×7 Hex: Virtual Connections and Game-State Reduction</a>. Advances in Computer Games 10. <span class="depth">序論（先手必勝、スワップ）を確認。</span></li>
+      <li>同グループ <a href="https://webdocs.cs.ualberta.ca/~hayward/hex7trees">7×7 Hex の初手ごとの証明木の一覧</a>。<span class="depth">49行の表（初手と応手）を確認。上下側が先手という前提はページの説明から。</span></li>
+      <li>Henderson, P., Arneson, B., Hayward, R. B. (2009) <a href="https://ijcai.org/proceedings/2009/91">Solving 8x8 Hex</a>. IJCAI. <span class="depth">要旨と文献表（ハイン1942年の Politiken の記事、ナッシュ1952、ライシュ1981）を確認。</span></li>
+      <li>Pawlewicz, J., Hayward, R. B. (2013) <a href="https://link.springer.com/doi/10.1007/978-3-319-09165-5_12">Scalable Parallel DFPN Search</a>. Computers and Games. <span class="depth">要旨（9×9の全初手、最難111日、10×10の初手を63日）を確認。</span></li>
+      <li>アルバータ大学 <a href="https://webdocs.cs.ualberta.ca/~hayward/hex">computer Hex research group</a>。<span class="depth">年表（2009年の8×8、2012年の9×9、2013年の10×10の中央）と MoHex の説明を確認。</span></li>
+      <li>Pawlewicz・Hayward <a href="https://cs.ualberta.ca/~hayward/talks/hex.sol10.pdf">solving 10x10 hex（講演スライド、2013）</a>、Hayward <a href="https://cs.ualberta.ca/~hayward/talks/hex.story.pdf">twist and turn: the story of Hex（講演スライド）</a>。<span class="depth">解析の年表と、シャノンの機械・ゲールの盤についての箇条書きを、スライドの断片で確認。</span></li>
+      <li>Hayward, R., Weninger, N. (2017) <a href="https://webdocs.cs.ualberta.ca/~hayward/papers/leiden17.pdf">Hex 2017: MoHex wins the 11x11 and 13x13 tournaments</a>. ICGA Journal. <span class="depth">11×11がハインの元の大きさであること、10×10の初手2つの解析を確認。</span></li>
+      <li>Enderton, B. <a href="https://www.cs.cmu.edu/~hde/hex/hexfaq">Answers to infrequently asked questions about the game of Hex</a>. <span class="depth">戦略泥棒の論法の説明を確認。</span></li>
+      <li>Wikipedia <a href="https://en.wikipedia.org/wiki/Hex_(board_game)">Hex (board game)</a>、<a href="https://en.wikipedia.org/wiki/Strategy-stealing_argument">Strategy-stealing argument</a>。<span class="depth">検索結果に出た抜粋のみ確認（ナッシュの再発見、ガードナーの紹介、シャノンとムーアの機械、レーマン1964、2019年の Mootwo、ナッシュが論法を発表しなかったこと）。ページ全文は開いていない。</span></li>
+      <li>Nash, J. F. (1952) <a href="https://www.rand.org/pubs/documents/D1164.html">Some Games and Machines for Playing Them</a>. RAND D-1164. <span class="depth">要旨を確認。本文は未読。</span></li>
+      <li>MathWorld <a href="https://mathworld.wolfram.com/GameofHex.html">Game of Hex</a>、cut-the-knot <a href="https://www.cut-the-knot.org/Curriculum/Games/HexTheory.shtml">Hex Can't End in a Draw</a>。<span class="depth">パーカー・ブラザーズ1952年、ガードナー1957年、ムーアの機械についての記述を確認。</span></li>
+      <li>Shannon, C. E. (1953) Computers and Automata. <span class="depth">シャノンの機械についての一文を、二次資料（<a href="https://github.com/tomwhite/birdcage">tomwhite/birdcage</a> の README）の引用で確認。原文は未読。</span></li>
+      <li>Gale, D. (1979) The Game of Hex and the Brouwer Fixed-Point Theorem. American Mathematical Monthly 86: 818–827. <span class="depth"><a href="https://maa.org/node/113796">MAA の紹介ページ</a>で確認。原文は未読。</span></li>
+      <li>arXiv:1409.7890 <a href="https://arxiv.org/pdf/1409.7890">Using Brouwer's fixed point theorem</a>。<span class="depth">ヘックスの定理とブラウワーの定理を両方向に導く構成を、目次と冒頭で確認。</span></li>
+      <li>Schwalbe, U., Walker, P. (2001) <a href="https://ageconsearch.umn.edu/record/263784/files/canterbury-nz-092.pdf">Zermelo and the Early History of Game Theory</a>. <span class="depth">序論（ツェルメロ1913年が最初の形式的な定理）を確認。</span> MacQuarrie <a href="https://mathshistory.st-andrews.ac.uk/Projects/MacQuarrie/chapter-4">Mathematics and Chess</a>。<span class="depth">フォン・ノイマン1928年の論文への言及を確認。</span></li>
+      <li>Arneson, B., Hayward, R. B., Henderson, P. (2010) <a href="https://typeset.io/pdf/monte-carlo-tree-search-in-hex-e7lxjfnufy.pdf">Monte Carlo Tree Search in Hex</a>. IEEE TCIAIG 2(4). <span class="depth">要旨と序論を確認。</span></li>
+      <li>アルバータ大学の論文 <a href="https://webdocs.cs.ualberta.ca/~hayward/papers/movepredhex.pdf">Hex の手の予測（movepredhex.pdf）</a>。<span class="depth">Wolve の抵抗評価関数への言及を検索結果の抜粋で確認。著者名は未確認。</span></li>
+      <li>arXiv:2008.06359 <a href="https://arxiv.org/pdf/2008.06359">HEX and Neurodynamic Programming</a>。<span class="depth">Hexy の2000年の優勝、シャノンとムーアの機械の記述を確認（二次資料）。</span></li>
+      <li>Seymour, M. <a href="https://mseymour.ca/hex_book/hexstrat1.html">Hex: A Strategy Guide</a>（1章、<a href="https://mseymour.ca/hex_book/hexstrat5.html">5章</a>）、Silverman・Seymour <a href="https://drericsilverman.com/2021/02/15/a-beginners-guide-to-hex/">A beginner's guide to Hex</a>。<span class="depth">隣で塞ぐ受けの問題点、2段目に置く利点、はしごの定義を検索結果の抜粋で確認。全文は未読。</span></li>
+      <li>HexWiki <a href="https://www.hexwiki.net/index.php/Ziggurat">Ziggurat</a>。<span class="depth">3段目のテンプレートであることと、2つの脅威が升を共有しないという説明を確認。升の配置は自分で導いた。</span></li>
+      <li>Doyle, P. G., Snell, J. L. (1984) <a href="https://arxiv.org/abs/math/0001057">Random Walks and Electric Networks</a>. MAA. <span class="depth">要旨と MAA の紹介を確認。本文は未読。</span> Hopcroft の講義ノート（Cornell CS 4850, 2010）。<span class="depth">「電圧＝先に着く確率」の主張を確認。</span></li>
+      <li>元になった対局ページ：<a href="https://fable52-site.pages.dev/">fable52-site.pages.dev</a>。<span class="depth">ルールの説明と AI の作り（ランダム試行、7×7、スワップなし）を確認。このページの文章と見た目は独自に作った。</span></li>
+    </ol>
+    <p class="siteFoot">このページは Claude（Anthropic）が2026年11月に作りました。見込み・講評・電位図は、このページのAIと計算によるもので、理論上の正解とは限りません。</p>
+  </footer>
+</div>
+
+<script>
+// Hex engine: MCTS + RAVE, playouts that answer a threatened bridge.
+// Written as one function so the page can turn it into a Web Worker
+// (via its source text) or call it on the main thread.
+function hexEngineModule() {
+  'use strict';
+  var V = 1, H = 2;                 // V connects top-bottom, H connects left-right
+  var OFF_V = -1, OFF_H = -2, OFF_X = -3;
+  // ring order around a cell: E, NE, NW, W, SW, SE
+  var DIRS = [[0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1], [1, 0]];
+  var R1 = [1, 2, 3, 4, 5, 0], R2 = [2, 3, 4, 5, 0, 1];
+
+  var seed = ((Date.now() * 2654435761) ^ 0x9e3779b9) | 0 || 1;
+  function rnd() {
+    seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 4294967296;
+  }
+  var now = (typeof performance !== 'undefined' && performance.now)
+    ? function () { return performance.now(); }
+    : function () { return Date.now(); };
+
+  function createEngine(N) {
+    var C = N * N;
+    var NBR = new Int16Array(C * 6);
+    var RING = new Int16Array(C * 6);
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
+      var i = r * N + c;
+      for (var k = 0; k < 6; k++) {
+        var rr = r + DIRS[k][0], cc = c + DIRS[k][1], v;
+        if (rr >= 0 && rr < N && cc >= 0 && cc < N) v = rr * N + cc;
+        else if ((rr < 0 || rr >= N) && cc >= 0 && cc < N) v = OFF_V;
+        else if ((cc < 0 || cc >= N) && rr >= 0 && rr < N) v = OFF_H;
+        else v = OFF_X;
+        RING[i * 6 + k] = v;
+        NBR[i * 6 + k] = v >= 0 ? v : -1;
+      }
+    }
+    var mark = new Uint32Array(C), stamp = 1;
+    var stack = new Int16Array(C);
+    var parent = new Int16Array(C);
+
+    function connected(b, p) {
+      stamp++; if (stamp > 4000000000) { mark.fill(0); stamp = 1; }
+      var sp = 0, i, cell;
+      for (i = 0; i < N; i++) {
+        cell = p === V ? i : i * N;
+        if (b[cell] === p) { stack[sp++] = cell; mark[cell] = stamp; }
+      }
+      while (sp > 0) {
+        cell = stack[--sp];
+        if (p === V ? cell >= C - N : cell % N === N - 1) return true;
+        var base = cell * 6;
+        for (var k = 0; k < 6; k++) {
+          var nb = NBR[base + k];
+          if (nb >= 0 && b[nb] === p && mark[nb] !== stamp) { mark[nb] = stamp; stack[sp++] = nb; }
+        }
+      }
+      return false;
+    }
+
+    // one connecting chain of p's stones (cells), or null
+    function winPath(b, p) {
+      var q = [], head = 0, i, cell;
+      var seen = new Uint8Array(C);
+      for (i = 0; i < N; i++) {
+        cell = p === V ? i : i * N;
+        if (b[cell] === p) { q.push(cell); seen[cell] = 1; parent[cell] = -1; }
+      }
+      while (head < q.length) {
+        cell = q[head++];
+        if (p === V ? cell >= C - N : cell % N === N - 1) {
+          var path = [];
+          while (cell >= 0) { path.push(cell); cell = parent[cell]; }
+          return path;
+        }
+        for (var k = 0; k < 6; k++) {
+          var nb = NBR[cell * 6 + k];
+          if (nb >= 0 && b[nb] === p && !seen[nb]) { seen[nb] = 1; parent[nb] = cell; q.push(nb); }
+        }
+      }
+      return null;
+    }
+
+    function ownerOf(b, e) {
+      return e >= 0 ? b[e] : (e === OFF_V ? V : (e === OFF_H ? H : 3));
+    }
+
+    // cells where a stone of p would complete p's connection now
+    function immediateWins(b, p) {
+      var out = [];
+      for (var i = 0; i < C; i++) if (b[i] === 0) {
+        b[i] = p;
+        if (connected(b, p)) out.push(i);
+        b[i] = 0;
+      }
+      return out;
+    }
+
+    var empt = new Int16Array(C), pos = new Int16Array(C);
+
+    // fill the board to the end; reply to a threatened bridge when there is one
+    function rollout(b, turn, last) {
+      var E = 0, i;
+      for (i = 0; i < C; i++) if (b[i] === 0) { empt[E] = i; pos[i] = E; E++; }
+      while (E > 0) {
+        var mv = -1;
+        if (last >= 0) {
+          var base = last * 6, found = 0;
+          for (var k = 0; k < 6; k++) {
+            var y = RING[base + R1[k]];
+            if (y < 0 || b[y] !== 0) continue;
+            var a = RING[base + k], z = RING[base + R2[k]];
+            if (ownerOf(b, a) === turn && ownerOf(b, z) === turn) {
+              found++;
+              if (found === 1 || rnd() * found < 1) mv = y;
+            }
+          }
+        }
+        if (mv < 0) mv = empt[(rnd() * E) | 0];
+        var pk = pos[mv], lc = empt[E - 1];
+        empt[pk] = lc; pos[lc] = pk; E--;
+        b[mv] = turn; last = mv; turn = 3 - turn;
+      }
+      return connected(b, V) ? V : H;
+    }
+
+    function makeNode(b, toMove) {
+      var m = 0, i, k = 0;
+      for (i = 0; i < C; i++) if (b[i] === 0) m++;
+      var moves = new Int16Array(m);
+      for (i = 0; i < C; i++) if (b[i] === 0) moves[k++] = i;
+      return {
+        toMove: toMove, moves: moves, n: 0,
+        cn: new Float32Array(m), cw: new Float32Array(m),
+        an: new Float32Array(m), aw: new Float32Array(m), kids: null
+      };
+    }
+
+    function newSearch(rootBoard, toMove, last, opt) {
+      opt = opt || {};
+      var maxSims = opt.maxSims || 1e9, maxMs = opt.maxMs || 1e9;
+      var EXP = opt.expand || 2;
+      var CU = opt.c != null ? opt.c : 0.1;
+      var RB = opt.raveB != null ? opt.raveB : 0.002;
+      var rb = Int8Array.from(rootBoard);
+      var root = makeNode(rb, toMove);
+      var work = new Int8Array(C);
+      var pathN = new Array(C + 1), pathI = new Int16Array(C + 1);
+      var sims = 0, t0 = now();
+
+      function select(node) {
+        var mv = node.moves, cn = node.cn, cw = node.cw, an = node.an, aw = node.aw;
+        var logN = Math.log(node.n + 1), best = 0, bestV = -1e9;
+        for (var j = 0; j < mv.length; j++) {
+          var n = cn[j], a = an[j], v;
+          if (n === 0 && a === 0) v = 2 + rnd() * 0.01;
+          else {
+            var q = n > 0 ? cw[j] / n : 0;
+            var qa = a > 0 ? aw[j] / a : 0;
+            var beta = a / (a + n + RB * n * a);
+            v = (1 - beta) * q + beta * qa + CU * Math.sqrt(logN / (n + 1)) + rnd() * 1e-6;
+          }
+          if (v > bestV) { bestV = v; best = j; }
+        }
+        return best;
+      }
+
+      function simulate() {
+        work.set(rb);
+        var node = root, depth = 0, lastMove = last;
+        while (true) {
+          var j = select(node), cell = node.moves[j];
+          work[cell] = node.toMove; lastMove = cell;
+          pathN[depth] = node; pathI[depth] = j; depth++;
+          if (node.cn[j] >= EXP && node.moves.length > 1) {
+            if (!node.kids) node.kids = new Array(node.moves.length).fill(null);
+            var child = node.kids[j];
+            if (!child) { child = makeNode(work, 3 - node.toMove); node.kids[j] = child; }
+            node = child;
+            continue;
+          }
+          break;
+        }
+        var winner = rollout(work, 3 - work[lastMove], lastMove);
+        for (var d = 0; d < depth; d++) {
+          var nd = pathN[d], i = pathI[d], p = nd.toMove, w = winner === p ? 1 : 0;
+          nd.n++; nd.cn[i]++; nd.cw[i] += w;
+          var mv = nd.moves, an = nd.an, aw = nd.aw;
+          for (var x = 0; x < mv.length; x++) if (work[mv[x]] === p) { an[x]++; aw[x] += w; }
+        }
+      }
+
+      return {
+        step: function (ms) {
+          var end = now() + ms;
+          while (true) {
+            for (var k = 0; k < 32; k++) {
+              if (root.moves.length === 0) return true;
+              simulate(); sims++;
+              if (sims >= maxSims) return true;
+            }
+            var t = now();
+            if (t - t0 >= maxMs) return true;
+            if (t >= end) return false;
+          }
+        },
+        result: function () {
+          var arr = [], m = root.moves.length;
+          for (var j = 0; j < m; j++) {
+            var n = root.cn[j], a = root.an[j];
+            arr.push({
+              cell: root.moves[j], n: n,
+              q: n > 0 ? root.cw[j] / n : null,
+              qa: a > 0 ? root.aw[j] / a : null
+            });
+          }
+          arr.sort(function (x, y) { return (y.n - x.n) || ((y.qa || 0) - (x.qa || 0)); });
+          return { sims: sims, ms: now() - t0, moves: arr };
+        }
+      };
+    }
+
+    return {
+      N: N, C: C, NBR: NBR, RING: RING,
+      connected: connected, winPath: winPath, immediateWins: immediateWins,
+      newSearch: newSearch
+    };
+  }
+
+  return { createEngine: createEngine, V: V, H: H };
+}
+
+
+</script>
+<script>(function () {
+  'use strict';
+  var M = hexEngineModule();
+  var V = M.V, H = M.H;
+  var USER = H, AI = V;
+  var LEVELS = [
+    { id: 'nyumon', label: '入門', sims: 150 },
+    { id: 'shokyu', label: '初級', sims: 800 },
+    { id: 'chukyu', label: '中級', sims: 4000 },
+    { id: 'jokyu', label: '上級', sims: 20000 },
+    { id: 'honki', label: '本気', ms: 2500 }
+  ];
+  var AN = { maxSims: 30000, maxMs: 1500 };     // coach: reading at the start of your turn
+  var LATE = { maxSims: 12000, maxMs: 1000 };   // coach: when you moved before the reading finished
+  var VERIFY = { maxSims: 6000, maxMs: 700 };   // coach: checking a move the reading skipped
+  var COL = { sumi: '#1c2027', ai: '#2a57bd', shu: '#d0401f', grid: '#c3c8d0' };
+  var DIRS = [[0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1], [1, 0]];
+  var EDGES = {}; EDGES[V] = ['top', 'bottom']; EDGES[H] = ['left', 'right'];
+  var EDGE_JA = { top: '上の辺', bottom: '下の辺', left: '左の辺', right: '右の辺' };
+
+  // 7x7 solved openings (Hayward et al. 2003). The first player owns top and bottom.
+  var T7W = 'a4 a6 a7 b3 b4 b5 b6 c2 c3 c4 c5 c6 d3 d4 d5 e2 e3 e4 e5 e6 f2 f3 f4 f5 g1 g2 g4'.split(' ');
+  var T7L = { a1: 'c4', a2: 'e3', a3: 'd4', a5: 'b6', b1: 'c4', b2: 'e3', b7: 'b6', c1: 'c4', c7: 'b6', d1: 'b6', d2: 'c5', d6: 'e3', d7: 'b6', e1: 'b6', e7: 'd3', f1: 'b6', f6: 'c5', f7: 'd3', g3: 'f2', g5: 'd4', g6: 'c5', g7: 'd3' };
+
+  var S = {
+    N: 7, userFirst: true, level: 'shokyu', coach: true, links: true,
+    next: { N: 7, userFirst: true },
+    board: null, moves: [], phase: 'idle', winner: 0, path: [],
+    analysis: null, hint: false, review: null, evals: [], gen: 0, aiSims: 0, judging: false, anim: -1
+  };
+  var eng = M.createEngine(7);
+
+  function $(id) { return document.getElementById(id); }
+  function nameOf(cell, N) { N = N || S.N; return String.fromCharCode(97 + cell % N) + (Math.floor(cell / N) + 1); }
+  function cellOf(s, N) { return (parseInt(s.slice(1), 10) - 1) * N + (s.charCodeAt(0) - 97); }
+  function names(arr, N) { return arr.map(function (c) { return nameOf(c, N); }).join('・'); }
+  function pct(q) { return Math.round(q * 100); }
+  function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function inb(r, c, N) { return r >= 0 && r < N && c >= 0 && c < N; }
+  function nbrs(cell, N) {
+    var r = Math.floor(cell / N), c = cell % N, out = [];
+    for (var k = 0; k < 6; k++) { var rr = r + DIRS[k][0], cc = c + DIRS[k][1]; if (inb(rr, cc, N)) out.push(rr * N + cc); }
+    return out;
+  }
+  function lastCell() { return S.moves.length ? S.moves[S.moves.length - 1].cell : -1; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+
+  // ---------- opening table ----------
+  function tpose(cell) { var r = Math.floor(cell / 7), c = cell % 7; return c * 7 + r; }
+  function openingVerdict(cell, p) {
+    var key = nameOf(p === V ? cell : tpose(cell), 7);
+    if (T7W.indexOf(key) >= 0) return { win: true };
+    var cm = T7L[key]; if (!cm) return null;
+    var cc = cellOf(cm, 7);
+    return { win: false, counter: p === V ? cc : tpose(cc) };
+  }
+
+  // ---------- shapes: bridges, edge templates, distances ----------
+  var BR = [[1, 1, 0, 1, 1, 0], [-1, 2, -1, 1, 0, 1], [2, -1, 1, -1, 1, 0]];
+  function bridgesOf(b, p, N) {
+    var out = [], opp = 3 - p;
+    for (var a = 0; a < N * N; a++) {
+      if (b[a] !== p) continue;
+      var r = Math.floor(a / N), c = a % N;
+      for (var k = 0; k < 3; k++) {
+        var d = BR[k];
+        if (!inb(r + d[0], c + d[1], N)) continue;
+        var z = (r + d[0]) * N + c + d[1]; if (b[z] !== p) continue;
+        var x = (r + d[2]) * N + c + d[3], y = (r + d[4]) * N + c + d[5];
+        var bx = b[x], by = b[y];
+        if (bx === p || by === p) continue;
+        if (bx === 0 && by === 0) out.push({ a: a, z: z, x: x, y: y, state: 'intact' });
+        else if (bx === opp && by === 0) out.push({ a: a, z: z, x: x, y: y, state: 'intruded', hit: x, save: y });
+        else if (by === opp && bx === 0) out.push({ a: a, z: z, x: x, y: y, state: 'intruded', hit: y, save: x });
+      }
+    }
+    return out;
+  }
+  function groupsOf(b, p, N) {
+    var g = new Int16Array(N * N).fill(-1), touch = [], k = 0;
+    for (var i = 0; i < N * N; i++) {
+      if (b[i] !== p || g[i] >= 0) continue;
+      var st = [i], t0 = false, t1 = false; g[i] = k;
+      while (st.length) {
+        var x = st.pop(), r = Math.floor(x / N), c = x % N;
+        if (p === V) { if (r === 0) t0 = true; if (r === N - 1) t1 = true; }
+        else { if (c === 0) t0 = true; if (c === N - 1) t1 = true; }
+        var nb = nbrs(x, N);
+        for (var j = 0; j < nb.length; j++) if (b[nb[j]] === p && g[nb[j]] < 0) { g[nb[j]] = k; st.push(nb[j]); }
+      }
+      touch.push([t0, t1]); k++;
+    }
+    return { g: g, touch: touch };
+  }
+  // map between the real board and a frame where the edge in question is row 0 (each map is its own inverse)
+  function frame(edge, r, c, N) {
+    if (edge === 'top') return [r, c];
+    if (edge === 'bottom') return [N - 1 - r, N - 1 - c];
+    if (edge === 'left') return [c, r];
+    return [N - 1 - c, N - 1 - r];
+  }
+  var ZIG = [
+    [[0, 1], [-1, 0], [-1, 1], [-1, 2], [-2, 0], [-2, 1], [-2, 2], [-2, 3]],
+    [[0, -1], [-1, -1], [-1, 0], [-1, 1], [-2, -1], [-2, 0], [-2, 1], [-2, 2]]
+  ];
+  function edgeLinksOf(b, p, N) {
+    var out = [], opp = 3 - p, gr = groupsOf(b, p, N);
+    for (var cell = 0; cell < N * N; cell++) {
+      if (b[cell] !== p) continue;
+      var r = Math.floor(cell / N), c = cell % N;
+      for (var ei = 0; ei < 2; ei++) {
+        var edge = EDGES[p][ei];
+        if (gr.touch[gr.g[cell]][ei]) continue;   // already on that edge
+        var f = frame(edge, r, c, N), fr = f[0], fc = f[1];
+        if (fr === 1) {
+          if (fc + 1 >= N) continue;
+          var A = frame(edge, 0, fc, N), B = frame(edge, 0, fc + 1, N);
+          var x = A[0] * N + A[1], y = B[0] * N + B[1], bx = b[x], by = b[y];
+          if (bx === p || by === p) continue;
+          if (bx === 0 && by === 0) out.push({ kind: 'II', stone: cell, edge: edge, carriers: [x, y], state: 'intact' });
+          else if (bx === opp && by === 0) out.push({ kind: 'II', stone: cell, edge: edge, carriers: [x, y], state: 'intruded', hit: x, save: y });
+          else if (by === opp && bx === 0) out.push({ kind: 'II', stone: cell, edge: edge, carriers: [x, y], state: 'intruded', hit: y, save: x });
+        } else if (fr === 2) {
+          for (var zi = 0; zi < 2; zi++) {
+            var ok = true, ids = [];
+            for (var q = 0; q < 8; q++) {
+              var rr = fr + ZIG[zi][q][0], cc = fc + ZIG[zi][q][1];
+              if (!inb(rr, cc, N)) { ok = false; break; }
+              var R = frame(edge, rr, cc, N), id = R[0] * N + R[1];
+              if (b[id] !== 0) { ok = false; break; }
+              ids.push(id);
+            }
+            if (ok) { out.push({ kind: 'Z', stone: cell, edge: edge, carriers: ids, state: 'intact' }); break; }
+          }
+        }
+      }
+    }
+    return out;
+  }
+  // fewest empty cells p still needs to connect, if the opponent never played again
+  function dist(b, p, N) {
+    var opp = 3 - p, D = new Array(N * N).fill(Infinity), dq = [], i, cell;
+    for (i = 0; i < N; i++) {
+      cell = p === V ? i : i * N;
+      if (b[cell] === opp) continue;
+      var w = b[cell] === p ? 0 : 1;
+      if (w < D[cell]) { D[cell] = w; if (w) dq.push(cell); else dq.unshift(cell); }
+    }
+    while (dq.length) {
+      cell = dq.shift();
+      var nb = nbrs(cell, N);
+      for (var j = 0; j < nb.length; j++) {
+        var n = nb[j]; if (b[n] === opp) continue;
+        var w2 = b[n] === p ? 0 : 1;
+        if (D[cell] + w2 < D[n]) { D[n] = D[cell] + w2; if (w2) dq.push(n); else dq.unshift(n); }
+      }
+    }
+    var best = Infinity;
+    for (i = 0; i < N; i++) { cell = p === V ? (N - 1) * N + i : i * N + N - 1; if (D[cell] < best) best = D[cell]; }
+    return best;
+  }
+
+  // ---------- plain-language reasons for a move of yours ----------
+  function explainMove(b0, m) {
+    var N = S.N, b = b0.slice(), p = USER, opp = AI, R = [], i;
+    b[m] = p;
+    if (eng.connected(b, p)) return ['この一手でつながって勝ち'];
+    b[m] = 0;
+    var oppWins = eng.immediateWins(b, opp);
+    if (oppWins.indexOf(m) >= 0) R.push(oppWins.length === 1 ? '相手の勝ちの一手を止める' : '相手の勝ち筋の一つを止める');
+    var gr = groupsOf(b, p, N);
+    var brs = bridgesOf(b, p, N);
+    for (i = 0; i < brs.length; i++) if (brs[i].state === 'intruded' && brs[i].save === m && gr.g[brs[i].a] !== gr.g[brs[i].z]) R.push('割り込まれたブリッジ ' + nameOf(brs[i].a) + '–' + nameOf(brs[i].z) + ' をつなぎ直す');
+    var els = edgeLinksOf(b, p, N);
+    for (i = 0; i < els.length; i++) if (els[i].kind === 'II' && els[i].state === 'intruded' && els[i].save === m) R.push(nameOf(els[i].stone) + ' と' + EDGE_JA[els[i].edge] + 'のつながりを守る');
+    var oppBr = bridgesOf(b, opp, N).filter(function (x) { return x.state === 'intact' && (x.x === m || x.y === m); });
+    var d0 = dist(b, p, N), e0 = dist(b, opp, N);
+    b[m] = p;
+    var d1 = dist(b, p, N), e1 = dist(b, opp, N);
+    var mates = bridgesOf(b, p, N).filter(function (x) { return x.state === 'intact' && (x.a === m || x.z === m); }).map(function (x) { return x.a === m ? x.z : x.a; });
+    var adj = nbrs(m, N).filter(function (n) { return b[n] === p; });
+    var el = edgeLinksOf(b, p, N).filter(function (t) { return t.stone === m && t.state === 'intact'; });
+    if (mates.length) R.push(names(mates) + ' とブリッジでつながる');
+    else if (adj.length) R.push(names(adj) + ' と隣でつながる');
+    if (el.length) R.push(EDGE_JA[el[0].edge] + 'まで' + (el[0].kind === 'II' ? '2段目の形' : 'ジッグラト') + 'で届く');
+    if (e1 > e0) R.push(isFinite(e1) ? '相手がつなぐのに要る石が ' + e0 + '→' + e1 + ' 個に増える' : '相手の道をすべて断つ');
+    else if (d1 < d0) R.push('あなたがつなぐのに要る石が ' + d0 + '→' + d1 + ' 個に減る');
+    if (oppBr.length) R.push('相手のブリッジに割り込む手（相手はもう片方で直せる）');
+    return R.slice(0, 3);
+  }
+
+  // ---------- the search runs in a worker so the page stays responsive ----------
+  var Brain = (function () {
+    var worker = null, useWorker = typeof Worker !== 'undefined', job = null, seq = 0, timer = null, engines = {};
+    var src = 'var M=(' + hexEngineModule.toString() + ')();var E={};' +
+      'onmessage=function(e){var d=e.data;var g=E[d.N]||(E[d.N]=M.createEngine(d.N));' +
+      'var s=g.newSearch(d.board,d.toMove,d.last,d.opt);' +
+      'for(;;){var done=s.step(70);postMessage({id:d.id,done:done,res:s.result()});if(done)break;}};';
+    var url = null;
+    function spawn() {
+      try {
+        if (!url) url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+        worker = new Worker(url);
+        worker.onmessage = onMsg;
+        worker.onerror = function (ev) {
+          if (ev && ev.preventDefault) ev.preventDefault();
+          useWorker = false; worker = null;
+          if (job) runHere(job);
+        };
+      } catch (err) { useWorker = false; worker = null; }
+    }
+    function onMsg(e) {
+      var d = e.data; if (!job || d.id !== job.id) return;
+      job.last = d.res; if (job.onProgress) job.onProgress(d.res);
+      if (d.done) { var j = job; job = null; j.resolve(d.res); }
+    }
+    function runHere(j) {
+      var g = engines[j.params.N] || (engines[j.params.N] = M.createEngine(j.params.N));
+      var s = g.newSearch(j.params.board, j.params.toMove, j.params.last, j.params.opt);
+      function tick() {
+        if (job !== j) return;
+        var done = s.step(14), r = s.result();
+        j.last = r; if (j.onProgress) j.onProgress(r);
+        if (done) { job = null; j.resolve(r); } else timer = setTimeout(tick, 0);
+      }
+      timer = setTimeout(tick, 0);
+    }
+    function search(params, onProgress, kind) {
+      cancel();
+      return new Promise(function (resolve) {
+        var j = job = { id: ++seq, resolve: resolve, onProgress: onProgress, last: null, params: params, kind: kind || '' };
+        if (useWorker && !worker) spawn();
+        if (useWorker && worker) {
+          worker.postMessage({ id: j.id, N: params.N, board: Array.prototype.slice.call(params.board), toMove: params.toMove, last: params.last, opt: params.opt });
+        } else runHere(j);
+      });
+    }
+    function cancel() {
+      if (!job) return null;
+      var j = job; job = null;
+      if (worker) { worker.terminate(); worker = null; }
+      if (timer) { clearTimeout(timer); timer = null; }
+      j.resolve(null);
+      return j.last;
+    }
+    function kind() { return job ? job.kind : null; }
+    return { search: search, cancel: cancel, kind: kind };
+  })();
+
+  // ---------- game flow ----------
+  function place(cell, p) { S.board[cell] = p; S.moves.push({ cell: cell, p: p }); S.anim = cell; }
+  function rebuild() { S.board = new Int8Array(S.N * S.N); S.moves.forEach(function (m) { S.board[m.cell] = m.p; }); }
+  function setEval(ply, win) {
+    S.evals = S.evals.filter(function (e) { return e.ply !== ply; });
+    S.evals.push({ ply: ply, win: win });
+    S.evals.sort(function (a, b) { return a.ply - b.ply; });
+  }
+  function job(toMove, opt, board, last) {
+    return { N: S.N, board: board || S.board, toMove: toMove, last: last === undefined ? lastCell() : last, opt: opt };
+  }
+
+  function newGame() {
+    Brain.cancel(); S.gen++;
+    S.N = S.next.N; S.userFirst = S.next.userFirst;
+    eng = M.createEngine(S.N);
+    S.board = new Int8Array(S.N * S.N);
+    S.moves = []; S.winner = 0; S.path = []; S.analysis = null; S.hint = false; S.review = null;
+    S.evals = []; S.judging = false; S.anim = -1;
+    if (S.userFirst) startUserTurn(); else aiTurn(S.gen);
+  }
+
+  function startUserTurn() {
+    S.phase = 'user'; S.hint = false; S.analysis = null;
+    render();
+    if (S.coach) runAnalysis();
+  }
+
+  function runAnalysis() {
+    var gen = S.gen, ply = S.moves.length;
+    var an = S.analysis = { ply: ply, sims: 0, moves: [], done: false };
+    Brain.search(job(USER, AN), function (res) {
+      if (gen !== S.gen || S.analysis !== an) return;
+      an.sims = res.sims; an.moves = res.moves;
+      renderStatus();
+      if (S.hint) renderNote();
+    }, 'analysis').then(function (res) {
+      if (!res || gen !== S.gen || S.analysis !== an) return;
+      an.sims = res.sims; an.moves = res.moves; an.done = true;
+      if (res.moves.length) setEval(ply, res.moves[0].q);
+      render();
+    });
+  }
+
+  function userPlay(cell) {
+    if (S.phase !== 'user' || S.review !== null || S.board[cell] !== 0) return;
+    var gen = S.gen;
+    var partial = Brain.cancel();
+    var an = S.analysis;
+    if (an && !an.done && partial) { an.sims = partial.sims; an.moves = partial.moves; }
+    var before = S.board.slice(), ply = S.moves.length, lastBefore = lastCell();
+    place(cell, USER);
+    var mv = S.moves[ply];
+    S.hint = false;
+    if (eng.connected(S.board, USER)) { if (S.coach) mv.fb = { cell: cell, ply: ply, win: true }; finish(USER); return; }
+    S.phase = 'ai';
+    if (!S.coach) { render(); aiTurn(gen); return; }
+    S.judging = true; render();
+    judge(before, lastBefore, cell, ply, an, gen).then(function (fb) {
+      if (gen !== S.gen) return;
+      mv.fb = fb; S.judging = false;
+      aiTurn(gen);
+    });
+  }
+
+  function judge(before, lastBefore, cell, ply, an, gen) {
+    var fb = { cell: cell, ply: ply };
+    if (S.N === 7 && ply === 0) fb.opening = openingVerdict(cell, USER);
+    if (an && an.sims >= 3000 && an.moves.length && !S.evals.some(function (e) { return e.ply === ply; })) setEval(ply, an.moves[0].q);
+    var ready = an && an.sims >= 3000 && an.moves.length ? Promise.resolve(an) :
+      Brain.search(job(USER, LATE, before, lastBefore), null, 'judge').then(function (r) {
+        if (!r || gen !== S.gen) return null;
+        if (r.moves.length) setEval(ply, r.moves[0].q);
+        return r;
+      });
+    return ready.then(function (a) {
+      if (!a || gen !== S.gen) return fb;
+      var best = a.moves[0];
+      var e = null;
+      for (var i = 0; i < a.moves.length; i++) if (a.moves[i].cell === cell) { e = a.moves[i]; break; }
+      var known = best.cell === cell ? best.q : (e && e.n >= Math.max(150, a.sims * 0.02) ? e.q : null);
+      var finishFb = function (q) {
+        fb.bestCell = best.cell; fb.bestQ = best.q; fb.q = q;
+        fb.delta = best.cell === cell ? 0 : Math.max(0, best.q - q);
+        fb.why = explainMove(before, cell);
+        if (best.cell !== cell) fb.bestWhy = explainMove(before, best.cell);
+        return fb;
+      };
+      if (known !== null) return finishFb(known);
+      var after = before.slice(); after[cell] = USER;
+      return Brain.search(job(AI, VERIFY, after, cell), null, 'judge').then(function (r) {
+        if (!r || gen !== S.gen || !r.moves.length) return fb;
+        return finishFb(1 - r.moves[0].q);
+      });
+    });
+  }
+
+  function aiTurn(gen) {
+    if (gen !== S.gen) return;
+    S.phase = 'ai'; S.aiSims = 0; render();
+    var t0 = performance.now();
+    var wins = eng.immediateWins(S.board, AI);
+    var threats = eng.immediateWins(S.board, USER);
+    var pick;
+    if (wins.length) pick = Promise.resolve(wins[0]);
+    else if (threats.length === 1) pick = Promise.resolve(threats[0]);
+    else {
+      var lv = LEVELS.filter(function (l) { return l.id === S.level; })[0];
+      pick = Brain.search(job(AI, lv.sims ? { maxSims: lv.sims } : { maxMs: lv.ms }), function (res) {
+        if (gen !== S.gen) return; S.aiSims = res.sims; renderStatus();
+      }, 'ai').then(function (r) {
+        if (!r || !r.moves.length) return -1;
+        S.aiSims = r.sims; return r.moves[0].cell;
+      });
+    }
+    pick.then(function (cell) {
+      if (gen !== S.gen || cell < 0) return;
+      var wait = 420 - (performance.now() - t0);
+      return sleep(Math.max(0, wait)).then(function () {
+        if (gen !== S.gen) return;
+        place(cell, AI);
+        var mv = S.moves[S.moves.length - 1];
+        if (S.N === 7 && S.moves.length === 1) mv.opening = openingVerdict(cell, AI);
+        if (eng.connected(S.board, AI)) { finish(AI); return; }
+        startUserTurn();
+      });
+    });
+  }
+
+  function finish(w) {
+    S.phase = 'over'; S.winner = w; S.judging = false;
+    S.path = eng.winPath(S.board, w) || [];
+    setEval(S.moves.length, w === USER ? 1 : 0);
+    render();
+  }
+
+  function undo() {
+    var k = -1;
+    for (var i = S.moves.length - 1; i >= 0; i--) if (S.moves[i].p === USER) { k = i; break; }
+    if (k < 0) return;
+    Brain.cancel(); S.gen++;
+    S.moves.length = k; rebuild();
+    S.winner = 0; S.path = []; S.review = null; S.judging = false; S.anim = -1;
+    S.evals = S.evals.filter(function (e) { return e.ply < k; });
+    startUserTurn();
+  }
+
+  // ---------- coach judgments ----------
+  function grade(d, isBest) {
+    if (isBest) return { sym: '◎', label: '最善手' };
+    if (d <= 0.025) return { sym: '◎', label: '好手' };
+    if (d <= 0.06) return { sym: '○', label: 'まずまず' };
+    if (d <= 0.13) return { sym: '△', label: '緩手' };
+    if (d <= 0.25) return { sym: '？', label: '疑問手' };
+    return { sym: '✕', label: '悪手' };
+  }
+  function alertsNow() {
+    var N = S.N, b = S.board, out = [];
+    var my = eng.immediateWins(b, USER), op = eng.immediateWins(b, AI);
+    if (my.length) out.push({ cells: my, kind: 'win', html: '<b class="c">' + names(my) + '</b> に打てば、そこでつながって勝ちです。' });
+    else if (op.length === 1) out.push({ cells: op, kind: 'must', html: '相手は次に <b class="c">' + nameOf(op[0]) + '</b> でつながります。ここを塞いでください。' });
+    else if (op.length >= 2) out.push({ cells: op, kind: 'lost', html: '相手の勝ち筋が ' + op.length + ' か所（' + names(op) + '）あり、1手では塞ぎきれません。' });
+    if (!my.length && op.length < 2) {
+      var last = lastCell(), gr = groupsOf(b, USER, N), list = [];
+      bridgesOf(b, USER, N).forEach(function (br) {
+        if (br.state !== 'intruded' || gr.g[br.a] === gr.g[br.z]) return;
+        var fresh = br.hit === last;
+        list.push({ cells: [br.save], fresh: fresh, kind: 'save', html: fresh
+          ? '相手の <b class="c">' + nameOf(br.hit) + '</b> は、あなたの ' + nameOf(br.a) + '–' + nameOf(br.z) + ' のブリッジへの割り込みです。<b class="c">' + nameOf(br.save) + '</b> に打てばつながったままです。'
+          : nameOf(br.a) + '–' + nameOf(br.z) + ' のブリッジは片側を塞がれています。<b class="c">' + nameOf(br.save) + '</b> が空いているうちは直せます。' });
+      });
+      edgeLinksOf(b, USER, N).forEach(function (t) {
+        if (t.kind !== 'II' || t.state !== 'intruded') return;
+        var fresh = t.hit === last;
+        list.push({ cells: [t.save], fresh: fresh, kind: 'save', html: (fresh ? '相手の <b class="c">' + nameOf(t.hit) + '</b> が、' : '') + nameOf(t.stone) + ' と' + EDGE_JA[t.edge] + 'のつながりに' + (fresh ? '割り込みました' : '割り込まれています') + '。<b class="c">' + nameOf(t.save) + '</b> に打てば辺まで届きます。' });
+      });
+      list.sort(function (a, b2) { return (b2.fresh ? 1 : 0) - (a.fresh ? 1 : 0); });
+      out = out.concat(list);
+    }
+    return out.slice(0, 3);
+  }
+  function turningPoint() {
+    var best = null;
+    S.moves.forEach(function (m) { if (m.fb && m.fb.delta != null && m.fb.delta >= 0.08 && (!best || m.fb.delta > best.delta)) best = m.fb; });
+    return best;
+  }
+
+  // ---------- drawing ----------
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function geom(N, s, labels) {
+    var w = Math.sqrt(3) * s;
+    var padL = labels ? 32 : 14, padT = labels ? 32 : 14, padR = 14, padB = 14;
+    var X0 = padL + w / 2, Y0 = padT + s;
+    return {
+      s: s, w: w,
+      cx: function (r, c) { return X0 + c * w + r * w / 2; },
+      cy: function (r) { return Y0 + r * 1.5 * s; },
+      W: X0 + (N - 1) * 1.5 * w + w / 2 + padR,
+      H: Y0 + (N - 1) * 1.5 * s + s + padB
+    };
+  }
+  function drawBoard(svg, cfg) {
+    var N = cfg.N, s = 20, g = geom(N, s, cfg.labels !== false), b = cfg.board;
+    var uid = svg.id || 'mb';
+    svg.setAttribute('viewBox', '0 0 ' + g.W.toFixed(1) + ' ' + g.H.toFixed(1));
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var defs = el('defs', {}, svg);
+    defs.innerHTML =
+      '<radialGradient id="' + uid + '-gs" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#4b525e"/><stop offset=".55" stop-color="#1f232a"/><stop offset="1" stop-color="#0d0f12"/></radialGradient>' +
+      '<radialGradient id="' + uid + '-ga" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7ea3f2"/><stop offset=".55" stop-color="#2a57bd"/><stop offset="1" stop-color="#173a8a"/></radialGradient>';
+    function V6(r, c, k) {
+      var x = g.cx(r, c), y = g.cy(r), h = g.w / 2;
+      var v = [[x, y - s], [x + h, y - s / 2], [x + h, y + s / 2], [x, y + s], [x - h, y + s / 2], [x - h, y - s / 2]][k];
+      return v[0].toFixed(1) + ',' + v[1].toFixed(1);
+    }
+    var top = [], bot = [], left = [], right = [], r, c, k;
+    for (c = 0; c < N; c++) { top.push(V6(0, c, 5), V6(0, c, 0)); bot.push(V6(N - 1, c, 4), V6(N - 1, c, 3)); }
+    top.push(V6(0, N - 1, 1)); bot.push(V6(N - 1, N - 1, 2));
+    for (r = 0; r < N; r++) { left.push(V6(r, 0, 5), V6(r, 0, 4)); right.push(V6(r, N - 1, 1), V6(r, N - 1, 2)); }
+    var bw = (s * 0.74).toFixed(1);
+    [[left, COL.sumi], [right, COL.sumi], [top, COL.ai], [bot, COL.ai]].forEach(function (pr) {
+      el('polyline', { points: pr[0].join(' '), fill: 'none', stroke: pr[1], 'stroke-width': bw, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    });
+    var gc = el('g', {}, svg);
+    for (r = 0; r < N; r++) for (c = 0; c < N; c++) {
+      var cell = r * N + c, pts = [];
+      for (k = 0; k < 6; k++) pts.push(V6(r, c, k));
+      var empty = !b || !b[cell];
+      var attrs = { points: pts.join(' '), 'class': 'hx' + (empty ? ' e' : ''), 'data-cell': cell };
+      if (cfg.shade && cfg.shade[cell]) attrs.style = 'fill:' + cfg.shade[cell];
+      if (cfg.interactive && empty) { attrs.tabindex = '0'; attrs.role = 'button'; attrs['aria-label'] = nameOf(cell, N) + ' に打つ'; }
+      el('polygon', attrs, gc);
+    }
+    if (cfg.labels !== false) {
+      for (c = 0; c < N; c++) { var t = el('text', { x: g.cx(0, c).toFixed(1), y: (g.cy(0) - s - 13).toFixed(1), 'text-anchor': 'middle', 'class': 'lc' }, svg); t.textContent = String.fromCharCode(97 + c); }
+      for (r = 0; r < N; r++) { var t2 = el('text', { x: (g.cx(r, 0) - g.w / 2 - 14).toFixed(1), y: (g.cy(r) + 4).toFixed(1), 'text-anchor': 'middle', 'class': 'lc' }, svg); t2.textContent = String(r + 1); }
+    }
+    var over = el('g', { 'pointer-events': 'none' }, svg);
+    function C(cell) { var rr = Math.floor(cell / N), cc = cell % N; return [g.cx(rr, cc), g.cy(rr)]; }
+    // connections
+    if (cfg.links && b) {
+      (cfg.linkPlayers || [USER, AI]).forEach(function (p) {
+        var color = p === USER ? COL.sumi : COL.ai;
+        var gr = groupsOf(b, p, N);
+        bridgesOf(b, p, N).forEach(function (br) {
+          var A = C(br.a), Z = C(br.z);
+          var risky = br.state === 'intruded' && gr.g[br.a] !== gr.g[br.z];
+          el('line', { x1: A[0], y1: A[1], x2: Z[0], y2: Z[1], stroke: risky ? COL.shu : color, 'stroke-width': risky ? 2.6 : 2, 'stroke-dasharray': '4 4', opacity: risky ? .95 : .5, 'stroke-linecap': 'round' }, over);
+        });
+        edgeLinksOf(b, p, N).forEach(function (t) {
+          var A = C(t.stone), ends = t.kind === 'II' ? t.carriers : t.carriers.slice(4), mx = 0, my = 0;
+          ends.forEach(function (e) { var P = C(e); mx += P[0]; my += P[1]; });
+          mx /= ends.length; my /= ends.length;
+          var ext = t.kind === 'II' ? 1.55 : 1.22;
+          var risky = t.state === 'intruded';
+          el('line', { x1: A[0], y1: A[1], x2: A[0] + (mx - A[0]) * ext, y2: A[1] + (my - A[1]) * ext, stroke: risky ? COL.shu : color, 'stroke-width': risky ? 2.6 : 2, 'stroke-dasharray': '4 4', opacity: risky ? .95 : .5, 'stroke-linecap': 'round' }, over);
+        });
+      });
+    }
+    if (cfg.path && cfg.path.length) {
+      el('polyline', { points: cfg.path.map(function (x) { var P = C(x); return P[0].toFixed(1) + ',' + P[1].toFixed(1); }).join(' '), fill: 'none', stroke: '#f2b134', 'stroke-width': (s * 1.05).toFixed(1), opacity: .55, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, over);
+    }
+    // stones
+    if (b) for (var i = 0; i < N * N; i++) {
+      if (!b[i]) continue;
+      var P = C(i);
+      var st = { cx: P[0].toFixed(1), cy: P[1].toFixed(1), r: (s * 0.74).toFixed(1), fill: 'url(#' + uid + (b[i] === USER ? '-gs' : '-ga') + ')', 'class': 'stone' + (i === cfg.anim ? ' drop' : '') };
+      if (cfg.focus && cfg.focus.length && cfg.focus.indexOf(i) < 0) st.opacity = .28;
+      el('circle', st, over);
+    }
+    if (b && cfg.last >= 0 && b[cfg.last]) {
+      var L = C(cfg.last);
+      el('circle', { cx: L[0], cy: L[1], r: (s * 0.17).toFixed(1), fill: '#fff', opacity: .92 }, over);
+    }
+    // red-pen marks
+    (cfg.marks || []).forEach(function (m) {
+      var P = C(m.cell), x = P[0], y = P[1];
+      if (m.kind === 'hint') {
+        el('circle', { cx: x, cy: y, r: s * 0.58, fill: 'rgba(255,255,255,.8)', stroke: COL.shu, 'stroke-width': 2.2 }, over);
+        var t = el('text', { x: x, y: y + s * 0.27, 'text-anchor': 'middle', 'class': 'mk', 'font-size': (s * 0.78).toFixed(1) }, over); t.textContent = m.label;
+      } else if (m.kind === 'best') {
+        var da = m.dashed ? { 'stroke-dasharray': '3 3', opacity: .8 } : {};
+        el('circle', Object.assign({ cx: x, cy: y, r: s * 0.6, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 }, da), over);
+        el('circle', Object.assign({ cx: x, cy: y, r: s * 0.3, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 }, da), over);
+      } else if (m.kind === 'alert') {
+        el('circle', { cx: x, cy: y, r: s * 0.64, fill: 'rgba(208,64,31,.10)', stroke: COL.shu, 'stroke-width': 3 }, over);
+        if (m.label) { var t3 = el('text', { x: x, y: y + s * 0.27, 'text-anchor': 'middle', 'class': 'mk', 'font-size': (s * 0.72).toFixed(1) }, over); t3.textContent = m.label; }
+      } else if (m.kind === 'ring') {
+        el('circle', { cx: x, cy: y, r: s * 0.9, fill: 'none', stroke: COL.shu, 'stroke-width': 2.2 }, over);
+      } else if (m.kind === 'dot') {
+        el('circle', { cx: x, cy: y, r: s * 0.5, fill: 'none', stroke: m.color || COL.sumi, 'stroke-width': 1.6, 'stroke-dasharray': '3 3' }, over);
+      }
+    });
+  }
+
+  // ---------- rendering ----------
+  function viewBoard() {
+    if (S.review === null) return { board: S.board, last: lastCell() };
+    var b = new Int8Array(S.N * S.N);
+    for (var i = 0; i <= S.review; i++) b[S.moves[i].cell] = S.moves[i].p;
+    return { board: b, last: S.moves[S.review].cell };
+  }
+  function render() {
+    renderBoard(); renderStatus(); renderNote(); renderActions(); renderSettings(); renderRecord(); renderPotential();
+    S.anim = -1;
+  }
+  function renderBoard() {
+    var v = viewBoard(), marks = [];
+    if (S.review !== null) {
+      var m = S.moves[S.review];
+      marks.push({ cell: m.cell, kind: 'ring' });
+      if (m.fb && m.fb.bestCell != null && m.fb.bestCell !== m.cell) marks.push({ cell: m.fb.bestCell, kind: 'best' });
+    } else if (S.coach && S.phase !== 'over') {
+      var lu = lastUserMove();
+      if (lu && lu.fb && lu.fb.bestCell != null && lu.fb.bestCell !== lu.cell && !S.board[lu.fb.bestCell]) marks.push({ cell: lu.fb.bestCell, kind: 'best', dashed: S.phase === 'user' });
+      if (S.phase === 'user') {
+        alertsNow().forEach(function (a) { a.cells.forEach(function (c) { marks.push({ cell: c, kind: 'alert', label: a.kind === 'win' ? '勝' : '' }); }); });
+        if (S.hint && S.analysis && S.analysis.done) S.analysis.moves.slice(0, 3).forEach(function (mm, i) { marks.push({ cell: mm.cell, kind: 'hint', label: '①②③'[i] }); });
+      }
+    }
+    var svg = $('board');
+    drawBoard(svg, { N: S.N, board: v.board, last: v.last, links: S.links && (S.phase !== 'over' || S.review !== null), marks: marks, path: S.review === null ? S.path : [], anim: S.review === null ? S.anim : -1, interactive: S.phase === 'user' && S.review === null });
+    svg.classList.toggle('playable', S.phase === 'user' && S.review === null);
+  }
+  function lastUserMove() {
+    for (var i = S.moves.length - 1; i >= 0; i--) if (S.moves[i].p === USER) return S.moves[i];
+    return null;
+  }
+  function currentEval() {
+    if (S.phase === 'user' && S.analysis && !S.analysis.done && S.analysis.sims >= 3000 && S.analysis.moves.length) return S.analysis.moves[0].q;
+    return S.evals.length ? S.evals[S.evals.length - 1].win : null;
+  }
+  function renderStatus() {
+    var l = '', r = '';
+    if (S.review !== null) {
+      l = '<span>振り返り　<span class="num">' + (S.review + 1) + ' / ' + S.moves.length + '</span> 手目</span><span class="rv"><button type="button" data-rv="prev" aria-label="前の手">◀</button><button type="button" data-rv="next" aria-label="次の手">▶</button><button type="button" data-rv="exit">対局に戻る</button></span>';
+    } else if (S.phase === 'over') {
+      l = S.winner === USER ? '<span class="dot s"></span><b>あなたの勝ち</b><span class="sub">左右がつながりました</span>' : '<span class="dot a"></span><b>相手の勝ち</b><span class="sub">上下がつながりました</span>';
+    } else if (S.phase === 'user') {
+      l = '<span class="dot s"></span><b>あなたの番</b><span class="sub">左右の辺をつなぐ</span>';
+    } else if (S.phase === 'ai') {
+      l = S.judging ? '<span class="dot s"></span><span>いまの一手を確かめています</span>' : '<span class="dot a"></span><b>相手が読んでいます</b>' + (S.aiSims ? '<span class="num">' + fmt(S.aiSims) + ' 回</span>' : '');
+    }
+    var ev = currentEval();
+    if (S.coach && ev != null && S.review === null) {
+      r = '<span class="meter" title="AIの読みでの、あなたの勝ちの割合"><span class="lab">見込み</span><span class="bar"><i style="width:' + pct(ev) + '%"></i></span><span class="num">' + pct(ev) + '%</span></span>';
+    }
+    $('status').innerHTML = '<div class="l">' + l + '</div><div class="r">' + r + '</div>';
+  }
+  function reasonText(list) { return list && list.length ? '：' + list.join('。') + '。' : '。'; }
+  function fbHTML(fb) {
+    if (!fb) return '';
+    if (fb.win) return '<div class="verdict"><span class="sym">◎</span>決め手</div><p><b class="c">' + nameOf(fb.cell) + '</b> でつながりました。</p>';
+    var h = '';
+    if (fb.bestCell != null) {
+      var g = grade(fb.delta, fb.cell === fb.bestCell);
+      h += '<div class="verdict"><span class="sym">' + g.sym + '</span>' + g.label + (fb.delta >= 0.01 ? '<small>見込み −' + pct(fb.delta) + '</small>' : '') + '</div>';
+      h += '<p>あなたの <b class="c">' + nameOf(fb.cell) + '</b>' + reasonText(fb.why) + '</p>';
+      if (fb.bestCell !== fb.cell) h += '<p>最善は <b class="c">' + nameOf(fb.bestCell) + '</b>（見込み ' + pct(fb.bestQ) + '%、盤の◎）' + reasonText(fb.bestWhy) + '</p>';
+      if (fb.bestQ < 0.06 || fb.bestQ > 0.94) h += '<p class="dim">形勢がほぼ決まっているので、この評価は参考程度です。</p>';
+    } else {
+      h += '<p>あなたの <b class="c">' + nameOf(fb.cell) + '</b>。</p>';
+    }
+    if (fb.opening) h += fb.opening.win
+      ? '<p>初手 <b class="c">' + nameOf(fb.cell) + '</b> は、解析で先手の勝ちと分かっている初手です。</p>'
+      : '<p>初手 <b class="c">' + nameOf(fb.cell) + '</b> は、正しく応じられると負ける初手です（解析表の応手は ' + nameOf(fb.opening.counter) + '）。</p>';
+    return h;
+  }
+  function aiOpeningHTML() {
+    var m = S.moves[0];
+    if (!m || m.p !== AI || !m.opening || S.moves.length > 2) return '';
+    return m.opening.win
+      ? '<p>相手の初手 <b class="c">' + nameOf(m.cell) + '</b> は、解析で先手の勝ちと分かっている初手です。理屈の上では相手の勝ちなので、ブリッジと受けで粘って間違いを待ちます。</p>'
+      : '<p>相手の初手 <b class="c">' + nameOf(m.cell) + '</b> は、後手が正しく応じれば勝てる初手です。解析表の応手は <b class="c">' + nameOf(m.opening.counter) + '</b>。</p>';
+  }
+  function hintHTML() {
+    var an = S.analysis;
+    if (!an || !an.done) return '<p class="dim">候補を読んでいます（' + fmt(an ? an.sims : 0) + ' 回）。読み終わると盤に①②③が出ます。</p>';
+    var html = '<ol>';
+    an.moves.slice(0, 3).forEach(function (m, i) {
+      html += '<li><b class="c">' + '①②③'[i] + ' ' + nameOf(m.cell) + '</b> 見込み ' + pct(m.q) + '%' + reasonText(explainMove(S.board, m.cell)) + '</li>';
+    });
+    return html + '</ol>';
+  }
+  function renderNote() {
+    var h = '';
+    if (S.review !== null) {
+      var m = S.moves[S.review];
+      if (m.p === USER) h = m.fb ? fbHTML(m.fb) : '<p>あなたの <b class="c">' + nameOf(m.cell) + '</b>（指南がオフのときの手なので講評はありません）。</p>';
+      else {
+        h = '<p>相手の <b class="c">' + nameOf(m.cell) + '</b>。</p>';
+        if (S.review === 0 && m.opening) h += m.opening.win ? '<p>解析で先手の勝ちと分かっている初手です。</p>' : '<p>後手が正しく応じれば勝てる初手です（解析表の応手は ' + nameOf(m.opening.counter) + '）。</p>';
+      }
+    } else if (S.phase === 'over') {
+      var won = S.winner === USER;
+      h = '<div class="verdict">' + (won ? 'あなたの勝ち' : '相手の勝ち') + '</div>';
+      h += won ? '<p>左右の辺がつながりました。</p>' : '<p>上下の辺がつながりました。</p>';
+      var tp = turningPoint();
+      if (tp) h += '<p>いちばん見込みを落とした手は <b class="c">' + (tp.ply + 1) + '手目の ' + nameOf(tp.cell) + '</b>（見込み −' + pct(tp.delta) + '）。最善は <b class="c">' + nameOf(tp.bestCell) + '</b> でした。</p>';
+      h += '<p class="dim">棋譜の手をタップすると、その局面と講評を振り返れます。「待った」で負けた手の前まで戻すこともできます。</p>';
+    } else if (!S.coach) {
+      h = '<p class="dim">指南はオフです。講評・警告・ヒントは出ません。</p>';
+    } else {
+      var lu = lastUserMove();
+      if (S.phase === 'ai' && S.judging) h += '<p class="dim">いまの一手を確かめています…</p>';
+      else if (lu && lu.fb) h += fbHTML(lu.fb);
+      h += aiOpeningHTML();
+      if (S.phase === 'user') {
+        var al = alertsNow();
+        if (al.length) {
+          if (h) h += '<hr>';
+          al.forEach(function (a) { h += '<p class="alert"><span class="bang">!</span><span>' + a.html + '</span></p>'; });
+        }
+        if (S.hint) { if (h) h += '<hr>'; h += hintHTML(); }
+        if (!S.moves.length) {
+          h = S.N === 7
+            ? '<p>先手です。7×7 では初手49通りのうち27通りが先手の勝ちと分かっていて、中央の <b class="c">d4</b> もその一つです。迷ったら d4 から。</p><p class="dim">一手ごとに講評し、相手に割り込まれたら朱の輪で知らせます。</p>'
+            : '<p>先手です。まずは中央から。</p><p class="dim">一手ごとに講評し、相手に割り込まれたら朱の輪で知らせます。</p>';
+          if (S.hint) h += '<hr>' + hintHTML();
+        }
+      }
+      if (!h) h = '<p class="dim">相手の番です。</p>';
+    }
+    $('note').innerHTML = h;
+  }
+  function renderActions() {
+    var hasUser = S.moves.some(function (m) { return m.p === USER; });
+    $('bHint').disabled = !(S.coach && S.phase === 'user' && S.review === null);
+    $('bHint').textContent = S.hint ? 'ヒントを消す' : 'ヒント';
+    $('bUndo').disabled = !hasUser;
+    $('bLinks').setAttribute('aria-pressed', String(S.links));
+    $('bCoach').setAttribute('aria-pressed', String(S.coach));
+  }
+  function seg(id, items, current, onPick) {
+    var box = $(id); box.innerHTML = '';
+    items.forEach(function (it) {
+      var bt = document.createElement('button');
+      bt.type = 'button'; bt.textContent = it.label; bt.setAttribute('aria-pressed', String(it.value === current));
+      bt.addEventListener('click', function () { onPick(it.value); });
+      box.appendChild(bt);
+    });
+  }
+  function renderSettings() {
+    seg('segFirst', [{ label: 'あなた', value: true }, { label: '相手', value: false }], S.next.userFirst, function (v) { S.next.userFirst = v; maybeRestart(); });
+    seg('segLevel', LEVELS.map(function (l) { return { label: l.label, value: l.id }; }), S.level, function (v) { S.level = v; snapshotSave(); renderSettings(); });
+    seg('segSize', [5, 7, 9].map(function (n) { return { label: n + '×' + n, value: n }; }), S.next.N, function (v) { S.next.N = v; maybeRestart(); });
+    var lv = LEVELS.filter(function (l) { return l.id === S.level; })[0];
+    var info = '相手が1手に使う試行：' + (lv.sims ? fmt(lv.sims) + ' 回' : '約 ' + (lv.ms / 1000) + ' 秒ぶん') + '。強さはすぐ反映されます。';
+    if (S.next.N !== S.N || S.next.userFirst !== S.userFirst) info += '<span class="pending"> 先手と盤の変更は「新しい対局」から反映されます。</span>';
+    $('setInfo').innerHTML = info;
+  }
+  function maybeRestart() {
+    if (!S.moves.some(function (m) { return m.p === USER; })) newGame();
+    else renderSettings();
+  }
+  function renderRecord() {
+    var svg = $('chart'), W = 320, Hh = 92, pl = 30, pr = 10, pt = 8, pb = 16;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + Hh);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var maxPly = Math.max(16, S.moves.length + 2);
+    function X(ply) { return pl + (W - pl - pr) * ply / maxPly; }
+    function Y(q) { return pt + (Hh - pt - pb) * (1 - q); }
+    el('line', { x1: pl, x2: W - pr, y1: Y(1), y2: Y(1), 'class': 'ax' }, svg);
+    el('line', { x1: pl, x2: W - pr, y1: Y(0), y2: Y(0), 'class': 'ax' }, svg);
+    el('line', { x1: pl, x2: W - pr, y1: Y(0.5), y2: Y(0.5), 'class': 'mid' }, svg);
+    [[1, '100%'], [0.5, '50%'], [0, '0%']].forEach(function (a) { var t = el('text', { x: pl - 4, y: Y(a[0]) + 3.5, 'text-anchor': 'end', 'class': 'tx' }, svg); t.textContent = a[1]; });
+    var tx = el('text', { x: W - pr, y: Hh - 3, 'text-anchor': 'end', 'class': 'tx' }, svg); tx.textContent = '手数 →';
+    var ev = S.evals;
+    if (!ev.length) {
+      var t0 = el('text', { x: pl + 8, y: Y(0.5) - 6, 'class': 'tx' }, svg); t0.textContent = 'あなたの番ごとの見込みがここに並びます';
+    } else {
+      el('polyline', { points: ev.map(function (e) { return X(e.ply).toFixed(1) + ',' + Y(e.win).toFixed(1); }).join(' '), 'class': 'ln' }, svg);
+      ev.forEach(function (e) {
+        var c = el('circle', { cx: X(e.ply), cy: Y(e.win), r: 3.4, 'class': 'pt' }, svg);
+        c.addEventListener('click', function () { if (e.ply < S.moves.length) { S.review = e.ply; render(); } });
+      });
+      var tp = turningPoint();
+      if (tp) {
+        var before = ev.filter(function (e) { return e.ply === tp.ply; })[0];
+        if (before) {
+          el('circle', { cx: X(tp.ply), cy: Y(before.win), r: 7, 'class': 'tp' }, svg);
+          var tl = el('text', { x: X(tp.ply), y: Math.max(10, Y(before.win) - 10), 'text-anchor': 'middle', 'class': 'tpl' }, svg); tl.textContent = '分かれ目';
+        }
+      }
+    }
+    var k = $('kifu'); k.innerHTML = '';
+    S.moves.forEach(function (m, i) {
+      var bt = document.createElement('button');
+      bt.type = 'button';
+      if (S.review === i) bt.setAttribute('aria-current', 'true');
+      var g = m.fb && m.fb.bestCell != null ? grade(m.fb.delta, m.fb.cell === m.fb.bestCell).sym : (m.fb && m.fb.win ? '◎' : '');
+      bt.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="d ' + (m.p === USER ? 's' : 'a') + '"></span>' + nameOf(m.cell) + (g ? '<span class="g">' + g + '</span>' : '');
+      bt.setAttribute('aria-label', (i + 1) + '手目 ' + (m.p === USER ? 'あなた' : '相手') + ' ' + nameOf(m.cell) + '、振り返る');
+      bt.addEventListener('click', function () { S.review = i; render(); });
+      k.appendChild(bt);
+    });
+  }
+
+  // ---------- guide figures ----------
+  function board(N, stones) {
+    var b = new Int8Array(N * N);
+    Object.keys(stones).forEach(function (k) { b[cellOf(k, N)] = stones[k]; });
+    return b;
+  }
+  function figures() {
+    var shade = {}, i;
+    for (i = 0; i < 49; i++) { var v = openingVerdict(i, USER); if (v && v.win) shade[i] = '#9ea4ad'; }
+    drawBoard($('figOpen'), { N: 7, board: new Int8Array(49), shade: shade, marks: [{ cell: cellOf('d4', 7), kind: 'best' }] });
+    drawBoard($('figBridge'), { N: 4, board: board(4, { b2: H, c3: H }), links: true, linkPlayers: [H], marks: [{ cell: cellOf('c2', 4), kind: 'dot' }, { cell: cellOf('b3', 4), kind: 'dot' }] });
+    drawBoard($('figBridge2'), { N: 4, board: board(4, { b2: H, c3: H, c2: V }), links: true, linkPlayers: [H], marks: [{ cell: cellOf('b3', 4), kind: 'alert', label: '応' }] });
+    drawBoard($('figEdge2'), { N: 5, board: board(5, { b3: H }), links: true, linkPlayers: [H], marks: [{ cell: cellOf('a3', 5), kind: 'dot' }, { cell: cellOf('a4', 5), kind: 'dot' }] });
+    var zs = {};
+    ['c4', 'b3', 'b4', 'b5', 'a3', 'a4', 'a5', 'a6'].forEach(function (k) { zs[cellOf(k, 6)] = '#dfe3e9'; });
+    drawBoard($('figZig'), { N: 6, board: board(6, { c3: H }), shade: zs });
+    drawBoard($('figBlock'), { N: 5, board: board(5, { c2: V, c3: H }), marks: [{ cell: cellOf('b3', 5), kind: 'alert', label: '抜' }] });
+  }
+
+
+  // ---------- site: board as an electric network ----------
+  var engCache = {};
+  function engN(N) { return engCache[N] || (engCache[N] = M.createEngine(N)); }
+  function solveLin(A, b) {
+    var n = b.length, x = Float64Array.from(b), c, r, k;
+    for (c = 0; c < n; c++) {
+      var piv = c, best = Math.abs(A[c][c]);
+      for (r = c + 1; r < n; r++) { var a = Math.abs(A[r][c]); if (a > best) { best = a; piv = r; } }
+      if (best < 1e-14) continue;
+      if (piv !== c) { var t = A[c]; A[c] = A[piv]; A[piv] = t; var tb = x[c]; x[c] = x[piv]; x[piv] = tb; }
+      for (r = c + 1; r < n; r++) {
+        var f = A[r][c] / A[c][c]; if (f === 0) continue;
+        for (k = c; k < n; k++) A[r][k] -= f * A[c][k];
+        x[r] -= f * x[c];
+      }
+    }
+    for (c = n - 1; c >= 0; c--) {
+      var s = x[c];
+      for (k = c + 1; k < n; k++) s -= A[c][k] * x[k];
+      x[c] = Math.abs(A[c][c]) < 1e-14 ? 0 : s / A[c][c];
+    }
+    return x;
+  }
+  // own stones ~0 ohm, empty cells 1 ohm, opponent stones cut; 1 V on p's first edge, 0 V on the second
+  function potentialOf(b, p, N) {
+    var opp = 3 - p, C = N * N, EPS = 0.02, i, j, k;
+    var Rc = new Float64Array(C);
+    for (i = 0; i < C; i++) Rc[i] = b[i] === p ? EPS : (b[i] === 0 ? 1 : Infinity);
+    var onSrc = function (x) { return p === V ? x < N : x % N === 0; };
+    var onSnk = function (x) { return p === V ? x >= C - N : x % N === N - 1; };
+    var seen = new Uint8Array(C), st = [];
+    for (i = 0; i < C; i++) if (b[i] !== opp && (onSrc(i) || onSnk(i))) { seen[i] = 1; st.push(i); }
+    while (st.length) {
+      var x0 = st.pop(), nb0 = nbrs(x0, N);
+      for (k = 0; k < nb0.length; k++) { var y0 = nb0[k]; if (!seen[y0] && b[y0] !== opp) { seen[y0] = 1; st.push(y0); } }
+    }
+    var idx = new Int32Array(C).fill(-1), cells = [];
+    for (i = 0; i < C; i++) if (seen[i]) { idx[i] = cells.length; cells.push(i); }
+    var n = cells.length, cur = new Float64Array(C);
+    if (!n) return { R: Infinity, cur: cur };
+    var A = [], rhs = new Float64Array(n), edges = [];
+    for (k = 0; k < n; k++) A.push(new Float64Array(n));
+    for (k = 0; k < n; k++) {
+      i = cells[k];
+      var nb = nbrs(i, N);
+      for (var t = 0; t < nb.length; t++) {
+        j = nb[t];
+        if (j > i && idx[j] >= 0) {
+          var g = 1 / (Rc[i] + Rc[j]), q = idx[j];
+          A[k][k] += g; A[q][q] += g; A[k][q] -= g; A[q][k] -= g;
+          edges.push([i, j, g]);
+        }
+      }
+      if (onSrc(i)) { A[k][k] += 1 / Rc[i]; rhs[k] += 1 / Rc[i]; }
+      if (onSnk(i)) A[k][k] += 1 / Rc[i];
+    }
+    var xs = solveLin(A, rhs), v = new Float64Array(C).fill(NaN), I = 0;
+    for (k = 0; k < n; k++) v[cells[k]] = xs[k];
+    edges.forEach(function (e) { var fl = Math.abs((v[e[0]] - v[e[1]]) * e[2]); cur[e[0]] += fl; cur[e[1]] += fl; });
+    for (k = 0; k < n; k++) {
+      i = cells[k];
+      if (onSrc(i)) { var fs = (1 - v[i]) / Rc[i]; I += fs; cur[i] += Math.abs(fs); }
+      if (onSnk(i)) cur[i] += Math.abs(v[i] / Rc[i]);
+    }
+    for (i = 0; i < C; i++) cur[i] /= 2;
+    return { R: I > 1e-12 ? 1 / I : Infinity, cur: cur };
+  }
+
+  var POT = { who: USER };
+  var POT_SAMPLE = { h: ['d4', 'b5', 'f3'], v: ['c4', 'e4', 'd6'] };
+  function renderPotential() {
+    var svg = $('figPot'); if (!svg) return;
+    seg('segPot', [{ label: 'あなたの回路', value: USER }, { label: '相手の回路', value: AI }], POT.who, function (v) { POT.who = v; renderPotential(); });
+    var live = S.board && S.moves.length >= 2;
+    var N = live ? S.N : 7, b, i;
+    if (live) b = S.board.slice();
+    else {
+      b = new Int8Array(49);
+      POT_SAMPLE.h.forEach(function (k) { b[cellOf(k, 7)] = H; });
+      POT_SAMPLE.v.forEach(function (k) { b[cellOf(k, 7)] = V; });
+    }
+    var me = potentialOf(b, POT.who, N), other = potentialOf(b, 3 - POT.who, N);
+    var max = 0, shade = {}, empties = [];
+    for (i = 0; i < N * N; i++) if (b[i] === 0) { empties.push(i); if (me.cur[i] > max) max = me.cur[i]; }
+    empties.forEach(function (c) { var x = max > 0 ? me.cur[c] / max : 0; shade[c] = 'rgba(208,64,31,' + (0.03 + 0.55 * Math.pow(x, 1.6)).toFixed(3) + ')'; });
+    empties.sort(function (a, c) { return me.cur[c] - me.cur[a]; });
+    var marks = max > 1e-9 ? empties.slice(0, 3).map(function (c, k) { return { cell: c, kind: 'hint', label: '①②③'[k] }; }) : [];
+    drawBoard(svg, { N: N, board: b, shade: shade, marks: marks, last: -1 });
+    var e = engN(N);
+    function rtxt(res, p) {
+      if (e.connected(b, p)) return 'ほぼ0（もうつながっている）';
+      if (!isFinite(res.R)) return '∞（もう道がない）';
+      return '<b>' + res.R.toFixed(2) + '</b>';
+    }
+    var mine = POT.who === USER;
+    var h = (mine ? 'あなたの回路（左の辺に1ボルト、右の辺に0ボルト）' : '相手の回路（上の辺に1ボルト、下の辺に0ボルト）') +
+      'の抵抗は ' + rtxt(me, POT.who) + '、' + (mine ? '相手' : 'あなた') + 'の回路は ' + rtxt(other, 3 - POT.who) + '。' +
+      '抵抗が小さいほど、つながる道が多く太い局面です。濃い朱ほど電流が集まる升で、①②③は空き升のうち電流の多い順です。';
+    if (!live) h += '<br>いまは例の局面です。対局で2手進むと、いまの盤面に切り替わります。';
+    $('potInfo').innerHTML = h;
+  }
+
+  var FILL = { n: 0, h: 0, v: 0, both: 0, none: 0 };
+  function renderFill() {
+    var b = new Int8Array(49), e = engN(7), i;
+    for (i = 0; i < 49; i++) b[i] = Math.random() < 0.5 ? H : V;
+    var wH = e.connected(b, H), wV = e.connected(b, V);
+    FILL.n++;
+    if (wH && wV) FILL.both++; else if (wH) FILL.h++; else if (wV) FILL.v++; else FILL.none++;
+    var path = e.winPath(b, wH ? H : V) || [];
+    drawBoard($('figFill'), { N: 7, board: b, path: path, focus: path, last: -1 });
+    $('fillInfo').innerHTML = (wH ? '墨が左右をつなぎました。藍は上下をつなげていません。' : '藍が上下をつなぎました。墨は左右をつなげていません。') +
+      '<br>これまで ' + FILL.n + ' 回：墨 ' + FILL.h + ' 回、藍 ' + FILL.v + ' 回、両方 ' + FILL.both + ' 回、どちらもなし ' + FILL.none + ' 回。';
+  }
+
+  function renderMoran() {
+    var r = +$('rngR').value, N = +$('rngN').value, k;
+    $('outR').textContent = r.toFixed(2); $('outN').textContent = String(N);
+    var Rk = [], tot = 0, v = [0], acc = 0;
+    for (k = 0; k < N; k++) { Rk.push(Math.pow(r, -k)); tot += Rk[k]; }
+    for (k = 1; k <= N; k++) { acc += Rk[k - 1]; v.push(acc / tot); }
+    var svg = $('figMoran');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var x0 = 28, x1 = 322, base = 146, top = 30, H0 = base - top;
+    function X(i) { return x0 + (x1 - x0) * i / N; }
+    function tx(x, y, s, anchor, cls) { var t = el('text', { x: x, y: y, 'text-anchor': anchor || 'start', 'class': cls || '' }, svg); t.textContent = s; return t; }
+    el('line', { x1: x0, x2: x1, y1: base, y2: base, 'class': 'ax' }, svg);
+    el('line', { x1: x0, x2: x0, y1: top, y2: base, 'class': 'ax' }, svg);
+    tx(x0 - 5, top + 4, '1', 'end'); tx(x0 - 5, base + 4, '0', 'end');
+    tx(x0 + 4, top - 12, '固定確率（＝電圧）', 'start', 'lab');
+    tx(x1, top - 12, '点線：中立 r = 1', 'end', 'lab');
+    el('line', { x1: X(0), y1: base, x2: X(N), y2: top, 'class': 'neu' }, svg);
+    var bw = Math.max(2, Math.min(10, (x1 - x0) / N * 0.55));
+    for (k = 1; k <= N; k++) {
+      var h = H0 * v[k];
+      el('rect', { x: (X(k) - bw / 2).toFixed(1), y: (base - h).toFixed(1), width: bw.toFixed(1), height: Math.max(0.6, h).toFixed(1), 'class': 'bar' + (k === 1 ? ' one' : '') }, svg);
+    }
+    var cmax = 0;
+    for (k = 0; k < N; k++) cmax = Math.max(cmax, Math.pow(r, k));
+    for (k = 0; k < N; k++) el('line', { x1: X(k).toFixed(1), x2: X(k + 1).toFixed(1), y1: 168, y2: 168, 'class': 'wire', 'stroke-width': (0.8 + 6 * Math.pow(r, k) / cmax).toFixed(2) }, svg);
+    tx(X(0), 190, '0（消失）', 'start', 'lab');
+    tx(X(N), 190, 'N（固定）', 'end', 'lab');
+    tx((x0 + x1) / 2, 190, '線の太さ＝通しやすさ rⁱ', 'middle', 'lab');
+    svg.setAttribute('aria-label', 'r=' + r.toFixed(2) + '、N=' + N + ' のときの各点の電圧（固定確率）。1個体からの固定確率は ' + v[1].toFixed(4));
+    $('moranInfo').innerHTML = '<span class="math">r</span> = ' + r.toFixed(2) + '、<span class="math">N</span> = ' + N + ' のとき、1個体から固定する確率は <b>' + v[1].toFixed(4) + '</b>（中立なら 1/<span class="math">N</span> = ' + (1 / N).toFixed(4) + '）。朱の棒がこの値です。';
+  }
+
+  function siteFigures() {
+    renderFill(); renderMoran(); renderPotential();
+    $('bFill').addEventListener('click', renderFill);
+    $('rngR').addEventListener('input', renderMoran);
+    $('rngN').addEventListener('input', renderMoran);
+  }
+
+
+  // ---------- events ----------
+  $('board').addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-cell]') : null;
+    if (t) userPlay(+t.getAttribute('data-cell'));
+  });
+  $('board').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var t = e.target.closest ? e.target.closest('[data-cell]') : null;
+    if (t) { e.preventDefault(); userPlay(+t.getAttribute('data-cell')); }
+  });
+  $('status').addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-rv]') : null;
+    if (!t || S.review === null) return;
+    var a = t.getAttribute('data-rv');
+    if (a === 'prev') S.review = Math.max(0, S.review - 1);
+    else if (a === 'next') S.review = S.review + 1 >= S.moves.length ? null : S.review + 1;
+    else S.review = null;
+    render();
+  });
+  $('bHint').addEventListener('click', function () { S.hint = !S.hint; render(); });
+  $('bUndo').addEventListener('click', undo);
+  $('bLinks').addEventListener('click', function () { S.links = !S.links; render(); snapshotSave(); });
+  $('bCoach').addEventListener('click', function () {
+    S.coach = !S.coach;
+    if (!S.coach) { if (Brain.kind() === 'analysis') Brain.cancel(); S.hint = false; S.analysis = null; }
+    else if (S.phase === 'user') runAnalysis();
+    render(); snapshotSave();
+  });
+  $('bNew').addEventListener('click', newGame);
+
+  // keep the game across a republish of this page
+  function snapshot() {
+    return { N: S.N, userFirst: S.userFirst, level: S.level, coach: S.coach, links: S.links, next: S.next,
+      moves: S.moves.map(function (m) { return { cell: m.cell, p: m.p, fb: m.fb || null, opening: m.opening || null }; }), evals: S.evals };
+  }
+  function snapshotSave() { /* the viewer asks for the snapshot itself; nothing to do */ }
+  function start(data) {
+    figures(); siteFigures();
+    if (data && data.moves && data.N) {
+      S.N = data.N; S.userFirst = data.userFirst; S.level = data.level || S.level; S.coach = data.coach !== false; S.links = data.links !== false;
+      S.next = data.next || { N: S.N, userFirst: S.userFirst };
+      eng = M.createEngine(S.N);
+      S.moves = data.moves; S.evals = data.evals || []; rebuild();
+      if (eng.connected(S.board, USER)) { finish(USER); return; }
+      if (eng.connected(S.board, AI)) { finish(AI); return; }
+      var toMove = (S.moves.length % 2 === 0) === S.userFirst ? USER : AI;
+      if (toMove === USER) startUserTurn(); else aiTurn(S.gen);
+      return;
+    }
+    newGame();
+  }
+  var hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) { try { hot.snapshot(snapshot); } catch (err) { /* ignore */ } }
+  if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
