@@ -7,7 +7,8 @@
 <meta name="description" content="引き分けのない陣取りゲーム、ヘックス。指南役つきのAIと対局しながら、勝ち方、歴史、数学（戦略泥棒・ブラウワーの不動点定理）、盤を電気回路として読む方法を学べるページ。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Klee+One:wght@400;600&family=STIX+Two+Text:ital,wght@0,400;1,400&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&display=swap&text=123457AI%C3%97%E3%80%81%E3%80%82%E3%81%84%E3%81%86%E3%81%88%E3%81%8B%E3%81%8C%E3%81%8D%E3%81%8F%E3%81%90%E3%81%91%E3%81%93%E3%81%95%E3%81%97%E3%81%9D%E3%81%9F%E3%81%A1%E3%81%A3%E3%81%A4%E3%81%A6%E3%81%A7%E3%81%A8%E3%81%A9%E3%81%AA%E3%81%AB%E3%81%AE%E3%81%AF%E3%81%B0%E3%81%B9%E3%81%BB%E3%81%BE%E3%81%BF%E3%82%80%E3%82%81%E3%82%82%E3%82%89%E3%82%8A%E3%82%8B%E3%82%8C%E3%82%8F%E3%82%92%E3%82%A2%E3%82%A6%E3%82%A9%E3%82%AF%E3%82%B2%E3%82%B7%E3%82%B8%E3%82%B9%E3%83%80%E3%83%83%E3%83%88%E3%83%8E%E3%83%92%E3%83%96%E3%83%98%E3%83%9A%E3%83%A0%E3%83%A3%E3%83%A9%E3%83%AA%E3%83%B3%E3%83%BC%E4%B8%80%E4%B8%89%E4%B8%A6%E4%BA%8C%E4%BA%94%E4%BD%8D%E5%85%88%E5%85%A8%E5%85%B8%E5%87%BA%E5%88%86%E5%88%9D%E5%8B%9D%E5%8D%97%E5%8F%97%E5%8F%B2%E5%9B%9B%E5%9B%9E%E5%9B%B3%E5%9B%BA%E5%A1%9E%E5%A4%96%E5%A4%A7%E5%AD%A6%E5%AE%9A%E5%B1%80%E5%B1%8A%E5%BA%A6%E5%BC%95%E5%BC%B7%E6%84%8F%E6%89%8B%E6%8C%87%E6%8E%A8%E6%95%B0%E6%96%B9%E6%98%8E%E6%9B%B8%E6%A2%B0%E6%A3%8B%E6%A9%9F%E6%AD%A9%E6%AD%B4%E6%AE%B5%E6%B0%97%E6%B5%81%E7%8E%87%E7%90%86%E7%99%BA%E7%9B%A4%E7%9B%AE%E7%9B%B8%E7%A2%BA%E7%A7%BB%E7%AE%97%E7%BD%AE%E8%80%85%E8%82%B2%E8%A6%8B%E8%A7%A3%E8%A8%88%E8%AA%AD%E8%AB%96%E8%AD%9C%E8%B2%A0%E8%B7%AF%E8%BE%BA%E8%BE%BC%E9%9A%A3%E9%9B%A3%E9%9B%BB%E9%9D%A2%E9%A3%9B">
 <style>
 :root {
   /* layout: the board comes first; the coach writes beside it in red pen, like margin notes in a teacher's copy */
@@ -18,8 +19,10 @@
   --rule: #c8cdd6;
   --shu: #c63a21;
   --font-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
-  --font-hand: "Klee One", "Hiragino Mincho ProN", "Yu Mincho", serif;
-  --font-num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-head: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --font-hand: "Klee One", "Klee", "UD Digi Kyokasho N-R", "Hiragino Maru Gothic ProN", var(--font-ui);
+  --font-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-math: "STIX Two Text", "Times New Roman", "Hiragino Mincho ProN", serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -38,7 +41,7 @@ body { color: var(--text); font-family: var(--font-ui); font-size: 16px; line-he
 .wrap { max-width: 1100px; margin: 0 auto; padding: 14px 16px 64px; }
 
 .masthead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 18px; margin: 4px 0 12px; }
-.masthead h1 { font-family: var(--font-hand); font-weight: 600; font-size: clamp(30px, 7vw, 40px); line-height: 1.15; margin: 0; letter-spacing: .06em; text-wrap: balance; }
+.masthead h1 { font-family: var(--font-head); font-weight: 800; font-size: clamp(30px, 7vw, 40px); line-height: 1.15; margin: 0; letter-spacing: .06em; text-wrap: balance; }
 .masthead p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 42em; }
 .k { font-weight: 700; color: var(--text); white-space: nowrap; }
 .k::before { content: ""; display: inline-block; width: .78em; height: .78em; border-radius: 50%; margin-right: .22em; vertical-align: -.04em; }
@@ -137,10 +140,10 @@ body { color: var(--text); font-family: var(--font-ui); font-size: 16px; line-he
 .kifu button[aria-current="true"] { border-color: var(--shu); box-shadow: inset 0 0 0 1px var(--shu); }
 
 .guide { margin-top: 48px; border-top: 1px solid var(--rule); padding-top: 24px; }
-.guide > h2 { font-family: var(--font-hand); font-weight: 600; font-size: 30px; margin: 0 0 6px; letter-spacing: .04em; }
+.guide > h2 { font-family: var(--font-head); font-weight: 700; font-size: 30px; margin: 0 0 6px; letter-spacing: .04em; }
 .guide .intro { color: var(--muted); max-width: 40em; margin: 0; font-size: 16px; }
 .lesson { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 36px; }
-.lesson h3 { font-family: var(--font-hand); font-weight: 600; font-size: 23px; margin: 0; display: flex; gap: 12px; align-items: baseline; line-height: 1.4; text-wrap: balance; }
+.lesson h3 { font-family: var(--font-head); font-weight: 700; font-size: 23px; margin: 0; display: flex; gap: 12px; align-items: baseline; line-height: 1.4; text-wrap: balance; }
 .lesson h3 .n { color: var(--shu); font-size: 26px; }
 .lesson p { margin: 0; font-size: 17.5px; line-height: 1.85; max-width: 38em; }
 .figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 16px 20px; max-width: 46em; }
@@ -171,23 +174,23 @@ html { scroll-behavior: smooth; }
 .toc::-webkit-scrollbar { display: none; }
 .toc a { flex: none; font-size: 14.5px; color: var(--text); text-decoration: none; padding: 6px 11px; border-radius: 6px; min-height: 36px; display: inline-flex; align-items: center; }
 .toc a:hover, .toc a:focus-visible { background: var(--panel); outline: none; }
-.toc a .n { color: var(--shu); font-family: var(--font-hand); font-weight: 600; margin-right: 3px; }
+.toc a .n { color: var(--shu); font-family: var(--font-head); font-weight: 700; margin-right: 3px; }
 section[id], article[id] { scroll-margin-top: 58px; }
 @media (min-width: 900px) { .board-col { top: 58px; } }
 
 .chap { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 26px; }
 .chap > header { display: grid; gap: 4px; margin-bottom: 6px; }
-.chap > header .kick { font-family: var(--font-hand); font-weight: 600; color: var(--shu); font-size: 18px; letter-spacing: .1em; }
-.chap > header h2 { font-family: var(--font-hand); font-weight: 600; font-size: clamp(28px, 6.4vw, 36px); margin: 0; letter-spacing: .04em; line-height: 1.3; text-wrap: balance; }
+.chap > header .kick { font-family: var(--font-head); font-weight: 700; color: var(--shu); font-size: 18px; letter-spacing: .1em; }
+.chap > header h2 { font-family: var(--font-head); font-weight: 800; font-size: clamp(28px, 6.4vw, 36px); margin: 0; letter-spacing: .04em; line-height: 1.3; text-wrap: balance; }
 .chap > header p { margin: 4px 0 0; color: var(--muted); max-width: 40em; font-size: 16px; }
 .chap .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 22px; }
-.chap .body > h3 { font-family: var(--font-hand); font-weight: 600; font-size: 22px; margin: 22px 0 0; line-height: 1.45; text-wrap: balance; }
+.chap .body > h3 { font-family: var(--font-head); font-weight: 700; font-size: 22px; margin: 22px 0 0; line-height: 1.45; text-wrap: balance; }
 .chap .body > p, .chap .body > ul, .chap .body > ol:not(.tl) { margin: 0; font-size: 17.5px; line-height: 1.85; max-width: 38em; }
 .chap .body > ul { padding-left: 1.2em; }
 .chap .body > ul li { margin: .2em 0; }
 .chap .body .src { font-size: 13.5px; color: var(--muted); max-width: 44em; }
-.math { font-family: "Times New Roman", "Hiragino Mincho ProN", serif; font-style: italic; white-space: nowrap; }
-.eq { font-family: "Times New Roman", "Hiragino Mincho ProN", serif; font-size: 19px; text-align: center; padding: 10px 6px; background: var(--panel); border-radius: 8px; max-width: 32em; overflow-x: auto; }
+.math { font-family: var(--font-math); font-style: italic; white-space: nowrap; }
+.eq { font-family: var(--font-math); font-size: 19px; text-align: center; padding: 10px 6px; background: var(--panel); border-radius: 8px; max-width: 32em; overflow-x: auto; }
 .eq i { font-style: italic; }
 
 /* timeline */
@@ -522,7 +525,7 @@ ol.tl .t .s { display: block; font-size: 12.5px; color: var(--muted); line-heigh
 
       <h3>固定確率も回路で解ける</h3>
       <p>モラン過程で、突然変異体の数を 0 から N までの一直線を歩くランダムウォークとみます。数が1増える確率と1減る確率の比は、相対適応度 <span class="math">r</span> です。そこで、<span class="math">i</span> と <span class="math">i</span>+1 のあいだのコンダクタンスを <span class="math">r<sup>i</sup></span>（抵抗 <span class="math">r<sup>−i</sup></span>）とおくと、同じ歩き方の回路ができます。N に1ボルト、0 に0ボルトをかけたときの点 <span class="math">i</span> の電圧が、<span class="math">i</span> 個体から固定する確率です。抵抗が直列に並ぶだけなので、分圧の計算で解けます。</p>
-      <div class="eq"><i>v</i>(<i>i</i>) ＝ Σ<sub><i>k</i>&lt;<i>i</i></sub> <i>r</i><sup>−<i>k</i></sup> ／ Σ<sub><i>k</i>&lt;<i>N</i></sub> <i>r</i><sup>−<i>k</i></sup>　　<i>v</i>(1) ＝ (1 − 1/<i>r</i>) ／ (1 − <i>r</i><sup>−<i>N</i></sup>)</div>
+      <div class="eq"><i>v</i>(<i>i</i>) = Σ<sub><i>k</i>&lt;<i>i</i></sub> <i>r</i><sup>−<i>k</i></sup> / Σ<sub><i>k</i>&lt;<i>N</i></sub> <i>r</i><sup>−<i>k</i></sup>, &nbsp; <i>v</i>(1) = (1 − 1/<i>r</i>) / (1 − <i>r</i><sup>−<i>N</i></sup>)</div>
       <div class="ctrl">
         <label for="rngR"><span class="math">r</span><input type="range" id="rngR" min="0.6" max="2" step="0.02" value="1.1"><output id="outR" for="rngR">1.10</output></label>
         <label for="rngN"><span class="math">N</span><input type="range" id="rngN" min="3" max="40" step="1" value="20"><output id="outN" for="rngN">20</output></label>
@@ -593,7 +596,7 @@ ol.tl .t .s { display: block; font-size: 12.5px; color: var(--muted); line-heigh
 // Hex engine: MCTS + RAVE, playouts that answer a threatened bridge.
 // Written as one function so the page can turn it into a Web Worker
 // (via its source text) or call it on the main thread.
-function hexEngineModule() {
+var hexEngineModule = function () {
   'use strict';
   var V = 1, H = 2;                 // V connects top-bottom, H connects left-right
   var OFF_V = -1, OFF_H = -2, OFF_X = -3;
@@ -631,7 +634,7 @@ function hexEngineModule() {
     var parent = new Int16Array(C);
 
     function connected(b, p) {
-      stamp++; if (stamp > 4000000000) { mark.fill(0); stamp = 1; }
+      stamp++; if (stamp > 4000000000) { for (var z0 = 0; z0 < C; z0++) mark[z0] = 0; stamp = 1; }
       var sp = 0, i, cell;
       for (i = 0; i < N; i++) {
         cell = p === V ? i : i * N;
@@ -733,7 +736,7 @@ function hexEngineModule() {
       var EXP = opt.expand || 2;
       var CU = opt.c != null ? opt.c : 0.1;
       var RB = opt.raveB != null ? opt.raveB : 0.002;
-      var rb = Int8Array.from(rootBoard);
+      var rb = new Int8Array(rootBoard);
       var root = makeNode(rb, toMove);
       var work = new Int8Array(C);
       var pathN = new Array(C + 1), pathI = new Int16Array(C + 1);
@@ -764,7 +767,7 @@ function hexEngineModule() {
           work[cell] = node.toMove; lastMove = cell;
           pathN[depth] = node; pathI[depth] = j; depth++;
           if (node.cn[j] >= EXP && node.moves.length > 1) {
-            if (!node.kids) node.kids = new Array(node.moves.length).fill(null);
+            if (!node.kids) node.kids = new Array(node.moves.length);
             var child = node.kids[j];
             if (!child) { child = makeNode(work, 3 - node.toMove); node.kids[j] = child; }
             node = child;
@@ -819,7 +822,7 @@ function hexEngineModule() {
   }
 
   return { createEngine: createEngine, V: V, H: H };
-}
+};
 
 
 </script>
@@ -851,7 +854,8 @@ function hexEngineModule() {
     N: 7, userFirst: true, level: 'shokyu', coach: true, links: true,
     next: { N: 7, userFirst: true },
     board: null, moves: [], phase: 'idle', winner: 0, path: [],
-    analysis: null, hint: false, review: null, evals: [], gen: 0, aiSims: 0, judging: false, anim: -1
+    analysis: null, hint: false, review: null, evals: [], gen: 0, aiSims: 0, judging: false, anim: -1,
+    reviewJob: null
   };
   var eng = M.createEngine(7);
 
@@ -861,7 +865,6 @@ function hexEngineModule() {
   function names(arr, N) { return arr.map(function (c) { return nameOf(c, N); }).join('・'); }
   function pct(q) { return Math.round(q * 100); }
   function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function inb(r, c, N) { return r >= 0 && r < N && c >= 0 && c < N; }
   function nbrs(cell, N) {
     var r = Math.floor(cell / N), c = cell % N, out = [];
@@ -903,7 +906,8 @@ function hexEngineModule() {
     return out;
   }
   function groupsOf(b, p, N) {
-    var g = new Int16Array(N * N).fill(-1), touch = [], k = 0;
+    var g = new Int16Array(N * N), touch = [], k = 0;
+    for (var i0 = 0; i0 < N * N; i0++) g[i0] = -1;
     for (var i = 0; i < N * N; i++) {
       if (b[i] !== p || g[i] >= 0) continue;
       var st = [i], t0 = false, t1 = false; g[i] = k;
@@ -965,7 +969,8 @@ function hexEngineModule() {
   }
   // fewest empty cells p still needs to connect, if the opponent never played again
   function dist(b, p, N) {
-    var opp = 3 - p, D = new Array(N * N).fill(Infinity), dq = [], i, cell;
+    var opp = 3 - p, D = [], dq = [], i, cell;
+    for (i = 0; i < N * N; i++) D.push(Infinity);
     for (i = 0; i < N; i++) {
       cell = p === V ? i : i * N;
       if (b[cell] === opp) continue;
@@ -988,7 +993,7 @@ function hexEngineModule() {
 
   // ---------- plain-language reasons for a move of yours ----------
   function explainMove(b0, m) {
-    var N = S.N, b = b0.slice(), p = USER, opp = AI, R = [], i;
+    var N = S.N, b = new Int8Array(b0), p = USER, opp = AI, R = [], i;
     b[m] = p;
     if (eng.connected(b, p)) return ['この一手でつながって勝ち'];
     b[m] = 0;
@@ -1038,7 +1043,7 @@ function hexEngineModule() {
     function onMsg(e) {
       var d = e.data; if (!job || d.id !== job.id) return;
       job.last = d.res; if (job.onProgress) job.onProgress(d.res);
-      if (d.done) { var j = job; job = null; j.resolve(d.res); }
+      if (d.done) { var j = job; job = null; j.done(d.res); }
     }
     function runHere(j) {
       var g = engines[j.params.N] || (engines[j.params.N] = M.createEngine(j.params.N));
@@ -1047,26 +1052,25 @@ function hexEngineModule() {
         if (job !== j) return;
         var done = s.step(14), r = s.result();
         j.last = r; if (j.onProgress) j.onProgress(r);
-        if (done) { job = null; j.resolve(r); } else timer = setTimeout(tick, 0);
+        if (done) { job = null; j.done(r); } else timer = setTimeout(tick, 0);
       }
       timer = setTimeout(tick, 0);
     }
-    function search(params, onProgress, kind) {
+    // done(result) is called once; with null when the search was cancelled
+    function search(params, onProgress, kind, done) {
       cancel();
-      return new Promise(function (resolve) {
-        var j = job = { id: ++seq, resolve: resolve, onProgress: onProgress, last: null, params: params, kind: kind || '' };
-        if (useWorker && !worker) spawn();
-        if (useWorker && worker) {
-          worker.postMessage({ id: j.id, N: params.N, board: Array.prototype.slice.call(params.board), toMove: params.toMove, last: params.last, opt: params.opt });
-        } else runHere(j);
-      });
+      var j = job = { id: ++seq, done: done || function () {}, onProgress: onProgress, last: null, params: params, kind: kind || '' };
+      if (useWorker && !worker) spawn();
+      if (useWorker && worker) {
+        worker.postMessage({ id: j.id, N: params.N, board: Array.prototype.slice.call(params.board), toMove: params.toMove, last: params.last, opt: params.opt });
+      } else runHere(j);
     }
     function cancel() {
       if (!job) return null;
       var j = job; job = null;
       if (worker) { worker.terminate(); worker = null; }
       if (timer) { clearTimeout(timer); timer = null; }
-      j.resolve(null);
+      setTimeout(function () { j.done(null); }, 0);
       return j.last;
     }
     function kind() { return job ? job.kind : null; }
@@ -1091,14 +1095,14 @@ function hexEngineModule() {
     eng = M.createEngine(S.N);
     S.board = new Int8Array(S.N * S.N);
     S.moves = []; S.winner = 0; S.path = []; S.analysis = null; S.hint = false; S.review = null;
-    S.evals = []; S.judging = false; S.anim = -1;
+    S.evals = []; S.judging = false; S.anim = -1; S.reviewJob = null;
     if (S.userFirst) startUserTurn(); else aiTurn(S.gen);
   }
 
   function startUserTurn() {
     S.phase = 'user'; S.hint = false; S.analysis = null;
-    render();
     if (S.coach) runAnalysis();
+    render();
   }
 
   function runAnalysis() {
@@ -1109,64 +1113,66 @@ function hexEngineModule() {
       an.sims = res.sims; an.moves = res.moves;
       renderStatus();
       if (S.hint) renderNote();
-    }, 'analysis').then(function (res) {
+    }, 'analysis', function (res) {
       if (!res || gen !== S.gen || S.analysis !== an) return;
       an.sims = res.sims; an.moves = res.moves; an.done = true;
       if (res.moves.length) setEval(ply, res.moves[0].q);
       render();
+      ensureReviews();
     });
   }
 
   function userPlay(cell) {
     if (S.phase !== 'user' || S.review !== null || S.board[cell] !== 0) return;
     var gen = S.gen;
+    var wasReading = Brain.kind() === 'analysis';
     var partial = Brain.cancel();
     var an = S.analysis;
-    if (an && !an.done && partial) { an.sims = partial.sims; an.moves = partial.moves; }
-    var before = S.board.slice(), ply = S.moves.length, lastBefore = lastCell();
+    if (an && !an.done && partial && wasReading) { an.sims = partial.sims; an.moves = partial.moves; }
+    var before = new Int8Array(S.board), ply = S.moves.length, lastBefore = lastCell();
     place(cell, USER);
     var mv = S.moves[ply];
     S.hint = false;
-    if (eng.connected(S.board, USER)) { if (S.coach) mv.fb = { cell: cell, ply: ply, win: true }; finish(USER); return; }
+    if (eng.connected(S.board, USER)) { mv.fb = { cell: cell, ply: ply, win: true }; finish(USER); return; }
     S.phase = 'ai';
     if (!S.coach) { render(); aiTurn(gen); return; }
     S.judging = true; render();
-    judge(before, lastBefore, cell, ply, an, gen).then(function (fb) {
+    judge(before, lastBefore, cell, ply, an, gen, function (fb) {
       if (gen !== S.gen) return;
       mv.fb = fb; S.judging = false;
       aiTurn(gen);
     });
   }
 
-  function judge(before, lastBefore, cell, ply, an, gen) {
+  // budget: how long to read when there is no reading of this turn yet (LATE in a game, AN afterwards)
+  function judge(before, lastBefore, cell, ply, an, gen, cb, budget) {
     var fb = { cell: cell, ply: ply };
     if (S.N === 7 && ply === 0) fb.opening = openingVerdict(cell, USER);
     if (an && an.sims >= 3000 && an.moves.length && !S.evals.some(function (e) { return e.ply === ply; })) setEval(ply, an.moves[0].q);
-    var ready = an && an.sims >= 3000 && an.moves.length ? Promise.resolve(an) :
-      Brain.search(job(USER, LATE, before, lastBefore), null, 'judge').then(function (r) {
-        if (!r || gen !== S.gen) return null;
-        if (r.moves.length) setEval(ply, r.moves[0].q);
-        return r;
-      });
-    return ready.then(function (a) {
-      if (!a || gen !== S.gen) return fb;
-      var best = a.moves[0];
-      var e = null;
-      for (var i = 0; i < a.moves.length; i++) if (a.moves[i].cell === cell) { e = a.moves[i]; break; }
-      var known = best.cell === cell ? best.q : (e && e.n >= Math.max(150, a.sims * 0.02) ? e.q : null);
-      var finishFb = function (q) {
+    function withReading(rd) {
+      if (!rd || gen !== S.gen || !rd.moves.length) { cb(fb); return; }
+      var best = rd.moves[0], e = null, i;
+      for (i = 0; i < rd.moves.length; i++) if (rd.moves[i].cell === cell) { e = rd.moves[i]; break; }
+      var known = best.cell === cell ? best.q : (e && e.n >= Math.max(150, rd.sims * 0.02) ? e.q : null);
+      function finishFb(q) {
         fb.bestCell = best.cell; fb.bestQ = best.q; fb.q = q;
         fb.delta = best.cell === cell ? 0 : Math.max(0, best.q - q);
         fb.why = explainMove(before, cell);
         if (best.cell !== cell) fb.bestWhy = explainMove(before, best.cell);
-        return fb;
-      };
-      if (known !== null) return finishFb(known);
-      var after = before.slice(); after[cell] = USER;
-      return Brain.search(job(AI, VERIFY, after, cell), null, 'judge').then(function (r) {
-        if (!r || gen !== S.gen || !r.moves.length) return fb;
-        return finishFb(1 - r.moves[0].q);
+        cb(fb);
+      }
+      if (known !== null) { finishFb(known); return; }
+      var after = new Int8Array(before); after[cell] = USER;
+      Brain.search(job(AI, VERIFY, after, cell), null, 'judge', function (r) {
+        if (!r || gen !== S.gen || !r.moves.length) { cb(fb); return; }
+        finishFb(1 - r.moves[0].q);
       });
+    }
+    if (an && an.sims >= 3000 && an.moves.length) { withReading(an); return; }
+    Brain.search(job(USER, budget || LATE, before, lastBefore), null, 'judge', function (r) {
+      if (!r || gen !== S.gen) { withReading(null); return; }
+      if (r.moves.length && !S.evals.some(function (e) { return e.ply === ply; })) setEval(ply, r.moves[0].q);
+      withReading(r);
     });
   }
 
@@ -1174,31 +1180,28 @@ function hexEngineModule() {
     if (gen !== S.gen) return;
     S.phase = 'ai'; S.aiSims = 0; render();
     var t0 = performance.now();
-    var wins = eng.immediateWins(S.board, AI);
-    var threats = eng.immediateWins(S.board, USER);
-    var pick;
-    if (wins.length) pick = Promise.resolve(wins[0]);
-    else if (threats.length === 1) pick = Promise.resolve(threats[0]);
-    else {
-      var lv = LEVELS.filter(function (l) { return l.id === S.level; })[0];
-      pick = Brain.search(job(AI, lv.sims ? { maxSims: lv.sims } : { maxMs: lv.ms }), function (res) {
-        if (gen !== S.gen) return; S.aiSims = res.sims; renderStatus();
-      }, 'ai').then(function (r) {
-        if (!r || !r.moves.length) return -1;
-        S.aiSims = r.sims; return r.moves[0].cell;
-      });
-    }
-    pick.then(function (cell) {
+    function play(cell) {
       if (gen !== S.gen || cell < 0) return;
       var wait = 420 - (performance.now() - t0);
-      return sleep(Math.max(0, wait)).then(function () {
+      setTimeout(function () {
         if (gen !== S.gen) return;
         place(cell, AI);
         var mv = S.moves[S.moves.length - 1];
         if (S.N === 7 && S.moves.length === 1) mv.opening = openingVerdict(cell, AI);
         if (eng.connected(S.board, AI)) { finish(AI); return; }
         startUserTurn();
-      });
+      }, Math.max(0, wait));
+    }
+    var wins = eng.immediateWins(S.board, AI);
+    var threats = eng.immediateWins(S.board, USER);
+    if (wins.length) { play(wins[0]); return; }
+    if (threats.length === 1) { play(threats[0]); return; }
+    var lv = LEVELS.filter(function (l) { return l.id === S.level; })[0];
+    Brain.search(job(AI, lv.sims ? { maxSims: lv.sims } : { maxMs: lv.ms }), function (res) {
+      if (gen !== S.gen) return; S.aiSims = res.sims; renderStatus();
+    }, 'ai', function (r) {
+      if (!r || !r.moves.length) return;
+      S.aiSims = r.sims; play(r.moves[0].cell);
     });
   }
 
@@ -1207,6 +1210,7 @@ function hexEngineModule() {
     S.path = eng.winPath(S.board, w) || [];
     setEval(S.moves.length, w === USER ? 1 : 0);
     render();
+    ensureReviews();
   }
 
   function undo() {
@@ -1215,10 +1219,44 @@ function hexEngineModule() {
     if (k < 0) return;
     Brain.cancel(); S.gen++;
     S.moves.length = k; rebuild();
-    S.winner = 0; S.path = []; S.review = null; S.judging = false; S.anim = -1;
+    S.winner = 0; S.path = []; S.review = null; S.judging = false; S.anim = -1; S.reviewJob = null;
     S.evals = S.evals.filter(function (e) { return e.ply < k; });
     startUserTurn();
   }
+
+  // ---------- 講評 after the fact ----------
+  // Your moves without a 講評 (played while the coach was off, or cut short) get one here.
+  // After the game: all of them, one at a time, the one on screen first.
+  // During a game: only the one you are looking at, and only while the coach is on.
+  // It uses the engine only when nothing else does, so it never delays the opponent or the coach.
+  function pendingReviews() {
+    var out = [];
+    S.moves.forEach(function (m, i) { if (m.p === USER && !m.fb) out.push(i); });
+    return out;
+  }
+  function ensureReviews() {
+    if (S.reviewJob || S.judging || Brain.kind() || (S.phase !== 'over' && S.phase !== 'user')) return;
+    var todo = pendingReviews();
+    if (!todo.length) return;
+    var seen = S.review !== null && S.moves[S.review] && S.moves[S.review].p === USER && !S.moves[S.review].fb;
+    var k = -1;
+    if (S.phase === 'over') k = seen ? S.review : todo[0];
+    else if (S.coach && seen) k = S.review;
+    if (k < 0) return;
+    var gen = S.gen, mv = S.moves[k], before = new Int8Array(S.N * S.N), i;
+    for (i = 0; i < k; i++) before[S.moves[i].cell] = S.moves[i].p;
+    var rj = S.reviewJob = { ply: k };
+    renderNote();
+    judge(before, k > 0 ? S.moves[k - 1].cell : -1, mv.cell, k, null, gen, function (fb) {
+      if (gen !== S.gen || S.reviewJob !== rj) return;
+      S.reviewJob = null;
+      var whole = fb.bestCell != null;   // a cut-short reading leaves the move waiting
+      if (whole && S.moves[k] === mv) mv.fb = fb;
+      render();
+      if (whole) ensureReviews();
+    }, AN);
+  }
+  function setReview(i) { S.review = i; render(); ensureReviews(); }
 
   // ---------- coach judgments ----------
   function grade(d, isBest) {
@@ -1360,9 +1398,11 @@ function hexEngineModule() {
         el('circle', { cx: x, cy: y, r: s * 0.58, fill: 'rgba(255,255,255,.8)', stroke: COL.shu, 'stroke-width': 2.2 }, over);
         var t = el('text', { x: x, y: y + s * 0.27, 'text-anchor': 'middle', 'class': 'mk', 'font-size': (s * 0.78).toFixed(1) }, over); t.textContent = m.label;
       } else if (m.kind === 'best') {
-        var da = m.dashed ? { 'stroke-dasharray': '3 3', opacity: .8 } : {};
-        el('circle', Object.assign({ cx: x, cy: y, r: s * 0.6, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 }, da), over);
-        el('circle', Object.assign({ cx: x, cy: y, r: s * 0.3, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 }, da), over);
+        var c1 = { cx: x, cy: y, r: s * 0.6, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 };
+        var c2 = { cx: x, cy: y, r: s * 0.3, fill: 'none', stroke: COL.shu, 'stroke-width': 1.8 };
+        if (m.dashed) { c1['stroke-dasharray'] = c2['stroke-dasharray'] = '3 3'; c1.opacity = c2.opacity = 0.8; }
+        el('circle', c1, over);
+        el('circle', c2, over);
       } else if (m.kind === 'alert') {
         el('circle', { cx: x, cy: y, r: s * 0.64, fill: 'rgba(208,64,31,.10)', stroke: COL.shu, 'stroke-width': 3 }, over);
         if (m.label) { var t3 = el('text', { x: x, y: y + s * 0.27, 'text-anchor': 'middle', 'class': 'mk', 'font-size': (s * 0.72).toFixed(1) }, over); t3.textContent = m.label; }
@@ -1428,6 +1468,11 @@ function hexEngineModule() {
     }
     $('status').innerHTML = '<div class="l">' + l + '</div><div class="r">' + r + '</div>';
   }
+  function waitText(ply) {
+    if (S.reviewJob && S.reviewJob.ply === ply) return '講評を作っています。数秒で出ます。';
+    if (S.phase === 'over' || S.coach) return '講評を作る順番を待っています。';
+    return '指南がオフのあいだは講評を出しません。対局が終わると作ります。';
+  }
   function reasonText(list) { return list && list.length ? '：' + list.join('。') + '。' : '。'; }
   function fbHTML(fb) {
     if (!fb) return '';
@@ -1467,7 +1512,7 @@ function hexEngineModule() {
     var h = '';
     if (S.review !== null) {
       var m = S.moves[S.review];
-      if (m.p === USER) h = m.fb ? fbHTML(m.fb) : '<p>あなたの <b class="c">' + nameOf(m.cell) + '</b>（指南がオフのときの手なので講評はありません）。</p>';
+      if (m.p === USER) h = m.fb ? fbHTML(m.fb) : '<p>あなたの <b class="c">' + nameOf(m.cell) + '</b>。</p><p class="dim">' + waitText(S.review) + '</p>';
       else {
         h = '<p>相手の <b class="c">' + nameOf(m.cell) + '</b>。</p>';
         if (S.review === 0 && m.opening) h += m.opening.win ? '<p>解析で先手の勝ちと分かっている初手です。</p>' : '<p>後手が正しく応じれば勝てる初手です（解析表の応手は ' + nameOf(m.opening.counter) + '）。</p>';
@@ -1476,11 +1521,13 @@ function hexEngineModule() {
       var won = S.winner === USER;
       h = '<div class="verdict">' + (won ? 'あなたの勝ち' : '相手の勝ち') + '</div>';
       h += won ? '<p>左右の辺がつながりました。</p>' : '<p>上下の辺がつながりました。</p>';
+      var left = pendingReviews().length;
+      if (left) h += '<p class="dim">講評のまだない手を、順に講評しています（あと ' + left + ' 手）。できた手から棋譜に印が付きます。</p>';
       var tp = turningPoint();
       if (tp) h += '<p>いちばん見込みを落とした手は <b class="c">' + (tp.ply + 1) + '手目の ' + nameOf(tp.cell) + '</b>（見込み −' + pct(tp.delta) + '）。最善は <b class="c">' + nameOf(tp.bestCell) + '</b> でした。</p>';
       h += '<p class="dim">棋譜の手をタップすると、その局面と講評を振り返れます。「待った」で負けた手の前まで戻すこともできます。</p>';
     } else if (!S.coach) {
-      h = '<p class="dim">指南はオフです。講評・警告・ヒントは出ません。</p>';
+      h = '<p class="dim">指南はオフです。対局中は講評・警告・ヒントを出しません。講評は対局が終わってから作るので、棋譜から振り返れます。</p>';
     } else {
       var lu = lastUserMove();
       if (S.phase === 'ai' && S.judging) h += '<p class="dim">いまの一手を確かめています…</p>';
@@ -1553,7 +1600,7 @@ function hexEngineModule() {
       el('polyline', { points: ev.map(function (e) { return X(e.ply).toFixed(1) + ',' + Y(e.win).toFixed(1); }).join(' '), 'class': 'ln' }, svg);
       ev.forEach(function (e) {
         var c = el('circle', { cx: X(e.ply), cy: Y(e.win), r: 3.4, 'class': 'pt' }, svg);
-        c.addEventListener('click', function () { if (e.ply < S.moves.length) { S.review = e.ply; render(); } });
+        c.addEventListener('click', function () { if (e.ply < S.moves.length) setReview(e.ply); });
       });
       var tp = turningPoint();
       if (tp) {
@@ -1572,7 +1619,7 @@ function hexEngineModule() {
       var g = m.fb && m.fb.bestCell != null ? grade(m.fb.delta, m.fb.cell === m.fb.bestCell).sym : (m.fb && m.fb.win ? '◎' : '');
       bt.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="d ' + (m.p === USER ? 's' : 'a') + '"></span>' + nameOf(m.cell) + (g ? '<span class="g">' + g + '</span>' : '');
       bt.setAttribute('aria-label', (i + 1) + '手目 ' + (m.p === USER ? 'あなた' : '相手') + ' ' + nameOf(m.cell) + '、振り返る');
-      bt.addEventListener('click', function () { S.review = i; render(); });
+      bt.addEventListener('click', function () { setReview(i); });
       k.appendChild(bt);
     });
   }
@@ -1601,7 +1648,7 @@ function hexEngineModule() {
   var engCache = {};
   function engN(N) { return engCache[N] || (engCache[N] = M.createEngine(N)); }
   function solveLin(A, b) {
-    var n = b.length, x = Float64Array.from(b), c, r, k;
+    var n = b.length, x = new Float64Array(b), c, r, k;
     for (c = 0; c < n; c++) {
       var piv = c, best = Math.abs(A[c][c]);
       for (r = c + 1; r < n; r++) { var a = Math.abs(A[r][c]); if (a > best) { best = a; piv = r; } }
@@ -1633,7 +1680,8 @@ function hexEngineModule() {
       var x0 = st.pop(), nb0 = nbrs(x0, N);
       for (k = 0; k < nb0.length; k++) { var y0 = nb0[k]; if (!seen[y0] && b[y0] !== opp) { seen[y0] = 1; st.push(y0); } }
     }
-    var idx = new Int32Array(C).fill(-1), cells = [];
+    var idx = new Int32Array(C), cells = [];
+    for (i = 0; i < C; i++) idx[i] = -1;
     for (i = 0; i < C; i++) if (seen[i]) { idx[i] = cells.length; cells.push(i); }
     var n = cells.length, cur = new Float64Array(C);
     if (!n) return { R: Infinity, cur: cur };
@@ -1653,7 +1701,8 @@ function hexEngineModule() {
       if (onSrc(i)) { A[k][k] += 1 / Rc[i]; rhs[k] += 1 / Rc[i]; }
       if (onSnk(i)) A[k][k] += 1 / Rc[i];
     }
-    var xs = solveLin(A, rhs), v = new Float64Array(C).fill(NaN), I = 0;
+    var xs = solveLin(A, rhs), v = new Float64Array(C), I = 0;
+    for (i = 0; i < C; i++) v[i] = NaN;
     for (k = 0; k < n; k++) v[cells[k]] = xs[k];
     edges.forEach(function (e) { var fl = Math.abs((v[e[0]] - v[e[1]]) * e[2]); cur[e[0]] += fl; cur[e[1]] += fl; });
     for (k = 0; k < n; k++) {
@@ -1672,7 +1721,7 @@ function hexEngineModule() {
     seg('segPot', [{ label: 'あなたの回路', value: USER }, { label: '相手の回路', value: AI }], POT.who, function (v) { POT.who = v; renderPotential(); });
     var live = S.board && S.moves.length >= 2;
     var N = live ? S.N : 7, b, i;
-    if (live) b = S.board.slice();
+    if (live) b = new Int8Array(S.board);
     else {
       b = new Int8Array(49);
       POT_SAMPLE.h.forEach(function (k) { b[cellOf(k, 7)] = H; });
@@ -1766,10 +1815,9 @@ function hexEngineModule() {
     var t = e.target.closest ? e.target.closest('[data-rv]') : null;
     if (!t || S.review === null) return;
     var a = t.getAttribute('data-rv');
-    if (a === 'prev') S.review = Math.max(0, S.review - 1);
-    else if (a === 'next') S.review = S.review + 1 >= S.moves.length ? null : S.review + 1;
-    else S.review = null;
-    render();
+    if (a === 'prev') setReview(Math.max(0, S.review - 1));
+    else if (a === 'next') setReview(S.review + 1 >= S.moves.length ? null : S.review + 1);
+    else setReview(null);
   });
   $('bHint').addEventListener('click', function () { S.hint = !S.hint; render(); });
   $('bUndo').addEventListener('click', undo);
@@ -1778,7 +1826,7 @@ function hexEngineModule() {
     S.coach = !S.coach;
     if (!S.coach) { if (Brain.kind() === 'analysis') Brain.cancel(); S.hint = false; S.analysis = null; }
     else if (S.phase === 'user') runAnalysis();
-    render(); snapshotSave();
+    render(); snapshotSave(); ensureReviews();
   });
   $('bNew').addEventListener('click', newGame);
 
